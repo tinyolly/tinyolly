@@ -447,7 +447,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 ### Corporate/Commercial Use
 
-For corporate or commercial use, please contact InfraArc for a commercial license:
+For corporate or commercial use, please contact for a commercial license:
 
 <div align="center">
   <img src="images/contact-email.svg" alt="Contact Email">
