@@ -137,11 +137,3 @@ This removes the OpenTelemetry Demo but leaves TinyOlly running.
 
 ---
 
-## Running Docker and Kubernetes Simultaneously
-
-Both environments can run at the same time on the same machine:
-- **Docker**: `http://localhost:5005`
-- **Kubernetes**: `http://localhost:5002`
-
-Each has its own isolated data and generates independent telemetry streams. Perfect for testing or comparing deployments.
-

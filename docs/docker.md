@@ -117,13 +117,3 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 ```
 
 The Otel Collector will forward everything to TinyOlly's OTLP receiver, which process telemetry and stores it in Redis in OTEL format for the backend and UI to access.
-
----
-
-## Running Docker and Kubernetes Simultaneously
-
-Both environments can run at the same time on the same machine:  
-- **Docker**: `http://localhost:5005`  
-- **Kubernetes**: `http://localhost:5002`  
-
-Each has its own isolated data and generates independent telemetry streams. Perfect for testing or comparing deployments.
