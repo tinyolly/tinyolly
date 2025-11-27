@@ -26,7 +26,7 @@ Organizations deploying TinyOlly in a broader or more intensive capacity are req
 
 For commercial licensing inquiries, contact:  
 <div align="center">
-  <img src="images/contact-email.svg" alt="Contact Email">
+  <img src="images/contact-email.svg" alt="Contact Email" width="300" height="40">
 </div>
 
 ## Rationale
