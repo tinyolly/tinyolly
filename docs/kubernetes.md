@@ -114,10 +114,10 @@ The demo includes two microservices that automatically generate traffic, showcas
 
 To deploy the full [OpenTelemetry Demo](https://opentelemetry.io/docs/demo/) with ~20 microservices:
 
-**Prerequisites:**
-- TinyOlly must be deployed first (see Setup above)
-- [Helm](https://helm.sh/docs/intro/install/) installed
-- Sufficient cluster resources (demo is resource-intensive)
+**Prerequisites:**  
+- TinyOlly must be deployed first (see Setup above)  
+- [Helm](https://helm.sh/docs/intro/install/) installed  
+- Sufficient cluster resources (demo is resource-intensive)  
 
 **Deploy:**
 ```bash
