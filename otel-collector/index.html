@@ -13,10 +13,10 @@
       
       
       
-        <link rel="prev" href="../docker/">
+        <link rel="prev" href="../kubernetes/">
       
       
-        <link rel="next" href="../otel-collector/">
+        <link rel="next" href="../api/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Run on Kubernetes - TinyOlly Documentation</title>
+        <title>OpenTelemetry Collector Config - TinyOlly Documentation</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kubernetes-deployment" class="md-skip">
+        <a href="#opentelemetry-collector" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Run on Kubernetes
+              OpenTelemetry Collector Config
             
           </span>
         </div>
@@ -313,6 +313,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../kubernetes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run on Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -332,7 +359,7 @@
   <span class="md-ellipsis">
     
   
-    Run on Kubernetes
+    OpenTelemetry Collector Config
   
 
     
@@ -350,7 +377,7 @@
   <span class="md-ellipsis">
     
   
-    Run on Kubernetes
+    OpenTelemetry Collector Config
   
 
     
@@ -376,10 +403,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        Configuration
       
     </span>
   </a>
@@ -387,10 +414,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-deploy-tinyolly-core" class="md-nav__link">
+  <a href="#default-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Deploy TinyOlly Core
+        Default Configuration
       
     </span>
   </a>
@@ -398,10 +425,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-demo-applications-optional" class="md-nav__link">
+  <a href="#customization-examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Demo Applications (Optional)
+        Customization Examples
       
     </span>
   </a>
@@ -409,13 +436,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-opentelemetry-demo-20-services-optional" class="md-nav__link">
+  <a href="#applying-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. OpenTelemetry Demo (~20 Services - Optional)
+        Applying Changes
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Applying Changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -423,33 +478,6 @@
   
 </nav>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../otel-collector/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OpenTelemetry Collector Config
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -589,10 +617,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        Configuration
       
     </span>
   </a>
@@ -600,10 +628,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-deploy-tinyolly-core" class="md-nav__link">
+  <a href="#default-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Deploy TinyOlly Core
+        Default Configuration
       
     </span>
   </a>
@@ -611,10 +639,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-demo-applications-optional" class="md-nav__link">
+  <a href="#customization-examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Demo Applications (Optional)
+        Customization Examples
       
     </span>
   </a>
@@ -622,13 +650,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-opentelemetry-demo-20-services-optional" class="md-nav__link">
+  <a href="#applying-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. OpenTelemetry Demo (~20 Services - Optional)
+        Applying Changes
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Applying Changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -652,101 +708,42 @@
   
 
 
-<h1 id="kubernetes-deployment">Kubernetes Deployment</h1>
-<p>All examples are launched from the repo - clone it first:<br />
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tinyolly/tinyolly
-</code></pre></div></p>
-<h2 id="prerequisites">Prerequisites</h2>
+<h1 id="opentelemetry-collector">OpenTelemetry Collector</h1>
+<p>TinyOlly uses the <a href="https://opentelemetry.io/docs/collector/">OpenTelemetry Collector</a> as the telemetry ingestion and shipping layer. The collector receives telemetry from your applications and forwards it to TinyOlly's OTLP receiver.</p>
+<h2 id="configuration">Configuration</h2>
+<p>TinyOlly includes a sample collector configuration that you can customize for your needs. The configuration files are located at:</p>
 <ul>
-<li><a href="https://minikube.sigs.k8s.io/docs/start/">Minikube</a></li>
-<li><a href="https://kubernetes.io/docs/tasks/tools/">kubectl</a></li>
+<li><strong>Docker</strong>: <code>docker/otel-collector-config.yaml</code></li>
+<li><strong>Kubernetes</strong>: <code>k8s/otel-collector-config.yaml</code></li>
 </ul>
-<h2 id="1-deploy-tinyolly-core">1. Deploy TinyOlly Core</h2>
-<ol>
-<li>
-<p><strong>Start Minikube:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>minikube<span class="w"> </span>start
-</code></pre></div>
-</li>
-<li>
-<p><strong>Build Images:</strong></p>
-<p>Run the build script to build the Docker images inside Minikube's Docker daemon:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./k8s/01-build-images.sh
-</code></pre></div>
-</li>
-<li>
-<p><strong>Apply Manifests:</strong></p>
-<p>Apply the Kubernetes manifests to deploy the services:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>k8s/
-</code></pre></div>
-</li>
-<li>
-<p><strong>Access the UI:</strong></p>
-<p>To access the TinyOlly UI (Service Type: LoadBalancer) on macOS with Minikube, you need to use <code>minikube tunnel</code>.</p>
-<p>Open a <strong>new terminal window</strong> and run:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>minikube<span class="w"> </span>tunnel
-</code></pre></div>
-<p>You may be asked for your password. Keep this terminal open.</p>
-<p>Now you can access the TinyOlly UI at: <a href="http://localhost:5002">http://localhost:5002</a></p>
-</li>
-<li>
-<p><strong>Send Telemetry from Host Apps:</strong></p>
-<p>To send telemetry from applications running on your host machine (outside Kubernetes), use <code>kubectl port-forward</code> to expose the OTel Collector ports:</p>
-<p>Open a <strong>new terminal window</strong> and run:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>service/otel-collector<span class="w"> </span><span class="m">4317</span>:4317<span class="w"> </span><span class="m">4318</span>:4318
-</code></pre></div>
-<p>Keep this terminal open. Now point your application's OpenTelemetry exporter to:<br />
-- <strong>gRPC</strong>: <code>http://localhost:4317</code><br />
-- <strong>HTTP</strong>: <code>http://localhost:4318</code>  </p>
-<p><strong>Example environment variables:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://localhost:4318
+<h2 id="default-configuration">Default Configuration</h2>
+<p>The default configuration includes:</p>
+<ul>
+<li><strong>OTLP Receivers</strong>: Accepts telemetry on ports 4317 (gRPC) and 4318 (HTTP)</li>
+<li><strong>Span Metrics Connector</strong>: Automatically generates RED metrics from traces</li>
+<li><strong>Batch Processor</strong>: Batches telemetry for efficient processing</li>
+<li><strong>OTLP Exporter</strong>: Forwards all telemetry to TinyOlly's OTLP receiver</li>
+</ul>
+<h2 id="customization-examples">Customization Examples</h2>
+<p>You can extend the collector configuration to add additional capabilities. The collector uses the <code>otel/opentelemetry-collector-contrib</code> image which includes:</p>
+<ul>
+<li><strong>Receivers</strong>: OTLP, Prometheus, Jaeger, Zipkin, and many more</li>
+<li><strong>Processors</strong>: Batch, Memory Limiter, Resource Detection, Tail Sampling, Filtering</li>
+<li><strong>Connectors</strong>: Span Metrics, Service Graph</li>
+<li><strong>Exporters</strong>: OTLP, Prometheus, Logging, and many more</li>
+</ul>
+<p>For a complete list of available components, see the <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib">OpenTelemetry Collector Contrib documentation</a>.</p>
+<h2 id="applying-changes">Applying Changes</h2>
+<h3 id="docker">Docker</h3>
+<p>After modifying <code>docker/otel-collector-config.yaml</code> rebuild/restart using:<br />
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>docker
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./01-start-core.sh
 </code></pre></div></p>
-<p><strong>For apps running inside the Kubernetes cluster:</strong><br />
-Use the Kubernetes service name:<br />
-- <strong>gRPC</strong>: <code>http://otel-collector:4317</code><br />
-- <strong>HTTP</strong>: <code>http://otel-collector:4318</code>  </p>
-</li>
-<li>
-<p><strong>Clean Up:</strong></p>
-<p>Use the cleanup script to remove all TinyOlly resources:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>./k8s/01-cleanup.sh
-</code></pre></div>
-<p>Shut down Minikube:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>minikube<span class="w"> </span>stop
+<h3 id="kubernetes">Kubernetes</h3>
+<p>After modifying <code>k8s/otel-collector-config.yaml</code>: rebuild/restart using:<br />
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>k8s/otel-collector-config.yaml
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment/otel-collector
 </code></pre></div></p>
-<p>Minikube may be more stable if you delete it:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>minikube<span class="w"> </span>delete
-</code></pre></div></p>
-</li>
-</ol>
-<hr />
-<h2 id="2-demo-applications-optional">2. Demo Applications (Optional)</h2>
-<p>To see TinyOlly in action with instrumented microservices:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-demo
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>./01-deploy.sh
-</code></pre></div>
-<p>To clean up the demo:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>./02-cleanup.sh
-</code></pre></div></p>
-<p>The demo includes two microservices that automatically generate traffic, showcasing distributed tracing across service boundaries.</p>
-<hr />
-<h2 id="3-opentelemetry-demo-20-services-optional">3. OpenTelemetry Demo (~20 Services - Optional)</h2>
-<p>To deploy the full <a href="https://opentelemetry.io/docs/demo/">OpenTelemetry Demo</a> with ~20 microservices:</p>
-<p><strong>Prerequisites:</strong><br />
-- TinyOlly must be deployed first (see Setup above)<br />
-- <a href="https://helm.sh/docs/intro/install/">Helm</a> installed<br />
-- Sufficient cluster resources (demo is resource-intensive)  </p>
-<p><strong>Deploy:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-otel-demo
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>./01-deploy-otel-demo-helm.sh
-</code></pre></div></p>
-<p>This deploys all OpenTelemetry Demo services configured to send telemetry to TinyOlly's collector via HTTP on port 4318. Built-in observability tools (Jaeger, Grafana, Prometheus) are disabled.</p>
-<p><strong>Cleanup:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-otel-demo
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>./02-cleanup-otel-demo-helm.sh
-</code></pre></div></p>
-<p>This removes the OpenTelemetry Demo but leaves TinyOlly running.</p>
-<hr />
 
 
 
