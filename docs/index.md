@@ -7,7 +7,7 @@
 
 ## What is TinyOlly?
 
-A **lightweight OpenTelemetry-native observability platform** built from scratch to visualize and correlate logs, metrics, and traces. No 3rd party observability tools - just Python (FastAPI), Redis, and JavaScript with a **comprehensive REST API**.
+A **lightweight OpenTelemetry-native observability platform** built from scratch to visualize and correlate logs, metrics, and traces. No 3rd party observability tools - just Python (FastAPI), Redis, OpenAPI, and JavaScript.
 
 - Think of TinyOlly as a development tool to observe and perfect your app's telemetry  
 - Send whatever you want to the Otel collector on Docker or K8S and TinyOlly will visualize it  

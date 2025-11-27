@@ -1,7 +1,7 @@
 # Licensing
 
 TinyOlly is released under the **BSD 3-Clause License**.  
-The full license text is available in the [`LICENSE`](../LICENSE) file. This license permits free use, modification, and redistribution for individuals, researchers, and small organizations.
+The full license text is available in the [LICENSE](https://github.com/tinyolly/tinyolly/blob/main/LICENSE) file. This license permits free use, modification, and redistribution for individuals, researchers, and small organizations.
 
 ## Community and Small-Scale Use
 
