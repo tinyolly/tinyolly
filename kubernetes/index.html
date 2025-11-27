@@ -685,26 +685,43 @@
 <p>Now you can access the TinyOlly UI at: <a href="http://localhost:5002">http://localhost:5002</a></p>
 </li>
 <li>
+<p><strong>Send Telemetry from Host Apps:</strong></p>
+<p>To send telemetry from applications running on your host machine (outside Kubernetes), use <code>kubectl port-forward</code> to expose the OTel Collector ports:</p>
+<p>Open a <strong>new terminal window</strong> and run:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>service/otel-collector<span class="w"> </span><span class="m">4317</span>:4317<span class="w"> </span><span class="m">4318</span>:4318
+</code></pre></div>
+<p>Keep this terminal open. Now point your application's OpenTelemetry exporter to:<br />
+- <strong>gRPC</strong>: <code>http://localhost:4317</code><br />
+- <strong>HTTP</strong>: <code>http://localhost:4318</code>  </p>
+<p><strong>Example environment variables:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://localhost:4318
+</code></pre></div></p>
+<p><strong>For apps running inside the Kubernetes cluster:</strong><br />
+Use the Kubernetes service name:<br />
+- <strong>gRPC</strong>: <code>http://otel-collector:4317</code><br />
+- <strong>HTTP</strong>: <code>http://otel-collector:4318</code>  </p>
+</li>
+<li>
 <p><strong>Clean Up:</strong></p>
 <p>Use the cleanup script to remove all TinyOlly resources:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>./k8s/01-cleanup.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>./k8s/01-cleanup.sh
 </code></pre></div>
 <p>Shut down Minikube:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>minikube<span class="w"> </span>stop
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>minikube<span class="w"> </span>stop
 </code></pre></div></p>
 <p>Minikube may be more stable if you delete it:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>minikube<span class="w"> </span>delete
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>minikube<span class="w"> </span>delete
 </code></pre></div></p>
 </li>
 </ol>
 <hr />
 <h2 id="2-demo-applications-optional">2. Demo Applications (Optional)</h2>
 <p>To see TinyOlly in action with instrumented microservices:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-demo
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>./01-deploy.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-demo
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>./01-deploy.sh
 </code></pre></div>
 <p>To clean up the demo:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>./02-cleanup.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>./02-cleanup.sh
 </code></pre></div></p>
 <p>The demo includes two microservices that automatically generate traffic, showcasing distributed tracing across service boundaries.</p>
 <hr />
@@ -715,13 +732,13 @@
 - <a href="https://helm.sh/docs/intro/install/">Helm</a> installed
 - Sufficient cluster resources (demo is resource-intensive)</p>
 <p><strong>Deploy:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-otel-demo
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>./01-deploy-otel-demo-helm.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-otel-demo
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>./01-deploy-otel-demo-helm.sh
 </code></pre></div></p>
 <p>This deploys all OpenTelemetry Demo services configured to send telemetry to TinyOlly's collector via HTTP on port 4318. Built-in observability tools (Jaeger, Grafana, Prometheus) are disabled.</p>
 <p><strong>Cleanup:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-otel-demo
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>./02-cleanup-otel-demo-helm.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-otel-demo
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>./02-cleanup-otel-demo-helm.sh
 </code></pre></div></p>
 <p>This removes the OpenTelemetry Demo but leaves TinyOlly running.</p>
 <hr />

@@ -717,9 +717,17 @@
 <hr />
 <h2 id="4-use-tinyolly-with-your-own-apps">4. Use TinyOlly with Your Own Apps</h2>
 <p>After deploying TinyOlly core (step 1 above), instrument your application to send telemetry:</p>
-<p><strong>Point your OpenTelemetry exporter to:</strong><br />
+<p><strong>For apps running in Docker containers:</strong><br />
+Point your OpenTelemetry exporter to:<br />
 - <strong>gRPC</strong>: <code>http://otel-collector:4317</code><br />
 - <strong>HTTP</strong>: <code>http://otel-collector:4318</code>  </p>
+<p><strong>For apps running on your host machine (outside Docker):</strong><br />
+Docker Desktop automatically exposes container ports to <code>localhost</code>. Point your OpenTelemetry exporter to:<br />
+- <strong>gRPC</strong>: <code>http://localhost:4317</code><br />
+- <strong>HTTP</strong>: <code>http://localhost:4318</code>  </p>
+<p><strong>Example environment variables:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://localhost:4318
+</code></pre></div></p>
 <p>The Otel Collector will forward everything to TinyOlly's OTLP receiver, which process telemetry and stores it in Redis in OTEL format for the backend and UI to access.</p>
 <hr />
 <h2 id="running-docker-and-kubernetes-simultaneously">Running Docker and Kubernetes Simultaneously</h2>
