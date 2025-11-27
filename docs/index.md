@@ -12,8 +12,6 @@ TinyOlly is located here: [https://github.com/tinyolly/tinyolly](https://github.
 git clone https://github.com/tinyolly/tinyolly
 ```
 
-## What is TinyOlly?
-
 A **lightweight OpenTelemetry-native observability platform** built from scratch to visualize and correlate logs, metrics, and traces. No 3rd party observability tools - just Python (FastAPI), Redis, OpenAPI, and JavaScript.
 
 - Think of TinyOlly as a development tool to observe and perfect your app's telemetry  
