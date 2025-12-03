@@ -419,6 +419,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#4-tinyolly-core-only-deployment-use-your-own-kubernetes-opentelemetry-collector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. TinyOlly Core-Only Deployment: Use Your Own Kubernetes OpenTelemetry Collector
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -632,6 +643,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#4-tinyolly-core-only-deployment-use-your-own-kubernetes-opentelemetry-collector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. TinyOlly Core-Only Deployment: Use Your Own Kubernetes OpenTelemetry Collector
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -746,6 +768,30 @@ Use the Kubernetes service name:<br />
 <a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>./02-cleanup-otel-demo-helm.sh
 </code></pre></div></p>
 <p>This removes the OpenTelemetry Demo but leaves TinyOlly running.</p>
+<h2 id="4-tinyolly-core-only-deployment-use-your-own-kubernetes-opentelemetry-collector">4. TinyOlly <strong>Core-Only</strong> Deployment: Use Your Own Kubernetes OpenTelemetry Collector</h2>
+<p>To deploy TinyOlly without the bundled OTel Collector (e.g., if you have an existing collector daemonset):</p>
+<ol>
+<li>
+<p><strong>Build Images:</strong>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>./k8s/01-build-images.sh
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Deploy Core:</strong>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-core-only
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>./deploy.sh
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Access UI:</strong>
+    Run <code>minikube tunnel</code> and access <code>http://localhost:5002</code>.</p>
+</li>
+<li>
+<p><strong>Cleanup:</strong>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>./cleanup.sh
+</code></pre></div></p>
+</li>
+</ol>
 <hr />
 
 
