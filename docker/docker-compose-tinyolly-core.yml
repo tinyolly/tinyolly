@@ -43,6 +43,7 @@ services:
     environment:
       - REDIS_HOST=tinyolly-redis
       - REDIS_PORT=6579
+      - DEPLOYMENT_ENV=docker
 
 networks:
   default:

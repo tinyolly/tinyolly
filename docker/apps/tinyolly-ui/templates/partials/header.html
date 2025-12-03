@@ -8,6 +8,12 @@
             </div>
         </div>
         <div class="header-controls">
+            {% if deployment_env and deployment_env != 'unknown' %}
+            <span
+                style="padding: 6px 12px; border-radius: 6px; font-size: 12px; border: 1px solid var(--border-color); background: var(--bg-hover); color: var(--text-main); cursor: default; font-weight: 600; text-transform: uppercase;">
+                {{ deployment_env }}
+            </span>
+            {% endif %}
             <a href="https://github.com/stevelerner/tinyolly" target="_blank" class="docs-link">
                 <span>Docs</span>
             </a>
@@ -21,4 +27,3 @@
         </div>
     </div>
 </header>
-

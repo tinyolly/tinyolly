@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 import json
+import os
 import time
 from typing import Optional, Dict, Any, List
 from tinyolly_redis_storage import Storage
@@ -400,7 +401,11 @@ async def get_stats():
 @app.get('/', response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
 async def index(request: Request):
     """Serve the main web UI dashboard"""
-    return templates.TemplateResponse('tinyolly.html', {'request': request})
+    deployment_env = os.getenv('DEPLOYMENT_ENV', 'unknown')
+    return templates.TemplateResponse('tinyolly.html', {
+        'request': request,
+        'deployment_env': deployment_env
+    })
 
 @app.get('/health', tags=["System"])
 async def health():

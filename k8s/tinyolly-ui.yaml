@@ -25,6 +25,8 @@ spec:
           value: "tinyolly-redis"
         - name: REDIS_PORT
           value: "6579"
+        - name: DEPLOYMENT_ENV
+          value: "kubernetes"
 ---
 apiVersion: v1
 kind: Service
