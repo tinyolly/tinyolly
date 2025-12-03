@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 import json
+import os
 import time
 from typing import Optional, Dict, Any, List
 from tinyolly_redis_storage import Storage
@@ -255,25 +256,25 @@ async def get_metrics(limit: Optional[int] = Query(default=None, description="Ma
     """Get list of all metrics with OpenTelemetry metadata (type, unit, description, resources)"""
     names = await storage.get_metric_names(limit=limit)
     
-    metrics_list = []
-    for name in names:
-        # Get metadata
-        metadata = await storage.get_metric_metadata(name)
+    async def fetch_metric_details(name):
+        # Fetch all details for a single metric in parallel
+        metadata, resources, attributes = await asyncio.gather(
+            storage.get_metric_metadata(name),
+            storage.get_all_resources(name),
+            storage.get_all_attributes(name)
+        )
         
-        # Get resources to count them
-        resources = await storage.get_all_resources(name)
-        
-        # Get attributes to count combinations
-        attributes = await storage.get_all_attributes(name)
-        
-        metrics_list.append({
+        return {
             'name': name,
             'type': metadata.get('type') or 'unknown',
             'unit': metadata.get('unit', ''),
             'description': metadata.get('description', ''),
             'resource_count': len(resources),
             'attribute_combinations': len(attributes)
-        })
+        }
+
+    # Fetch all metrics in parallel
+    metrics_list = await asyncio.gather(*(fetch_metric_details(name) for name in names))
     
     return metrics_list
 
@@ -400,7 +401,11 @@ async def get_stats():
 @app.get('/', response_class=HTMLResponse, tags=["UI"], include_in_schema=False)
 async def index(request: Request):
     """Serve the main web UI dashboard"""
-    return templates.TemplateResponse('tinyolly.html', {'request': request})
+    deployment_env = os.getenv('DEPLOYMENT_ENV', 'unknown')
+    return templates.TemplateResponse('tinyolly.html', {
+        'request': request,
+        'deployment_env': deployment_env
+    })
 
 @app.get('/health', tags=["System"])
 async def health():

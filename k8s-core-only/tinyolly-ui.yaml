@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tinyolly-ui
+  labels:
+    app: tinyolly-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tinyolly-ui
+  template:
+    metadata:
+      labels:
+        app: tinyolly-ui
+    spec:
+      containers:
+      - name: tinyolly-ui
+        image: tinyolly-ui:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5002
+        env:
+        - name: REDIS_HOST
+          value: "tinyolly-redis"
+        - name: REDIS_PORT
+          value: "6579"
+        - name: DEPLOYMENT_ENV
+          value: "kubernetes-core"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tinyolly-ui
+spec:
+  type: LoadBalancer
+  selector:
+    app: tinyolly-ui
+  ports:
+    - protocol: TCP
+      port: 5002
+      targetPort: 5002

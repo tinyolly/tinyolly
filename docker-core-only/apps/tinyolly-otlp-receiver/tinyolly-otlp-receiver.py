@@ -10,6 +10,7 @@ import sys
 import asyncio
 import threading
 import uvloop
+import os
 
 from opentelemetry.proto.collector.trace.v1 import trace_service_pb2_grpc
 from opentelemetry.proto.collector.trace.v1 import trace_service_pb2
@@ -146,7 +147,7 @@ class MetricsService(metrics_service_pb2_grpc.MetricsServiceServicer):
         await storage.store_metrics(otlp_data)
 
 
-def serve():
+def serve(port=4343):
     """Start the gRPC server"""
     # Initialize the event loop before starting the server
     get_event_loop()
@@ -158,10 +159,11 @@ def serve():
     logs_service_pb2_grpc.add_LogsServiceServicer_to_server(LogsService(), server)
     metrics_service_pb2_grpc.add_MetricsServiceServicer_to_server(MetricsService(), server)
     
-    # Listen on port 4317 (standard OTLP gRPC port)
-    server.add_insecure_port('[::]:4317')
+    # Listen on configured port
+    # Use 0.0.0.0 to accept both IPv4 and IPv6 connections
+    server.add_insecure_port(f'0.0.0.0:{port}')
     
-    print("TinyOlly OTLP Receiver (gRPC) starting on port 4317...")
+    print(f"TinyOlly OTLP Receiver (gRPC) starting on port {port}...")
     
     # Check Redis connection asynchronously
     redis_connected = run_async(storage.is_connected())
@@ -179,4 +181,6 @@ def serve():
 
 
 if __name__ == '__main__':
-    serve()
+    # Allow port to be configured via environment variable, default to 4343
+    port = int(os.environ.get('PORT', 4343))
+    serve(port)

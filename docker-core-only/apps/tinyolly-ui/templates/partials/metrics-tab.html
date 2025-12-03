@@ -2,21 +2,28 @@
     <!-- Controls Section -->
     <div class="logs-controls" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
         <input type="text" id="metric-search" placeholder="Search metrics..." style="flex: 1;">
-        <button id="metric-filter-toggle" onclick="window.toggleREDMetricsFilter()" style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">
+        <button id="metric-filter-toggle" onclick="window.toggleREDMetricsFilter()"
+            style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">
             Show RED Metrics Only
         </button>
-        <button onclick="window.closeAllMetrics()" style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">
+        <button onclick="window.closeAllMetrics()"
+            style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">
             Close All
         </button>
     </div>
-    
+
     <!-- Resource Filters Section -->
-    <div id="resource-filters-section" style="margin-bottom: 15px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+    <div id="resource-filters-section"
+        style="margin-bottom: 15px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
         <!-- Resource filters will be rendered here by metrics.js -->
     </div>
-    
+
     <!-- Metrics Table -->
     <div class="metric-table" id="metrics-container">
-        <div class="loading">Loading metrics...</div>
+        <div class="loading">
+            <img src="/static/logo.svg" alt="Loading..."
+                style="height: 48px; width: 48px; animation: spin 1.5s linear infinite;">
+            <div style="margin-top: 12px;">Loading metrics...</div>
+        </div>
     </div>
 </div>

@@ -1,13 +1,15 @@
 <div id="spans-content" class="tab-content">
     <div class="logs-controls">
-        <input type="text" id="span-search"
-            placeholder="Search spans (trace ID, span ID, service, name, status)">
+        <input type="text" id="span-search" placeholder="Search spans (trace ID, span ID, service, name, status)">
         <button onclick="clearSpanFilter()">Clear</button>
         <button onclick="window.closeAllSpans()">Close All</button>
     </div>
     <div class="span-list" id="spans-container">
-        <div class="loading">Loading spans...</div>
+        <div class="loading">
+            <img src="/static/logo.svg" alt="Loading..."
+                style="height: 48px; width: 48px; animation: spin 1.5s linear infinite;">
+            <div style="margin-top: 12px;">Loading spans...</div>
+        </div>
     </div>
     <div id="span-detail-container" style="display: none; margin-top: 20px;"></div>
 </div>
-

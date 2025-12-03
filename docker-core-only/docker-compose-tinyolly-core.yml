@@ -1,10 +1,12 @@
 services:
-  redis:
+  tinyolly-redis:
     image: redis:7-alpine
     container_name: tinyolly-redis
     ports:
-      - "6379:6379"
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+      - "6579:6579"
+    command: redis-server --port 6579 --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - tinyolly-network
 
   tinyolly-otlp-receiver:
     build:
@@ -12,31 +14,37 @@ services:
       dockerfile: ../../../docker/dockerfiles/Dockerfile.tinyolly-otlp-receiver
     container_name: tinyolly-otlp-receiver
     depends_on:
-      - redis
+      - tinyolly-redis
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=tinyolly-redis
+      - REDIS_PORT=6579
+      - DEPLOYMENT_ENV=docker-core
+      - PORT=4343
     ports:
-      - "4319:4317"  # OTLP gRPC receiver (exposed on 4319 to avoid conflict with Elastic EDOT on 4317)
+      - "4343:4343"
+    networks:
+      - tinyolly-network
 
   # No otel-collector service - use external collector (e.g., Elastic EDOT)
-  # Configure your external collector to send to: localhost:4319 (gRPC)
-  # Note: TinyOlly receiver only supports gRPC. For HTTP support, use an external collector
-  #       that accepts HTTP and forwards via gRPC to this receiver.
-  # Port 4319 is used instead of 4317 to avoid conflict with Elastic EDOT collector on 4317.
+  # Configure your external collector to send to: localhost:4343 (gRPC)
 
-  tinyolly:
+  tinyolly-ui:
     build:
       context: ./apps/tinyolly-ui
       dockerfile: ../../../docker/dockerfiles/Dockerfile.tinyolly-ui
-    container_name: tinyolly
+    container_name: tinyolly-ui
     ports:
-      - "5005:5002"  # Changed to 5005 to avoid conflict with K8s (which uses 5002)
+      - "5005:5002"  # Exposed on 5005 to avoid conflict if running alongside full demo
     depends_on:
-      - redis
+      - tinyolly-redis
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=tinyolly-redis
+      - REDIS_PORT=6579
+      - DEPLOYMENT_ENV=docker-core
+    networks:
+      - tinyolly-network
 
 networks:
-  default:
+  tinyolly-network:
     name: tinyolly-network
 

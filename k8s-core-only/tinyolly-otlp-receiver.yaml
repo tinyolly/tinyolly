@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tinyolly-otlp-receiver
+  labels:
+    app: tinyolly-otlp-receiver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tinyolly-otlp-receiver
+  template:
+    metadata:
+      labels:
+        app: tinyolly-otlp-receiver
+    spec:
+      containers:
+      - name: tinyolly-otlp-receiver
+        image: tinyolly-otlp-receiver:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 4343
+        env:
+        - name: REDIS_HOST
+          value: "tinyolly-redis"
+        - name: REDIS_PORT
+          value: "6579"
+        - name: DEPLOYMENT_ENV
+          value: "kubernetes-core"
+        - name: PORT
+          value: "4343"
+        - name: REDIS_TTL
+          value: "1800"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tinyolly-otlp-receiver
+spec:
+  selector:
+    app: tinyolly-otlp-receiver
+  ports:
+    - protocol: TCP
+      port: 4343
+      targetPort: 4343
+      name: grpc

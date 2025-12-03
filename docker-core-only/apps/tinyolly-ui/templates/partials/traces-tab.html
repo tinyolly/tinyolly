@@ -6,7 +6,11 @@
             <button onclick="window.closeAllTraceDetails()">Close All</button>
         </div>
         <div class="trace-list" id="traces-container">
-            <div class="loading">Loading traces...</div>
+            <div class="loading">
+                <img src="/static/logo.svg" alt="Loading..."
+                    style="height: 48px; width: 48px; animation: spin 1.5s linear infinite;">
+                <div style="margin-top: 12px;">Loading traces...</div>
+            </div>
         </div>
     </div>
     <div id="trace-detail-view" style="display: none;">

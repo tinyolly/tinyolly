@@ -1,16 +1,17 @@
 <div id="logs-content" class="tab-content active">
     <div class="logs-controls">
-        <input type="text" id="log-search"
-            placeholder="Search logs (any text in message, service, trace/span IDs)">
-        <input type="text" id="trace-id-filter" placeholder="Filter by trace ID (optional)"
-            style="display:none;">
+        <input type="text" id="log-search" placeholder="Search logs (any text in message, service, trace/span IDs)">
+        <input type="text" id="trace-id-filter" placeholder="Filter by trace ID (optional)" style="display:none;">
         <button onclick="loadLogs()" style="display:none;">Filter</button>
         <button onclick="clearLogFilter()">Clear</button>
         <button onclick="window.closeAllLogs()">Close All</button>
     </div>
     <div id="log-json-container"></div>
     <div class="log-list" id="logs-container">
-        <div class="loading">Loading logs...</div>
+        <div class="loading">
+            <img src="/static/logo.svg" alt="Loading..."
+                style="height: 48px; width: 48px; animation: spin 1.5s linear infinite;">
+            <div style="margin-top: 12px;">Loading logs...</div>
+        </div>
     </div>
 </div>
-
