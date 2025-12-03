@@ -474,6 +474,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#using-your-own-collector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Your Own Collector
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -688,6 +699,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#using-your-own-collector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Your Own Collector
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -743,6 +765,22 @@
 <p>After modifying <code>k8s/otel-collector-config.yaml</code>: rebuild/restart using:<br />
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>k8s/otel-collector-config.yaml
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment/otel-collector
+</code></pre></div></p>
+<h2 id="using-your-own-collector">Using Your Own Collector</h2>
+<p>You can use your own OpenTelemetry Collector instance instead of the one bundled with TinyOlly. This is useful if you have an existing collector setup or want to test specific collector configurations.</p>
+<p>To do this, deploy the <strong>Core-Only</strong> version of TinyOlly (see <a href="../docker/#5-tinyolly-core-only-deployment-use-your-own-docker-opentelemetry-collector">Docker Deployment</a> or <a href="../kubernetes/#4-tinyolly-core-only-deployment-use-your-own-kubernetes-opentelemetry-collector">Kubernetes Deployment</a>).</p>
+<p>Then, configure your collector's OTLP exporter to send data to the TinyOlly Receiver:</p>
+<ul>
+<li><strong>Endpoint</strong>: <code>tinyolly-otlp-receiver:4343</code></li>
+<li><strong>Protocol</strong>: gRPC</li>
+<li><strong>TLS</strong>: Insecure (or configured as needed)</li>
+</ul>
+<p>Example Exporter Configuration:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">exporters</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">otlp</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tinyolly-otlp-receiver:4343&quot;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">tls</span><span class="p">:</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">insecure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div></p>
 
 
