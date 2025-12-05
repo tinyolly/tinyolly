@@ -5,18 +5,18 @@ and provides a web UI for visualization and correlation.
 Optimized with ORJSON, uvloop, and batch operations.
 """
 
-from fastapi import FastAPI, Request, HTTPException, Query, status, APIRouter
+from fastapi import FastAPI, Request, HTTPException, Query, status, APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, HTMLResponse, ORJSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZIPMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
 import json
 import os
 import time
 import logging
-from typing import Optional, Dict, Any, List, Literal
+from typing import Optional, Dict, Any, List, Literal, Set
 from tinyolly_redis_storage import Storage
 import uvloop
 import asyncio
@@ -328,6 +328,63 @@ templates = Jinja2Templates(directory="templates")
 
 # Initialize storage
 storage = Storage()
+
+# ============================================
+# WebSocket Connection Manager
+# ============================================
+
+class ConnectionManager:
+    """Manages WebSocket connections for real-time updates.
+
+    Handles multiple concurrent WebSocket connections and broadcasts
+    updates to all connected clients.
+    """
+
+    def __init__(self):
+        """Initialize connection manager with empty connections set."""
+        self.active_connections: Set[WebSocket] = set()
+
+    async def connect(self, websocket: WebSocket):
+        """Accept and register a new WebSocket connection.
+
+        Args:
+            websocket (WebSocket): WebSocket connection to register
+        """
+        await websocket.accept()
+        self.active_connections.add(websocket)
+        logger.info(f"WebSocket connected. Total connections: {len(self.active_connections)}")
+
+    def disconnect(self, websocket: WebSocket):
+        """Remove a WebSocket connection from active connections.
+
+        Args:
+            websocket (WebSocket): WebSocket connection to remove
+        """
+        self.active_connections.discard(websocket)
+        logger.info(f"WebSocket disconnected. Total connections: {len(self.active_connections)}")
+
+    async def broadcast(self, message: dict):
+        """Broadcast a message to all connected WebSocket clients.
+
+        Args:
+            message (dict): Message to broadcast (will be JSON-serialized)
+        """
+        if not self.active_connections:
+            return
+
+        disconnected = set()
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logger.error(f"Error sending to WebSocket: {e}")
+                disconnected.add(connection)
+
+        # Clean up disconnected clients
+        for conn in disconnected:
+            self.disconnect(conn)
+
+manager = ConnectionManager()
 
 # ============================================
 # API Version Routers
@@ -1131,6 +1188,61 @@ async def admin_stats():
     stats['uptime'] = uptime_str
 
     return stats
+
+@app.websocket("/ws/updates")
+async def websocket_updates(websocket: WebSocket):
+    """WebSocket endpoint for real-time telemetry updates.
+
+    Provides live updates for traces, logs, metrics, and stats without polling.
+    Clients connect once and receive push notifications for new data.
+
+    **Message Format:**
+    ```json
+    {
+        "type": "stats" | "trace" | "log" | "metric",
+        "data": {...}
+    }
+    ```
+
+    **Usage Example (JavaScript):**
+    ```javascript
+    const ws = new WebSocket('ws://localhost:5002/ws/updates');
+    ws.onmessage = (event) => {
+        const update = JSON.parse(event.data);
+        console.log(`Received ${update.type}:`, update.data);
+    };
+    ```
+    """
+    await manager.connect(websocket)
+    try:
+        # Send initial stats
+        stats = await storage.get_stats()
+        await websocket.send_json({
+            "type": "stats",
+            "data": stats
+        })
+
+        # Keep connection alive and send periodic updates
+        while True:
+            try:
+                # Wait for client messages (ping/pong)
+                await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+            except asyncio.TimeoutError:
+                # Send stats update every 30 seconds
+                stats = await storage.get_stats()
+                await websocket.send_json({
+                    "type": "stats",
+                    "data": stats
+                })
+            except WebSocketDisconnect:
+                break
+
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}", exc_info=True)
+    finally:
+        manager.disconnect(websocket)
 
 @app.get(
     '/health',
