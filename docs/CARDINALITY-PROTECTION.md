@@ -1,5 +1,12 @@
 # Cardinality Protection
 
+<div align="center">
+  <img src="../images/spans.png" alt="Cardinality Protection" width="600">
+  <p><em>Span waterfall showing distributed trace complexity</em></p>
+</div>
+
+---
+
 TinyOlly includes built-in protection against metric cardinality explosion with a configurable limit on unique metric names.
 
 ## Configuration

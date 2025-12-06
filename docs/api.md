@@ -1,5 +1,12 @@
 # REST API & OpenAPI
 
+<div align="center">
+  <img src="../images/metrics.png" alt="TinyOlly REST API" width="600">
+  <p><em>Metrics accessible via the REST API</em></p>
+</div>
+
+---
+
 TinyOlly provides a comprehensive REST API for programmatic access to all telemetry data in **OpenTelemetry-native format**.
 
 ## Interactive API Documentation

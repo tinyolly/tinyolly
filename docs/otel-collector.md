@@ -1,5 +1,12 @@
 # OpenTelemetry Collector
 
+<div align="center">
+  <img src="../images/logs.png" alt="OpenTelemetry Collector" width="600">
+  <p><em>Logs flowing through the OpenTelemetry Collector to TinyOlly</em></p>
+</div>
+
+---
+
 TinyOlly uses the [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) as the telemetry ingestion and shipping layer. The collector receives telemetry from your applications and forwards it to TinyOlly's OTLP receiver.
 
 ## Configuration

@@ -1,5 +1,12 @@
 # Technical Details
 
+<div align="center">
+  <img src="../images/servicecatalog.png" alt="TinyOlly Architecture" width="600">
+  <p><em>Service catalog showing RED metrics for all services</em></p>
+</div>
+
+---
+
 ## Architecture
 
 ```
