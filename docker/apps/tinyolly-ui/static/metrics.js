@@ -7,6 +7,7 @@ import { loadChartJs, renderActionButton, copyToClipboard, downloadJson, renderE
 const MAX_METRICS_IN_MEMORY = 1000; // Prevent unbounded memory growth
 let allMetrics = [];
 let activeResourceFilters = {}; // {key: value}
+let activeAttributeFilters = {}; // {key: value} - for metric attribute filtering
 let expandedMetric = null;
 let allResourceKeys = new Set(); // All unique resource keys across metrics
 let showOnlyRED = false;
@@ -1192,8 +1193,12 @@ window.viewMetricsWithFilters = (filters) => {
         activeResourceFilters = { ...filters.resource };
     }
 
-    // TODO: Store attribute filters for use when metric is expanded
-    // For now, just apply resource filters
+    // Store attribute filters for use when metric is expanded
+    if (filters.attributes) {
+        activeAttributeFilters = { ...filters.attributes };
+    } else {
+        activeAttributeFilters = {};
+    }
 
     // Switch to metrics tab
     import('./tabs.js').then(module => {

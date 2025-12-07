@@ -1616,7 +1616,11 @@ async def health():
 
 if __name__ == '__main__':
     import uvicorn
+    # Port 5002 is the internal container port
+    # Docker maps this to 5005 externally (see docker-compose-tinyolly-core.yml)
+    # Kubernetes uses port 5002 directly (see k8s/tinyolly-ui.yaml)
+    port = int(os.getenv('PORT', 5002))
     logger.info("Starting TinyOlly UI...")
-    logger.info("✓ HTTP mode: http://localhost:5002")
+    logger.info(f"✓ HTTP mode: http://0.0.0.0:{port}")
     # uvloop is already installed via policy at top of file
-    uvicorn.run(app, host='0.0.0.0', port=5002)
+    uvicorn.run(app, host='0.0.0.0', port=port)

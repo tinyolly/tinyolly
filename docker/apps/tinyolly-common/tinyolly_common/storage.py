@@ -12,6 +12,7 @@ import os
 import logging
 import msgpack
 import orjson
+from typing import Dict, Any, Optional, List, Union
 from redis import asyncio as aioredis
 from async_lru import alru_cache
 
@@ -23,6 +24,8 @@ REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.getenv('REDIS_PORT_NUMBER', os.getenv('REDIS_PORT_OVERRIDE', '6579')))
 TTL_SECONDS = int(os.getenv('REDIS_TTL', 1800))  # 30 minutes default
 MAX_METRIC_CARDINALITY = int(os.getenv('MAX_METRIC_CARDINALITY', 1000))
+COMPRESSION_THRESHOLD = int(os.getenv('COMPRESSION_THRESHOLD_BYTES', 512))  # Compress if larger than this
+SERVICE_GRAPH_CACHE_TTL = int(os.getenv('SERVICE_GRAPH_CACHE_TTL', 5))  # Cache TTL in seconds
 
 # ZSTD Contexts (reusing context is faster)
 zstd_compressor = zstd.ZstdCompressor(level=3)
@@ -42,20 +45,21 @@ class Storage:
         max_cardinality (int): Maximum unique metric series allowed
     """
 
-    def __init__(self, host=REDIS_HOST, port=REDIS_PORT, ttl=TTL_SECONDS, max_cardinality=MAX_METRIC_CARDINALITY):
+    def __init__(self, host: str = REDIS_HOST, port: int = REDIS_PORT, 
+                 ttl: int = TTL_SECONDS, max_cardinality: int = MAX_METRIC_CARDINALITY):
         """Initialize Storage with Redis connection parameters.
 
         Args:
-            host (str): Redis hostname. Defaults to REDIS_HOST env var.
-            port (int): Redis port. Defaults to REDIS_PORT env var.
-            ttl (int): Data TTL in seconds. Defaults to 1800 (30 minutes).
-            max_cardinality (int): Max unique metrics. Defaults to 1000.
+            host: Redis hostname. Defaults to REDIS_HOST env var.
+            port: Redis port. Defaults to REDIS_PORT env var.
+            ttl: Data TTL in seconds. Defaults to 1800 (30 minutes).
+            max_cardinality: Max unique metrics. Defaults to 1000.
         """
         self.host = host
         self.port = port
         self.ttl = ttl
         self.max_cardinality = max_cardinality
-        self._client = None
+        self._client: Optional[aioredis.Redis] = None
     
     async def get_client(self):
         """Get or create async Redis client with connection pooling.
@@ -94,26 +98,26 @@ class Storage:
         except:
             return False
 
-    def _compress_for_storage(self, data):
+    def _compress_for_storage(self, data: Dict[str, Any]) -> bytes:
         """Serialize and conditionally compress data for Redis storage.
 
-        Uses msgpack for serialization and ZSTD compression for payloads > 512 bytes.
+        Uses msgpack for serialization and ZSTD compression for payloads > threshold.
         Adds 'ZSTD:' prefix to compressed data for format detection.
 
         Args:
-            data (dict): Python dictionary to store
+            data: Python dictionary to store
 
         Returns:
-            bytes: Serialized (and possibly compressed) binary data
+            Serialized (and possibly compressed) binary data
 
         Note:
-            Compression threshold is 512 bytes to balance CPU vs storage.
+            Compression threshold is configurable via COMPRESSION_THRESHOLD_BYTES env var.
         """
         # Serialize
         packed = msgpack.packb(data)
 
-        # Compress if larger than 512 bytes
-        if len(packed) > 512:
+        # Compress if larger than threshold
+        if len(packed) > COMPRESSION_THRESHOLD:
             compressed = zstd_compressor.compress(packed)
             return b'ZSTD:' + compressed
         return packed
@@ -350,8 +354,15 @@ class Storage:
         ids = await client.zrevrange('span_index', 0, limit - 1)
         return [id.decode('utf-8') for id in ids]
 
-    async def get_span_details(self, span_id):
-        """Get details for a specific span"""
+    async def get_span_details(self, span_id: str) -> Optional[Dict[str, Any]]:
+        """Get details for a specific span.
+        
+        Args:
+            span_id: Unique span identifier
+            
+        Returns:
+            Span details dictionary or None if span not found
+        """
         span_key = f"span:{span_id}"
         try:
             client = await self.get_client()
@@ -363,7 +374,16 @@ class Storage:
             span = self._decompress_if_needed(span_data)
             
             # Extract attributes for display
-            def get_attr(obj, keys):
+            def get_attr(obj: Dict[str, Any], keys: List[str]) -> Optional[Union[str, int, bool, float]]:
+                """Extract attribute value from span by trying multiple key names.
+                
+                Args:
+                    obj: Span or log object containing attributes
+                    keys: List of attribute keys to try (in order)
+                    
+                Returns:
+                    First matching attribute value or None
+                """
                 # Handle OTLP list of dicts format
                 attributes = obj.get('attributes')
                 if isinstance(attributes, list):
@@ -664,8 +684,15 @@ class Storage:
         attributes = resource.get('attributes', [])
         return self.parse_attributes(attributes)
 
-    def _hash_dict(self, d):
-        """Create a stable hash for a dictionary"""
+    def _hash_dict(self, d: Dict[str, Any]) -> str:
+        """Create a stable hash for a dictionary.
+        
+        Args:
+            d: Dictionary to hash
+            
+        Returns:
+            8-character hexadecimal hash string
+        """
         import hashlib
         sorted_items = sorted(d.items())
         s = json.dumps(sorted_items, sort_keys=True)
@@ -1205,7 +1232,16 @@ class Storage:
         edges = {}  # (source, target) -> {count, durations}
         
         # Helper to get attribute value
-        def _get_span_attr_value(span, key_to_find):
+        def _get_span_attr_value(span: Dict[str, Any], key_to_find: str) -> Optional[Union[str, int, bool]]:
+            """Extract attribute value from span by key.
+            
+            Args:
+                span: Span dictionary containing attributes
+                key_to_find: Attribute key to search for
+                
+            Returns:
+                Attribute value (string, int, bool) or None if not found
+            """
             attributes = span.get('attributes', [])
             if isinstance(attributes, list):
                 for attr in attributes:
@@ -1310,7 +1346,7 @@ class Storage:
             'edges': graph_edges
         }
         
-        await client.setex(cache_key, 5, orjson.dumps(result).decode('utf-8'))
+        await client.setex(cache_key, SERVICE_GRAPH_CACHE_TTL, orjson.dumps(result).decode('utf-8'))
         return result
 
     @alru_cache(maxsize=1, ttl=5)
