@@ -18,14 +18,14 @@ export function renderTraces(traces) {
     const limitNote = traces.length >= 50 ? renderLimitNote(50, traces.length, 'Showing last 50 traces (older data available in Redis).') : '';
 
     const headerRow = renderTableHeader([
-        { label: 'Time', flex: 'flex: 0 0 100px' },
-        { label: 'ServiceName', flex: 'flex: 0 0 120px' },
-        { label: 'traceId', flex: 'flex: 0 0 260px' },
-        { label: 'Spans', flex: 'flex: 0 0 60px', align: 'right' },
-        { label: 'Duration ms', flex: 'flex: 0 0 80px', align: 'right' },
-        { label: 'Method', flex: 'flex: 0 0 70px' },
-        { label: 'Route / URL', flex: 'flex: 1' },
-        { label: 'Status', flex: 'flex: 0 0 60px', align: 'right' }
+        { label: 'Time', flex: '0 0 100px' },
+        { label: 'ServiceName', flex: '0 0 120px' },
+        { label: 'traceId', flex: '0 0 260px' },
+        { label: 'Spans', flex: '0 0 60px', align: 'right' },
+        { label: 'Duration', flex: '0 0 80px', align: 'right' },
+        { label: 'Method', flex: '0 0 70px' },
+        { label: 'Route / URL', flex: '1' },
+        { label: 'Status', flex: '0 0 60px', align: 'right' }
     ]);
 
     container.innerHTML = limitNote + headerRow + traces.map(trace => {

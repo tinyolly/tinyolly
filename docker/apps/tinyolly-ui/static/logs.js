@@ -57,12 +57,12 @@ function renderLogList(container, logsToShow, totalLogs) {
 
     // Build table with headers
     const headerRow = renderTableHeader([
-        { label: 'Time', flex: 'flex: 0 0 100px' },
-        { label: 'ServiceName', flex: 'flex: 0 0 120px' },
-        { label: 'Severity', flex: 'flex: 0 0 60px' },
-        { label: 'traceId', flex: 'flex: 0 0 180px' },
-        { label: 'spanId', flex: 'flex: 0 0 140px' },
-        { label: 'Message', flex: 'flex: 1; min-width: 200px' }
+        { label: 'Time', flex: '0 0 100px' },
+        { label: 'ServiceName', flex: '0 0 120px' },
+        { label: 'Severity', flex: '0 0 60px' },
+        { label: 'traceId', flex: '0 0 180px' },
+        { label: 'spanId', flex: '0 0 140px' },
+        { label: 'Message', flex: '1; min-width: 200px' }
     ]);
 
     const logsHtml = logsToShow.map((log, index) => {

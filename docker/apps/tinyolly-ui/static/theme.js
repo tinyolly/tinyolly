@@ -47,6 +47,10 @@ export function setTheme(theme) {
     if (activeTab === 'map') {
         loadServiceMap();
     } else if (activeTab === 'metrics') {
-        loadMetrics();
+        // Only reload metrics if metrics tab is actually visible
+        const metricsTab = document.getElementById('metrics-content');
+        if (metricsTab && metricsTab.classList.contains('active')) {
+            loadMetrics();
+        }
     }
 }

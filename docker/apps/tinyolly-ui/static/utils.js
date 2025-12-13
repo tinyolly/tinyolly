@@ -234,7 +234,17 @@ export function renderLoadingState(message = 'Loading...') {
 export function renderTableHeader(columns) {
     const columnsHtml = columns.map(col => {
         const align = col.align ? `text-align: ${col.align};` : '';
-        return `<div style="flex: ${col.flex}; ${align}">${col.label}</div>`;
+        // Extract flex value - handle both "flex: 0 0 100px" format and just the value
+        let flexValue = col.flex;
+        if (flexValue.includes('flex:')) {
+            flexValue = flexValue.replace('flex:', '').trim();
+        }
+        // Handle min-width if present (e.g., "1; min-width: 200px")
+        const minWidthMatch = flexValue.match(/min-width:\s*(\d+px)/);
+        const minWidth = minWidthMatch ? `min-width: ${minWidthMatch[1]};` : '';
+        // Remove min-width from flex value if present
+        flexValue = flexValue.replace(/;\s*min-width:\s*\d+px/, '').trim();
+        return `<div style="flex: ${flexValue}; ${minWidth}${align}">${col.label}</div>`;
     }).join('');
     
     return `

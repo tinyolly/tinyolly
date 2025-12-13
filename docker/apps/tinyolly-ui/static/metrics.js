@@ -22,6 +22,16 @@ const TYPE_BADGES = {
 
 export async function renderMetrics(metricsData) {
     const container = document.getElementById('metrics-container');
+    
+    // Only render if metrics tab is active and container exists
+    if (!container) {
+        return;
+    }
+    
+    const metricsTab = document.getElementById('metrics-content');
+    if (!metricsTab || !metricsTab.classList.contains('active')) {
+        return;
+    }
 
     if (!metricsData || metricsData.length === 0) {
         container.innerHTML = renderEmptyState('No metrics collected yet');
@@ -35,14 +45,13 @@ export async function renderMetrics(metricsData) {
         allMetrics = allMetrics.slice(-MAX_METRICS_IN_MEMORY);
     }
 
-    // Extract all unique resource keys
+    // Extract all unique resource keys (for backward compatibility)
     extractResourceKeys();
 
-    // Render resource filters section
-    renderResourceFilters();
+    // Metric labels filter section removed - too slow, will be reworked in the future
 
-    // Filter metrics based on active resource filters and RED filter
-    let filteredMetrics = filterMetricsByResources(allMetrics);
+    // Filter metrics based on active attribute filters and RED filter
+    let filteredMetrics = filterMetricsByAttributes(allMetrics);
 
     // Apply RED filter if enabled
     if (showOnlyRED) {
@@ -129,42 +138,78 @@ function extractResourceKeys() {
     allResourceKeys.add('deployment.environment');
 }
 
-function renderResourceFilters() {
-    const filterContainer = document.getElementById('resource-filters-section');
+// DISABLED: Metric Labels Filter - Too slow, will be reworked in the future
+async function renderMetricLabelsFilters() {
+    // Function disabled - metric labels filter removed
+    return;
+    /*
+    const filterContainer = document.getElementById('metric-labels-section');
     if (!filterContainer) return;
 
+    // Fetch all available metric labels (attributes) across all metrics
+    const allAttributeKeys = new Set();
+    const attributeValuesMap = new Map(); // key -> Set of values
+
+    // Fetch attributes for each metric
+    for (const metric of allMetrics) {
+        try {
+            const response = await fetch(`/api/metrics/${metric.name}/attributes`);
+            if (response.ok) {
+                const attributes = await response.json();
+                attributes.forEach(attrObj => {
+                    Object.keys(attrObj).forEach(key => {
+                        allAttributeKeys.add(key);
+                        if (!attributeValuesMap.has(key)) {
+                            attributeValuesMap.set(key, new Set());
+                        }
+                        const value = attrObj[key];
+                        if (value !== undefined && value !== null) {
+                            attributeValuesMap.get(key).add(String(value));
+                        }
+                    });
+                });
+            }
+        } catch (error) {
+            console.warn(`Failed to fetch attributes for ${metric.name}:`, error);
+        }
+    }
+
     let html = '<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">';
-    html += '<span style="font-weight: 600; font-size: 13px;">Resource Filters:</span>';
+    html += '<span style="font-weight: 600; font-size: 13px;">Metric Labels:</span>';
 
     // Active filter chips
-    for (const [key, value] of Object.entries(activeResourceFilters)) {
+    for (const [key, value] of Object.entries(activeAttributeFilters)) {
         html += `
             <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--primary); color: white; border-radius: 16px; font-size: 12px;">
                 <span>${key}: ${value}</span>
-                <button onclick="window.removeResourceFilter('${key}')" style="background: none; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; line-height: 1;">×</button>
+                <button onclick="window.removeMetricLabelFilter('${key}')" style="background: none; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; line-height: 1;">×</button>
             </span>
         `;
     }
 
-    // Add filter dropdown
-    if (allResourceKeys.size > 0) {
-        html += `
-            <select id="resource-key-select" onchange="window.showResourceValueInput(this.value)" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); font-size: 12px;">
-                <option value="">+ Add filter...</option>
-                ${Array.from(allResourceKeys).map(key => {
-            if (!activeResourceFilters[key]) {
-                return `<option value="${key}">${key}</option>`;
+    // Add filter dropdowns for each attribute key
+    if (allAttributeKeys.size > 0) {
+        Array.from(allAttributeKeys).sort().forEach(key => {
+            if (!activeAttributeFilters[key]) {
+                const values = Array.from(attributeValuesMap.get(key) || []).sort();
+                if (values.length > 0) {
+                    html += `
+                        <select id="metric-label-${key}" onchange="window.applyMetricLabelFilter('${key}', this.value)" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); font-size: 12px;">
+                            <option value="">${key} (all)</option>
+                            ${values.map(v => `<option value="${v}">${v}</option>`).join('')}
+                        </select>
+                    `;
+                }
             }
-            return '';
-        }).join('')}
-            </select>
-        `;
+        });
+    } else {
+        html += '<span style="font-size: 12px; color: var(--text-muted);">No metric labels available</span>';
     }
 
     // Clear all button
-    if (Object.keys(activeResourceFilters).length > 0) {
+    if (Object.keys(activeAttributeFilters).length > 0) {
         html += `
-            <button onclick="window.clearAllResourceFilters()" style="padding: 4px 10px; background: var(--bg-hover); border: 1px solid var(--border); border-radius: 4px; font-size: 12px; cursor: pointer;">
+            <button onclick="window.clearAllMetricLabelFilters()" style="padding: 4px 10px; background: var(--bg-hover); border: 1px solid var(--border); border-radius: 4px; font-size: 12px; cursor: pointer;">
                 Clear All Filters
             </button>
         `;
@@ -172,15 +217,16 @@ function renderResourceFilters() {
 
     html += '</div>';
     filterContainer.innerHTML = html;
+    */
 }
 
-function filterMetricsByResources(metrics) {
-    if (Object.keys(activeResourceFilters).length === 0) {
+function filterMetricsByAttributes(metrics) {
+    if (Object.keys(activeAttributeFilters).length === 0) {
         return metrics;
     }
 
-    // For now, return all metrics (filtering happens when fetching series)
-    // In a full implementation, we'd fetch resources for each metric and filter here
+    // Filtering by attributes happens when fetching series data
+    // For now, return all metrics (they'll be filtered when expanded)
     return metrics;
 }
 
@@ -250,13 +296,13 @@ async function renderMetricDetail(metric, container) {
     try {
         container.innerHTML = '<div style="text-align: center; padding: 20px;">Loading...</div>';
 
-        // Fetch full metric data with filters
+        // Fetch full metric data with attribute filters
         const params = new URLSearchParams();
-        for (const [key, value] of Object.entries(activeResourceFilters)) {
-            params.append(`resource.${key}`, value);
+        for (const [key, value] of Object.entries(activeAttributeFilters)) {
+            params.append(`attribute.${key}`, value);
         }
 
-        const response = await fetch(`/api/metrics/${metric.name}?${params.toString()}`);
+        const response = await fetch(`/api/metrics/query?name=${encodeURIComponent(metric.name)}&${params.toString()}`);
         const data = await response.json();
 
         // Build action buttons
@@ -1090,15 +1136,76 @@ function adjustColorAlpha(color, alpha) {
     return color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
 }
 
-// Global window functions for filters
+// DISABLED: Global window functions for metric label filters - Too slow, will be reworked in the future
+/*
+window.removeMetricLabelFilter = async (key) => {
+    delete activeAttributeFilters[key];
+    await renderMetricLabelsFilters();
+    // Reload expanded metrics with new filters
+    if (expandedMetric) {
+        const container = document.querySelector(`[data-metric-name="${expandedMetric}"] .metric-detail-container`);
+        if (container && container.style.display !== 'none') {
+            delete container.dataset.loaded;
+            const metric = allMetrics.find(m => m.name === expandedMetric);
+            if (metric) {
+                await renderMetricDetail(metric, container);
+                container.dataset.loaded = 'true';
+            }
+        }
+    }
+    renderMetrics(allMetrics);
+};
+
+window.clearAllMetricLabelFilters = async () => {
+    activeAttributeFilters = {};
+    await renderMetricLabelsFilters();
+    // Reload expanded metrics with new filters
+    if (expandedMetric) {
+        const container = document.querySelector(`[data-metric-name="${expandedMetric}"] .metric-detail-container`);
+        if (container && container.style.display !== 'none') {
+            delete container.dataset.loaded;
+            const metric = allMetrics.find(m => m.name === expandedMetric);
+            if (metric) {
+                await renderMetricDetail(metric, container);
+                container.dataset.loaded = 'true';
+            }
+        }
+    }
+    renderMetrics(allMetrics);
+};
+
+window.applyMetricLabelFilter = async (key, value) => {
+    if (value) {
+        activeAttributeFilters[key] = value;
+    } else {
+        delete activeAttributeFilters[key];
+    }
+    await renderMetricLabelsFilters();
+    // Reload expanded metrics with new filters
+    if (expandedMetric) {
+        const container = document.querySelector(`[data-metric-name="${expandedMetric}"] .metric-detail-container`);
+        if (container && container.style.display !== 'none') {
+            delete container.dataset.loaded;
+            const metric = allMetrics.find(m => m.name === expandedMetric);
+            if (metric) {
+                await renderMetricDetail(metric, container);
+                container.dataset.loaded = 'true';
+            }
+        }
+    }
+    renderMetrics(allMetrics);
+};
+*/
+
+// Keep old functions for backward compatibility (but they won't be used)
 window.removeResourceFilter = (key) => {
     delete activeResourceFilters[key];
-    import('./api.js').then(module => module.loadMetrics());
+    renderMetrics(allMetrics);
 };
 
 window.clearAllResourceFilters = () => {
     activeResourceFilters = {};
-    import('./api.js').then(module => module.loadMetrics());
+    renderMetrics(allMetrics);
 };
 
 window.showResourceValueInput = (key) => {
@@ -1106,9 +1213,8 @@ window.showResourceValueInput = (key) => {
     const value = prompt(`Enter value for ${key}:`);
     if (value) {
         activeResourceFilters[key] = value;
-        import('./api.js').then(module => module.loadMetrics());
+        renderMetrics(allMetrics);
     }
-    document.getElementById('resource-key-select').value = '';
 };
 
 window.applyAttributeFilter = (chartId, key, value) => {

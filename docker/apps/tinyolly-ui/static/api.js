@@ -102,6 +102,12 @@ export async function loadLogs(filterTraceId = null) {
 }
 
 export async function loadMetrics() {
+    // Only load if metrics tab is active
+    const metricsTab = document.getElementById('metrics-content');
+    if (!metricsTab || !metricsTab.classList.contains('active')) {
+        return;
+    }
+    
     try {
         const response = await fetch('/api/metrics');
         let metrics = await response.json();
