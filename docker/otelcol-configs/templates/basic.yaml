@@ -1,6 +1,4 @@
-# Basic OTLP Configuration
 # Simple OTLP receiver with debug exporter
-# Good starting point for testing telemetry collection
 
 receivers:
   otlp:

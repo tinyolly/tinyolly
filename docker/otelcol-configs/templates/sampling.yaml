@@ -1,6 +1,4 @@
-# Probabilistic Sampling Configuration
-# Samples traces at a configurable rate to reduce volume
-# Useful for high-traffic environments
+# Sample traces at configurable rate to reduce volume
 
 receivers:
   otlp:

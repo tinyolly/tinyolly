@@ -1,6 +1,4 @@
-# Span Metrics Configuration
-# Generates RED metrics (Rate, Errors, Duration) from traces
-# Uses the spanmetrics connector to derive metrics from spans
+# Generate RED metrics from traces using spanmetrics connector
 
 receivers:
   otlp:

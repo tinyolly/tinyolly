@@ -1,6 +1,4 @@
-# Attribute Filtering Configuration
 # Filter, transform, and redact sensitive attributes
-# Useful for PII removal and data normalization
 
 receivers:
   otlp:

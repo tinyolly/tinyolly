@@ -1623,6 +1623,7 @@ async def opamp_list_templates():
 
     Templates are loaded from YAML files in the otelcol-configs/templates directory.
     Each template includes metadata extracted from YAML comments.
+    Returns a maximum of 4 templates for the UI display.
     """
     templates = []
     templates_dir = Path(OTELCOL_TEMPLATES_DIR)
@@ -1631,33 +1632,29 @@ async def opamp_list_templates():
         return {"templates": []}
 
     for yaml_file in sorted(templates_dir.glob("*.yaml")):
+        if len(templates) >= 4:  # Maximum 4 templates
+            break
         try:
             content = yaml_file.read_text()
-            # Extract title and description from first comment lines
+            # Extract description from first comment line
             lines = content.split('\n')
-            title = yaml_file.stem.replace('_', ' ').replace('-', ' ').title()
+            name = yaml_file.stem.replace('_', ' ').replace('-', ' ').title()
             description = ""
-            found_title = False
 
+            # First non-empty comment line is the description
             for line in lines:
                 if line.startswith('#'):
                     comment = line.lstrip('#').strip()
                     if comment:
-                        if not found_title:
-                            # First non-empty comment is the title
-                            title = comment
-                            found_title = True
-                        else:
-                            # Second non-empty comment is description
-                            description = comment
-                            break
+                        description = comment
+                        break
                 elif line.strip():
                     # Hit non-comment content
                     break
 
             templates.append({
                 "id": yaml_file.stem,
-                "name": title,
+                "name": name,
                 "description": description,
                 "filename": yaml_file.name
             })
