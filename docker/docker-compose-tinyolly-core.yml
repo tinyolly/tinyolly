@@ -63,11 +63,13 @@ services:
       - otel-collector
     volumes:
       - ./otelcol-configs/templates:/app/otelcol-templates:ro
+      - ./otelcol-configs/default.yaml:/app/otelcol-default.yaml:ro
     environment:
       - REDIS_HOST=tinyolly-redis
       - REDIS_PORT=6579
       - DEPLOYMENT_ENV=docker
       - OPAMP_SERVER_URL=http://tinyolly-opamp-server:4321
+      - OTELCOL_DEFAULT_CONFIG=/app/otelcol-default.yaml
       - OTEL_SERVICE_NAME=tinyolly-ui
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
       - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf

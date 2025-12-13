@@ -217,8 +217,8 @@ export async function loadCollectorConfig() {
  * Reset config editor to default
  */
 export async function resetConfigToDefault() {
-    // Load the 'basic' template as the default
-    await loadTemplate('basic');
+    // Load the 'default' template
+    await loadTemplate('default');
     setConfigStatus('success', 'Reset to default');
     setTimeout(() => setConfigStatus(''), 2000);
 }

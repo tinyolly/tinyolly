@@ -1607,6 +1607,7 @@ async def opamp_health():
 # ============================================
 
 OTELCOL_TEMPLATES_DIR = os.getenv("OTELCOL_TEMPLATES_DIR", "/app/otelcol-templates")
+OTELCOL_DEFAULT_CONFIG = os.getenv("OTELCOL_DEFAULT_CONFIG", "/app/otelcol-default.yaml")
 
 @app.get(
     '/api/opamp/templates',
@@ -1621,45 +1622,75 @@ async def opamp_list_templates():
     """
     List all available OTel Collector configuration templates.
 
-    Templates are loaded from YAML files in the otelcol-configs/templates directory.
-    Each template includes metadata extracted from YAML comments.
-    Returns a maximum of 4 templates for the UI display.
+    The default configuration is always returned first, followed by up to 3 alternate examples
+    from the templates directory. Each template includes metadata extracted from YAML comments.
+    Returns a maximum of 4 templates total (1 default + 3 alternates).
     """
     templates = []
-    templates_dir = Path(OTELCOL_TEMPLATES_DIR)
-
-    if not templates_dir.exists():
-        return {"templates": []}
-
-    for yaml_file in sorted(templates_dir.glob("*.yaml")):
-        if len(templates) >= 4:  # Maximum 4 templates
-            break
+    
+    # First, add the default configuration as the first option
+    default_config_path = Path(OTELCOL_DEFAULT_CONFIG)
+    if default_config_path.exists():
         try:
-            content = yaml_file.read_text()
-            # Extract description from first comment line
+            content = default_config_path.read_text()
             lines = content.split('\n')
-            name = yaml_file.stem.replace('_', ' ').replace('-', ' ').title()
-            description = ""
+            name = "Default Configuration"
+            description = "Default OpenTelemetry Collector configuration with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector"
 
-            # First non-empty comment line is the description
+            # Extract description from first comment line
             for line in lines:
                 if line.startswith('#'):
                     comment = line.lstrip('#').strip()
                     if comment:
+                        # Use the first comment line as description
                         description = comment
                         break
                 elif line.strip():
-                    # Hit non-comment content
                     break
 
             templates.append({
-                "id": yaml_file.stem,
+                "id": "default",
                 "name": name,
                 "description": description,
-                "filename": yaml_file.name
+                "filename": "default.yaml"
             })
         except Exception as e:
-            logger.warning(f"Failed to read template {yaml_file}: {e}")
+            logger.warning(f"Failed to read default config {default_config_path}: {e}")
+    
+    # Then, add up to 3 alternate templates from the templates directory
+    templates_dir = Path(OTELCOL_TEMPLATES_DIR)
+    if templates_dir.exists():
+        alternate_count = 0
+        for yaml_file in sorted(templates_dir.glob("*.yaml")):
+            if alternate_count >= 3:  # Maximum 3 alternate templates
+                break
+            try:
+                content = yaml_file.read_text()
+                # Extract description from first comment line
+                lines = content.split('\n')
+                name = yaml_file.stem.replace('_', ' ').replace('-', ' ').title()
+                description = ""
+
+                # First non-empty comment line is the description
+                for line in lines:
+                    if line.startswith('#'):
+                        comment = line.lstrip('#').strip()
+                        if comment:
+                            description = comment
+                            break
+                    elif line.strip():
+                        # Hit non-comment content
+                        break
+
+                templates.append({
+                    "id": yaml_file.stem,
+                    "name": name,
+                    "description": description,
+                    "filename": yaml_file.name
+                })
+                alternate_count += 1
+            except Exception as e:
+                logger.warning(f"Failed to read template {yaml_file}: {e}")
 
     return {"templates": templates}
 
@@ -1677,8 +1708,31 @@ async def opamp_get_template(template_id: str):
     """
     Get the content of a specific configuration template.
 
-    The template_id corresponds to the filename without extension.
+    The template_id 'default' returns the default configuration.
+    Other template_ids correspond to filenames without extension in the templates directory.
     """
+    # Handle default template
+    if template_id == "default":
+        default_config_path = Path(OTELCOL_DEFAULT_CONFIG)
+        if not default_config_path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail="Default configuration not found"
+            )
+        try:
+            content = default_config_path.read_text()
+            return {
+                "id": "default",
+                "filename": "default.yaml",
+                "config": content
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to read default config: {str(e)}"
+            )
+    
+    # Handle other templates
     templates_dir = Path(OTELCOL_TEMPLATES_DIR)
     template_file = templates_dir / f"{template_id}.yaml"
 
