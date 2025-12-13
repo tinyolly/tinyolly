@@ -6,6 +6,7 @@ Get TinyOlly running in under 5 minutes!
 
 - **TinyOlly UI** at `http://localhost:5005`
 - **OpenTelemetry Collector** listening on ports 4317 (gRPC) and 4318 (HTTP)
+- **OpAMP Server** for remote collector configuration management
 - **Demo microservices** generating automatic telemetry
 
 ---
@@ -37,6 +38,7 @@ cd docker
 This starts:
 
 - **OpenTelemetry Collector** (ports 4317/4318)
+- **OpAMP Server** (ports 4320/4321)
 - **TinyOlly OTLP Receiver** (internal)
 - **TinyOlly UI** (port 5005)
 - **Redis storage** (internal)
@@ -168,7 +170,7 @@ cd docker
 - Check demo app logs: `docker compose -f docker-demo/docker-compose-demo.yml logs`
 
 ### Port conflicts
-- TinyOlly uses ports 4317, 4318, 5005, 6579
+- TinyOlly uses ports 4317, 4318, 4320, 4321, 4343, 5005, 6579
 - Stop conflicting services or modify ports in `docker-compose-tinyolly-core.yml`
 
 ### Demo apps not generating traffic

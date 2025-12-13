@@ -25,6 +25,7 @@ cd docker
 
 This starts:
 - **OTel Collector**: Listening on `localhost:4317` (gRPC) and `localhost:4318` (HTTP)  
+- **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)  
 - **TinyOlly UI**: `http://localhost:5005`  
 - **TinyOlly OTLP Receiver and its Redis storage**: OTLP observability back end and storage  
 - Rebuilds images if code changes are detected  
@@ -133,11 +134,12 @@ If you already have an OpenTelemetry Collector or want to send telemetry directl
 
 ```bash
 cd docker-core-only
-docker compose -f docker-compose-tinyolly-core.yml up -d
+./01-start-core.sh
 ```
 
 This starts:
-- **TinyOlly OTLP Receiver**: Listening on `localhost:4343` (gRPC)
+- **TinyOlly OTLP Receiver**: Listening on `localhost:4343` (gRPC only)
+- **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)
 - **TinyOlly UI**: `http://localhost:5005`
 - **TinyOlly Redis**: `localhost:6579`
 
@@ -174,3 +176,25 @@ service:
 ```
 
 The Otel Collector will forward everything to TinyOlly's OTLP receiver, which process telemetry and stores it in Redis in OTEL format for the backend and UI to access.
+
+**OpAMP Configuration (Optional):**
+
+To enable remote configuration management via TinyOlly UI, add the OpAMP extension to your collector config:
+
+```yaml
+extensions:
+  opamp:
+    server:
+      ws:
+        endpoint: ws://localhost:4320/v1/opamp
+
+service:
+  extensions: [opamp]
+```
+
+The default configuration template (located at `docker/otelcol-configs/config.yaml`) shows a complete example with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.
+
+**Stop core-only services:**
+```bash
+./02-stop-core.sh
+```

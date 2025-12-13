@@ -13,7 +13,7 @@ TinyOlly uses the [OpenTelemetry Collector](https://opentelemetry.io/docs/collec
 
 TinyOlly includes a sample collector configuration that you can customize for your needs. The configuration files are located at:
 
-- **Docker**: `docker/otel-collector-config.yaml`
+- **Docker**: `docker/otelcol-configs/config.yaml`
 - **Kubernetes**: `k8s/otel-collector-config.yaml`
 
 ## Default Configuration
@@ -21,6 +21,7 @@ TinyOlly includes a sample collector configuration that you can customize for yo
 The default configuration includes:
 
 - **OTLP Receivers**: Accepts telemetry on ports 4317 (gRPC) and 4318 (HTTP)
+- **OpAMP Extension**: Enables remote configuration management via TinyOlly UI
 - **Span Metrics Connector**: Automatically generates RED metrics from traces
 - **Batch Processor**: Batches telemetry for efficient processing
 - **OTLP Exporter**: Forwards all telemetry to TinyOlly's OTLP receiver
@@ -40,7 +41,7 @@ For a complete list of available components, see the [OpenTelemetry Collector Co
 
 ### Docker
 
-After modifying `docker/otel-collector-config.yaml` rebuild/restart using:  
+After modifying `docker/otelcol-configs/config.yaml` rebuild/restart using:  
 ```bash
 cd docker
 ./01-start-core.sh
@@ -62,7 +63,7 @@ To do this, deploy the **Core-Only** version of TinyOlly (see [Docker Deployment
 
 Then, configure your collector's OTLP exporter to send data to the TinyOlly Receiver:
 
-- **Endpoint**: `tinyolly-otlp-receiver:4343`
+- **Endpoint**: `tinyolly-otlp-receiver:4343` (or `localhost:4343` from host)
 - **Protocol**: gRPC
 - **TLS**: Insecure (or configured as needed)
 
@@ -74,3 +75,20 @@ exporters:
     tls:
       insecure: true
 ```
+
+**OpAMP Configuration (Optional):**
+
+To enable remote configuration management via TinyOlly UI, add the OpAMP extension to your collector config:
+
+```yaml
+extensions:
+  opamp:
+    server:
+      ws:
+        endpoint: ws://localhost:4320/v1/opamp
+
+service:
+  extensions: [opamp]
+```
+
+The default configuration template (located at `docker/otelcol-configs/config.yaml`) shows a complete example with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.
