@@ -1230,6 +1230,7 @@
 <ul>
 <li><strong>TinyOlly UI</strong> at <code>http://localhost:5005</code></li>
 <li><strong>OpenTelemetry Collector</strong> listening on ports 4317 (gRPC) and 4318 (HTTP)</li>
+<li><strong>OpAMP Server</strong> for remote collector configuration management</li>
 <li><strong>Demo microservices</strong> generating automatic telemetry</li>
 </ul>
 <hr />
@@ -1252,6 +1253,7 @@
 <p>This starts:</p>
 <ul>
 <li><strong>OpenTelemetry Collector</strong> (ports 4317/4318)</li>
+<li><strong>OpAMP Server</strong> (ports 4320/4321)</li>
 <li><strong>TinyOlly OTLP Receiver</strong> (internal)</li>
 <li><strong>TinyOlly UI</strong> (port 5005)</li>
 <li><strong>Redis storage</strong> (internal)</li>
@@ -1349,7 +1351,7 @@
 </ul>
 <h3 id="port-conflicts">Port conflicts</h3>
 <ul>
-<li>TinyOlly uses ports 4317, 4318, 5005, 6579</li>
+<li>TinyOlly uses ports 4317, 4318, 4320, 4321, 4343, 5005, 6579</li>
 <li>Stop conflicting services or modify ports in <code>docker-compose-tinyolly-core.yml</code></li>
 </ul>
 <h3 id="demo-apps-not-generating-traffic">Demo apps not generating traffic</h3>
