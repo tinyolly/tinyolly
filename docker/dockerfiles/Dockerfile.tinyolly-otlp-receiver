@@ -5,6 +5,16 @@ ARG APP_DIR=tinyolly-otlp-receiver
 
 WORKDIR /app
 
+# Install bash and bash-completion for better shell experience
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    bash-completion \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set bash as default shell and enable completion
+SHELL ["/bin/bash", "-c"]
+RUN echo 'if [ -f /etc/bash_completion ]; then . /etc/bash_completion; fi' >> /etc/bash.bashrc
+
 # Copy and install shared tinyolly-common package
 COPY tinyolly-common /tmp/tinyolly-common
 RUN pip install --no-cache-dir -e /tmp/tinyolly-common

@@ -58,7 +58,8 @@ func NewOpAMPServer() *OpAMPServer {
 func (s *OpAMPServer) loadInitialConfig() {
 	configPaths := []string{
 		"/etc/otel-collector-config.yaml",
-		"./otel-collector-config.yaml",
+		"./otelcol-configs/config.yaml",
+		"../otelcol-configs/config.yaml",
 	}
 
 	if configPath := os.Getenv("COLLECTOR_CONFIG_PATH"); configPath != "" {

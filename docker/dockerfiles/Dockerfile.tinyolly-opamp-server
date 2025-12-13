@@ -21,7 +21,14 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /tinyolly-opamp-server .
 # Runtime stage
 FROM alpine:3.19
 
-RUN apk add --no-cache ca-certificates
+# Install bash for better shell experience (bash-completion not readily available in Alpine)
+RUN apk add --no-cache \
+    ca-certificates \
+    bash \
+    coreutils
+
+# Set bash as default shell
+SHELL ["/bin/bash", "-c"]
 
 COPY --from=builder /tinyolly-opamp-server /tinyolly-opamp-server
 
