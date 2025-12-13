@@ -1,0 +1,65 @@
+# Example of an INCORRECT configuration to test TinyOlly UI error handling
+# This config contains intentional errors: invalid YAML syntax, missing required sections,
+# invalid processor names, and pipeline misconfigurations.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  # Invalid receiver configuration - missing required fields
+  prometheus:
+    # Missing scrape_configs or other required fields
+
+extensions:
+  opamp:
+    server:
+      ws:
+        endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  # Invalid processor - this processor doesn't exist
+  invalid_processor:
+    some_field: value
+  # Malformed processor - invalid YAML structure
+  attributes:
+    actions:
+      - key: environment
+        value: development
+        action: upsert
+      # Missing proper list termination - will cause validation issues
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp:
+    endpoint: "tinyolly-otlp-receiver:4343"
+    tls:
+      insecure: true
+  # Invalid exporter - missing required configuration
+  nonexistent_exporter:
+    # Missing required fields
+
+service:
+  extensions: [opamp]
+  pipelines:
+    traces:
+      receivers: [otlp, prometheus]  # prometheus receiver doesn't support traces
+      processors: [invalid_processor, batch]  # invalid processor
+      exporters: [debug, otlp, nonexistent_exporter]  # nonexistent exporter
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, otlp]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, otlp]
+    # Invalid pipeline - missing required fields (this will fail validation)
+    invalid_pipeline:
+      # Missing receivers, processors, and exporters

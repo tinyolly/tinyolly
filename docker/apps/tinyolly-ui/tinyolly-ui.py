@@ -17,6 +17,9 @@ import os
 import time
 import logging
 import sys
+import tempfile
+import subprocess
+import shutil
 from typing import Optional, Dict, Any, List, Literal, Set
 from pathlib import Path
 from tinyolly_common import Storage
@@ -1497,10 +1500,191 @@ async def opamp_get_config(
             detail=f"OpAMP server unavailable: {str(e)}"
         )
 
+class ConfigValidateRequest(BaseModel):
+    """Request body for validating OTel Collector configuration"""
+    config: str = Field(..., description="YAML configuration to validate")
+
 class ConfigUpdateRequest(BaseModel):
     """Request body for updating OTel Collector configuration"""
     config: str = Field(..., description="YAML configuration for the OTel Collector")
     instance_id: Optional[str] = Field(default=None, description="Target specific agent instance")
+
+@app.post(
+    '/api/opamp/validate',
+    tags=["OpAMP"],
+    operation_id="opamp_validate_config",
+    summary="Validate OTel Collector configuration",
+    responses={
+        200: {"description": "Validation result"},
+        400: {"description": "Invalid request"}
+    }
+)
+async def opamp_validate_config(request: ConfigValidateRequest):
+    """
+    Validate an OTel Collector configuration using the official otelcol validate command.
+    
+    Uses the OpenTelemetry Collector's built-in validation which checks:
+    - Valid YAML syntax
+    - Component configurations
+    - Pipeline references
+    - Component-specific validation rules
+    """
+    import yaml
+    
+    # First do basic YAML syntax check
+    try:
+        parsed = yaml.safe_load(request.config)
+        if parsed is None:
+            return {
+                "valid": False,
+                "error": "Configuration is empty or invalid"
+            }
+    except yaml.YAMLError as e:
+        return {
+            "valid": False,
+            "error": f"YAML syntax error: {str(e)}"
+        }
+    
+    # Try to use otelcol validate command for proper validation
+    # Check if we can use docker exec to run validation in the collector container
+    collector_container = os.getenv("OTEL_COLLECTOR_CONTAINER", "otel-collector")
+    
+    # Write config to temporary file
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as tmp_file:
+        tmp_file.write(request.config)
+        tmp_file_path = tmp_file.name
+    
+    try:
+        # Try to validate using docker exec in the collector container
+        # This uses the actual otelcol validate command
+        docker_cmd = [
+            "docker", "exec", collector_container,
+            "otelcol", "validate", "--config=/tmp/validate-config.yaml"
+        ]
+        
+        # Copy config into container and validate
+        # First, copy the file into the container
+        copy_cmd = [
+            "docker", "cp", tmp_file_path, f"{collector_container}:/tmp/validate-config.yaml"
+        ]
+        
+        copy_result = subprocess.run(
+            copy_cmd,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if copy_result.returncode != 0:
+            # Docker exec not available, fall back to basic validation
+            logger.warning(f"Could not copy config to container: {copy_result.stderr}")
+            return _basic_validation(parsed)
+        
+        # Now run validation
+        validate_result = subprocess.run(
+            docker_cmd,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        # Clean up file in container
+        subprocess.run(
+            ["docker", "exec", collector_container, "rm", "/tmp/validate-config.yaml"],
+            capture_output=True,
+            timeout=5
+        )
+        
+        if validate_result.returncode == 0:
+            return {
+                "valid": True,
+                "error": None
+            }
+        else:
+            # Extract error message from stderr
+            error_msg = validate_result.stderr.strip() or validate_result.stdout.strip()
+            if not error_msg:
+                error_msg = "Configuration validation failed"
+            
+            return {
+                "valid": False,
+                "error": error_msg
+            }
+            
+    except subprocess.TimeoutExpired:
+        logger.warning("Validation command timed out")
+        return _basic_validation(parsed)
+    except FileNotFoundError:
+        # Docker command not found, fall back to basic validation
+        logger.warning("Docker command not available, using basic validation")
+        return _basic_validation(parsed)
+    except Exception as e:
+        logger.warning(f"Error running otelcol validate: {e}, falling back to basic validation")
+        return _basic_validation(parsed)
+    finally:
+        # Clean up temp file
+        try:
+            os.unlink(tmp_file_path)
+        except:
+            pass
+
+def _basic_validation(parsed: dict):
+    """Fallback basic validation when otelcol validate is not available"""
+    # Check for required top-level sections
+    required_sections = ['receivers', 'exporters', 'service']
+    missing = [section for section in required_sections if section not in parsed]
+    
+    if missing:
+        return {
+            "valid": False,
+            "error": f"Missing required sections: {', '.join(missing)}"
+        }
+    
+    # Check service.pipelines structure
+    if 'service' in parsed:
+        service = parsed['service']
+        if 'pipelines' not in service:
+            return {
+                "valid": False,
+                "error": "Service section is missing 'pipelines'"
+            }
+        
+        pipelines = service.get('pipelines', {})
+        if not pipelines:
+            return {
+                "valid": False,
+                "error": "No pipelines defined in service section"
+            }
+        
+        # Check each pipeline has required fields
+        for pipeline_name, pipeline_config in pipelines.items():
+            if not isinstance(pipeline_config, dict):
+                return {
+                    "valid": False,
+                    "error": f"Pipeline '{pipeline_name}' has invalid structure"
+                }
+            
+            # Receivers and exporters are required, processors are optional
+            required_pipeline_fields = ['receivers', 'exporters']
+            for field in required_pipeline_fields:
+                if field not in pipeline_config:
+                    return {
+                        "valid": False,
+                        "error": f"Pipeline '{pipeline_name}' is missing '{field}'"
+                    }
+            
+            # Processors are optional, but if present should be a list
+            if 'processors' in pipeline_config and not isinstance(pipeline_config['processors'], list):
+                return {
+                    "valid": False,
+                    "error": f"Pipeline '{pipeline_name}' has invalid 'processors' field (must be a list)"
+                }
+    
+    return {
+        "valid": True,
+        "error": None,
+        "warning": "Using basic validation (otelcol validate not available)"
+    }
 
 @app.post(
     '/api/opamp/config',
@@ -1607,7 +1791,7 @@ async def opamp_health():
 # ============================================
 
 OTELCOL_TEMPLATES_DIR = os.getenv("OTELCOL_TEMPLATES_DIR", "/app/otelcol-templates")
-OTELCOL_DEFAULT_CONFIG = os.getenv("OTELCOL_DEFAULT_CONFIG", "/app/otelcol-default.yaml")
+OTELCOL_DEFAULT_CONFIG = os.getenv("OTELCOL_DEFAULT_CONFIG", "/app/otelcol-config.yaml")
 
 @app.get(
     '/api/opamp/templates',
@@ -1652,7 +1836,7 @@ async def opamp_list_templates():
                 "id": "default",
                 "name": name,
                 "description": description,
-                "filename": "default.yaml"
+                "filename": "config.yaml"
             })
         except Exception as e:
             logger.warning(f"Failed to read default config {default_config_path}: {e}")
@@ -1723,7 +1907,7 @@ async def opamp_get_template(template_id: str):
             content = default_config_path.read_text()
             return {
                 "id": "default",
-                "filename": "default.yaml",
+                "filename": "config.yaml",
                 "config": content
             }
         except Exception as e:

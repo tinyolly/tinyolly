@@ -1,4 +1,8 @@
-# Generate RED metrics from traces using spanmetrics connector
+# Default configuration with Prometheus Remote Write receiver
+# Extends the default config to accept Prometheus remote write metrics
+# in addition to OTLP. Useful for integrating Prometheus exporters.
+# Note: This receiver is in alpha status. Prometheus must be started with
+# --enable-feature=metadata-wal-records flag for proper functionality.
 
 receivers:
   otlp:
@@ -7,6 +11,18 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  
+  # Prometheus Remote Write receiver (alpha feature)
+  # Prometheus should send to: http://<collector>:8888/api/v1/write
+  prometheusremotewrite:
+    endpoint: 0.0.0.0:8888
+    # Optional: configure authentication
+    # auth:
+    #   authenticator: basicauth
+    # Optional: configure TLS
+    # tls:
+    #   cert_file: /path/to/cert.pem
+    #   key_file: /path/to/key.pem
 
 extensions:
   opamp:
@@ -27,9 +43,6 @@ connectors:
     dimensions:
       - name: http.method
       - name: http.status_code
-      - name: http.route
-      - name: rpc.method
-      - name: rpc.service
     dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
     metrics_flush_interval: 15s
@@ -38,7 +51,7 @@ connectors:
 exporters:
   debug:
     verbosity: detailed
-
+  
   otlp:
     endpoint: "tinyolly-otlp-receiver:4343"
     tls:
@@ -51,12 +64,13 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [debug, otlp, spanmetrics]
-
+    
     metrics:
-      receivers: [otlp, spanmetrics]
+      # Include both OTLP metrics and Prometheus remote write metrics
+      receivers: [otlp, prometheusremotewrite, spanmetrics]
       processors: [batch]
       exporters: [debug, otlp]
-
+    
     logs:
       receivers: [otlp]
       processors: [batch]

@@ -16,7 +16,7 @@ export async function initCollector() {
         editor.addEventListener('keydown', handleEditorKeydown);
 
         // Add real-time validation
-        editor.addEventListener('input', debounce(validateConfig, 500));
+        editor.addEventListener('input', debounce(() => validateConfig(), 500));
     }
 
     // Load templates from API
@@ -205,7 +205,7 @@ export async function loadCollectorConfig() {
             setConfigStatus('error', 'No config available');
         }
 
-        validateConfig();
+        await validateConfig();
 
     } catch (error) {
         console.error('Error loading config:', error);
@@ -347,7 +347,8 @@ export async function showConfigDiff() {
     const newConfig = editor.value;
     
     // Validate first
-    if (!validateConfig()) {
+    const isValid = await validateConfig();
+    if (!isValid) {
         setConfigStatus('error', 'Invalid YAML');
         return;
     }
@@ -464,7 +465,8 @@ export async function applyCollectorConfig() {
     const config = editor.value;
 
     // Validate first
-    if (!validateConfig()) {
+    const isValid = await validateConfig();
+    if (!isValid) {
         setConfigStatus('error', 'Invalid YAML');
         return;
     }
@@ -488,9 +490,9 @@ function setConfigStatus(type, message) {
 }
 
 /**
- * Validate YAML config (basic client-side validation)
+ * Validate YAML config (enhanced validation with YAML parsing)
  */
-export function validateConfig() {
+export async function validateConfig() {
     const editor = document.getElementById('collector-config-editor');
     const validationEl = document.getElementById('config-validation');
 
@@ -498,11 +500,9 @@ export function validateConfig() {
 
     const config = editor.value;
 
-    // Basic YAML validation
+    // Basic structure checks first
     try {
-        // Check for basic YAML structure issues
         const lines = config.split('\n');
-        let indentStack = [0];
         let hasService = false;
         let hasReceivers = false;
         let hasExporters = false;
@@ -513,10 +513,6 @@ export function validateConfig() {
 
             // Skip empty lines and comments
             if (!trimmed || trimmed.startsWith('#')) continue;
-
-            // Check indentation consistency (basic check)
-            const indent = line.search(/\S/);
-            if (indent === -1) continue;
 
             // Check for required sections
             if (trimmed.startsWith('service:')) hasService = true;
@@ -543,9 +539,56 @@ export function validateConfig() {
             return false;
         }
 
-        validationEl.className = 'config-validation valid';
-        validationEl.textContent = 'Configuration is valid';
-        return true;
+        // Try to parse YAML - this will catch syntax errors
+        try {
+            // Use server-side validation for more thorough checking
+            const response = await fetch('/api/opamp/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ config })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.valid) {
+                    validationEl.className = 'config-validation valid';
+                    validationEl.textContent = 'Configuration is valid';
+                    return true;
+                } else {
+                    validationEl.className = 'config-validation invalid';
+                    validationEl.textContent = result.error || 'Configuration has errors';
+                    return false;
+                }
+            } else {
+                // Fallback to basic validation if server validation fails
+                const error = await response.json().catch(() => ({ detail: 'Validation failed' }));
+                validationEl.className = 'config-validation invalid';
+                validationEl.textContent = error.detail || 'Validation error';
+                return false;
+            }
+        } catch (fetchError) {
+            // If server validation is unavailable, do basic YAML parsing check
+            // Try to use js-yaml if available, otherwise just mark as "needs server validation"
+            if (typeof window.jsyaml !== 'undefined') {
+                try {
+                    window.jsyaml.load(config);
+                    validationEl.className = 'config-validation valid';
+                    validationEl.textContent = 'Configuration syntax is valid (full validation requires server)';
+                    return true;
+                } catch (yamlError) {
+                    validationEl.className = 'config-validation invalid';
+                    validationEl.textContent = `YAML syntax error: ${yamlError.message}`;
+                    return false;
+                }
+            } else {
+                // No YAML parser available - just check structure
+                validationEl.className = 'config-validation warning';
+                validationEl.textContent = 'Basic structure OK (full validation requires server)';
+                return true; // Allow it through, server will catch errors
+            }
+        }
 
     } catch (error) {
         validationEl.className = 'config-validation invalid';
@@ -572,7 +615,7 @@ export async function loadTemplate(templateId) {
         const data = await response.json();
         if (data.config) {
             editor.value = data.config;
-            validateConfig();
+            await validateConfig();
             setConfigStatus('success', `Loaded "${templateId}" template`);
             setTimeout(() => setConfigStatus(''), 2000);
         } else {

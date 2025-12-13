@@ -29,7 +29,7 @@ services:
       - "4320:4320"  # OpAMP WebSocket port
       - "4321:4321"  # HTTP REST API port
     volumes:
-      - ./otelcol-configs/default.yaml:/etc/otel-collector-config.yaml:ro
+      - ./otelcol-configs/config.yaml:/etc/otel-collector-config.yaml:ro
     environment:
       - OPAMP_PORT=4320
       - HTTP_PORT=4321
@@ -40,7 +40,7 @@ services:
     container_name: otel-collector
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
-      - ./otelcol-configs/default.yaml:/etc/otel-collector-config.yaml
+      - ./otelcol-configs/config.yaml:/etc/otel-collector-config.yaml
     ports:
       - "4317:4317"  # OTLP gRPC receiver (external access)
       - "4318:4318"  # OTLP HTTP receiver (external access)
@@ -63,13 +63,15 @@ services:
       - otel-collector
     volumes:
       - ./otelcol-configs/templates:/app/otelcol-templates:ro
-      - ./otelcol-configs/default.yaml:/app/otelcol-default.yaml:ro
+      - ./otelcol-configs/config.yaml:/app/otelcol-config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # For otelcol validate command
     environment:
       - REDIS_HOST=tinyolly-redis
       - REDIS_PORT=6579
       - DEPLOYMENT_ENV=docker
       - OPAMP_SERVER_URL=http://tinyolly-opamp-server:4321
-      - OTELCOL_DEFAULT_CONFIG=/app/otelcol-default.yaml
+      - OTELCOL_DEFAULT_CONFIG=/app/otelcol-config.yaml
+      - OTEL_COLLECTOR_CONTAINER=otel-collector
       - OTEL_SERVICE_NAME=tinyolly-ui
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
       - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
