@@ -49,13 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initTheme();
         initHideTinyOllyToggle();
 
-        // Check URL for tab parameter (for bookmarks/direct links)
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlTab = urlParams.get('tab');
-        if (urlTab) {
-            localStorage.setItem('tinyolly-active-tab', urlTab);
-        }
-
+        // Tab initialization now handles URL parameters internally
         initTabs();
         loadStats();
 

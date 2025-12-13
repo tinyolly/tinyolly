@@ -18,10 +18,14 @@ export function getCurrentTab() {
 }
 
 export function initTabs() {
-    let savedTab = 'logs';
-    try {
-        savedTab = localStorage.getItem('tinyolly-active-tab') || 'logs';
-    } catch (e) { console.warn('LocalStorage access failed:', e); }
+    // Check URL parameter first (for bookmarks/direct links)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlTab = urlParams.get('tab');
+    
+    // Always default to 'logs' tab when opening the base URL
+    // Only use URL parameter if explicitly provided
+    const savedTab = urlTab || 'logs';
+    
     switchTab(savedTab, null, true); // true = initial load, don't push to history
     updateAutoRefreshButton();
 
