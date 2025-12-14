@@ -488,6 +488,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#opentelemetry-collector-opamp-config-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenTelemetry Collector + OpAMP Config Page
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -564,6 +575,17 @@
     <span class="md-ellipsis">
       
         Using Your Own Collector
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#opamp-configuration-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpAMP Configuration (Optional)
       
     </span>
   </a>
@@ -846,6 +868,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#opentelemetry-collector-opamp-config-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenTelemetry Collector + OpAMP Config Page
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -928,6 +961,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#opamp-configuration-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpAMP Configuration (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -956,6 +1000,17 @@
 
 <hr />
 <p>TinyOlly uses the <a href="https://opentelemetry.io/docs/collector/">OpenTelemetry Collector</a> as the telemetry ingestion and shipping layer. The collector receives telemetry from your applications and forwards it to TinyOlly's OTLP receiver.</p>
+<h2 id="opentelemetry-collector-opamp-config-page">OpenTelemetry Collector + OpAMP Config Page</h2>
+<p>TinyOlly includes a web interface for managing OpenTelemetry Collector configurations via the OpAMP (Open Agent Management Protocol). Access this page through the <strong>"OpenTelemetry Collector + OpAMP Config"</strong> tab in the TinyOlly UI.</p>
+<p><strong>Features:</strong>
+- View current configuration from connected collectors
+- Apply configuration changes with real-time validation
+- Browse configuration templates for common use cases
+- Monitor OpAMP server status and connected agents
+- Preview configuration diffs before applying</p>
+<p><strong>Requirements:</strong>
+- Your collector must be configured with the OpAMP extension (see <a href="#opamp-configuration-optional">OpAMP Configuration</a> below)
+- Collector must be connected to the OpAMP server</p>
 <h2 id="configuration">Configuration</h2>
 <p>TinyOlly includes a sample collector configuration that you can customize for your needs. The configuration files are located at:</p>
 <ul>
@@ -1007,8 +1062,8 @@
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">tls</span><span class="p">:</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">insecure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div></p>
-<p><strong>OpAMP Configuration (Optional):</strong></p>
-<p>To enable remote configuration management via TinyOlly UI, add the OpAMP extension to your collector config:</p>
+<h2 id="opamp-configuration-optional">OpAMP Configuration (Optional)</h2>
+<p>The <strong>OpenTelemetry Collector + OpAMP Config</strong> page in the TinyOlly UI allows you to view and manage collector configurations remotely. To enable this feature, add the OpAMP extension to your collector config:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">extensions</span><span class="p">:</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">opamp</span><span class="p">:</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">server</span><span class="p">:</span>

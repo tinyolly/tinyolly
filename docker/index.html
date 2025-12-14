@@ -486,6 +486,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#opamp-configuration-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpAMP Configuration (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -872,6 +883,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#opamp-configuration-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpAMP Configuration (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -915,6 +937,7 @@
 - <strong>TinyOlly OTLP Receiver and its Redis storage</strong>: OTLP observability back end and storage<br />
 - Rebuilds images if code changes are detected  </p>
 <p><strong>Open the UI:</strong> <code>http://localhost:5005</code> (empty until you send data)</p>
+<p><strong>OpenTelemetry Collector + OpAMP Config Page:</strong> Navigate to the "OpenTelemetry Collector + OpAMP Config" tab in the UI to view and manage collector configurations remotely. See the <a href="#opamp-configuration-optional">OpAMP Configuration</a> section below for setup instructions.</p>
 <p><strong>Stop core services:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./02-stop-core.sh
 </code></pre></div></p>
@@ -1022,8 +1045,8 @@ i.e.<br />
 <a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a><span class="w">      </span><span class="nt">exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">debug</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">otlp</span><span class="p p-Indicator">]</span>
 </code></pre></div></p>
 <p>The Otel Collector will forward everything to TinyOlly's OTLP receiver, which process telemetry and stores it in Redis in OTEL format for the backend and UI to access.</p>
-<p><strong>OpAMP Configuration (Optional):</strong></p>
-<p>To enable remote configuration management via TinyOlly UI, add the OpAMP extension to your collector config:</p>
+<h2 id="opamp-configuration-optional">OpAMP Configuration (Optional)</h2>
+<p>The <strong>OpenTelemetry Collector + OpAMP Config</strong> page in the TinyOlly UI allows you to view and manage collector configurations remotely. To enable this feature, add the OpAMP extension to your collector config:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">extensions</span><span class="p">:</span>
 <a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">opamp</span><span class="p">:</span>
 <a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="nt">server</span><span class="p">:</span>
