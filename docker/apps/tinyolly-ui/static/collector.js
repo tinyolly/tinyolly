@@ -484,22 +484,76 @@ async function applyCollectorConfigDirect(config) {
     setConfigStatus('pending', 'Applying...');
 
     try {
+        const payload = { config };
+        console.log('Sending config update request, config length:', config.length);
+        
         const response = await fetch('/api/opamp/config', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ config })
+            body: JSON.stringify(payload)
         });
 
+        // Clone response for error handling (response can only be read once)
+        const responseClone = response.clone();
+
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || `HTTP ${response.status}`);
+            // Try to parse as JSON first, fallback to text
+            let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    
+                    // Handle FastAPI validation errors (422) - detail is an array
+                    if (response.status === 422 && Array.isArray(errorData.detail)) {
+                        const validationErrors = errorData.detail.map(err => {
+                            const loc = err.loc ? err.loc.join('.') : '';
+                            const msg = err.msg || 'Validation error';
+                            return loc ? `${loc}: ${msg}` : msg;
+                        }).join('; ');
+                        errorMessage = `Validation error: ${validationErrors}`;
+                    } else {
+                        // Handle other error formats
+                        errorMessage = errorData.detail || errorData.message || errorData.error || JSON.stringify(errorData);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    if (errorText) {
+                        errorMessage = errorText;
+                    }
+                }
+            } catch (e) {
+                // If parsing fails, try to get text from clone
+                try {
+                    const errorText = await responseClone.text();
+                    if (errorText && errorText.trim()) {
+                        errorMessage = errorText.trim();
+                    }
+                } catch (e2) {
+                    console.error('Failed to extract error message:', e2);
+                }
+            }
+            throw new Error(errorMessage);
         }
 
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            console.error('Failed to parse response JSON:', jsonError);
+            throw new Error(`Invalid response from server: ${jsonError.message || 'Could not parse JSON'}`);
+        }
 
-        setConfigStatus('success', `Applied to ${data.affected_instance_ids?.length || 0} agent(s)`);
+        if (!data) {
+            throw new Error('Empty response from server');
+        }
+
+        const affectedCount = (data.affected_instance_ids && Array.isArray(data.affected_instance_ids)) 
+            ? data.affected_instance_ids.length 
+            : 0;
+        setConfigStatus('success', `Applied to ${affectedCount} agent(s)`);
         currentConfig = config;
 
         // Refresh status after a short delay
@@ -510,7 +564,33 @@ async function applyCollectorConfigDirect(config) {
 
     } catch (error) {
         console.error('Error applying config:', error);
-        setConfigStatus('error', `Failed: ${error.message}`);
+        console.error('Error type:', typeof error);
+        console.error('Error constructor:', error?.constructor?.name);
+        console.error('Error keys:', error ? Object.keys(error) : 'N/A');
+        
+        // Extract error message properly - handle various error object types
+        let errorMessage = 'Unknown error';
+        if (error instanceof Error) {
+            errorMessage = error.message || error.toString();
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        } else if (error && typeof error === 'object') {
+            // Try various common error message fields
+            errorMessage = error.detail || error.message || error.error || error.msg || error.toString();
+            // If still not found, stringify the object but limit length
+            if (!errorMessage || errorMessage === '[object Object]') {
+                try {
+                    const stringified = JSON.stringify(error);
+                    errorMessage = stringified.length > 200 ? stringified.substring(0, 200) + '...' : stringified;
+                } catch (e) {
+                    errorMessage = String(error);
+                }
+            }
+        } else {
+            errorMessage = String(error);
+        }
+        
+        setConfigStatus('error', `Failed: ${errorMessage}`);
     }
 }
 

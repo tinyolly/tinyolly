@@ -11,6 +11,22 @@ import asyncio
 import threading
 import uvloop
 import os
+import logging
+
+# Configure OpenTelemetry logging before other imports
+# This will automatically instrument logging to send logs via OTLP
+os.environ.setdefault('OTEL_SERVICE_NAME', 'tinyolly-otlp-receiver')
+os.environ.setdefault('OTEL_EXPORTER_OTLP_ENDPOINT', 'http://otel-collector:4318')
+os.environ.setdefault('OTEL_EXPORTER_OTLP_PROTOCOL', 'http/protobuf')
+os.environ.setdefault('OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED', 'true')
+
+# Initialize OpenTelemetry logging instrumentation
+try:
+    from opentelemetry.instrumentation.logging import LoggingInstrumentor
+    LoggingInstrumentor().instrument()
+except ImportError:
+    # If OpenTelemetry is not available, continue without instrumentation
+    pass
 
 from opentelemetry.proto.collector.trace.v1 import trace_service_pb2_grpc
 from opentelemetry.proto.collector.trace.v1 import trace_service_pb2
@@ -20,6 +36,14 @@ from opentelemetry.proto.collector.metrics.v1 import metrics_service_pb2_grpc
 from opentelemetry.proto.collector.metrics.v1 import metrics_service_pb2
 
 from tinyolly_common import Storage
+
+# Configure logging to use standard library logger (will be instrumented by OpenTelemetry)
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 storage = Storage()
 
@@ -66,7 +90,7 @@ class TraceService(trace_service_pb2_grpc.TraceServiceServicer):
             return trace_service_pb2.ExportTraceServiceResponse()
             
         except Exception as e:
-            print(f"Error processing traces: {e}", file=sys.stderr)
+            logger.error(f"Error processing traces: {e}", exc_info=True)
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
             return trace_service_pb2.ExportTraceServiceResponse()
@@ -78,7 +102,7 @@ class TraceService(trace_service_pb2_grpc.TraceServiceServicer):
         otlp_data = MessageToDict(
             request,
             preserving_proto_field_name=False,  # Use camelCase for consistency
-            including_default_value_fields=False,
+            always_print_fields_with_no_presence=False,
             use_integers_for_enums=False
         )
         
@@ -96,7 +120,7 @@ class LogsService(logs_service_pb2_grpc.LogsServiceServicer):
             return logs_service_pb2.ExportLogsServiceResponse()
             
         except Exception as e:
-            print(f"Error processing logs: {e}", file=sys.stderr)
+            logger.error(f"Error processing logs: {e}", exc_info=True)
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
             return logs_service_pb2.ExportLogsServiceResponse()
@@ -108,7 +132,7 @@ class LogsService(logs_service_pb2_grpc.LogsServiceServicer):
         otlp_data = MessageToDict(
             request,
             preserving_proto_field_name=False,  # Use camelCase for consistency
-            including_default_value_fields=False,
+            always_print_fields_with_no_presence=False,
             use_integers_for_enums=False
         )
         
@@ -126,7 +150,7 @@ class MetricsService(metrics_service_pb2_grpc.MetricsServiceServicer):
             return metrics_service_pb2.ExportMetricsServiceResponse()
             
         except Exception as e:
-            print(f"Error processing metrics: {e}", file=sys.stderr)
+            logger.error(f"Error processing metrics: {e}", exc_info=True)
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
             return metrics_service_pb2.ExportMetricsServiceResponse()
@@ -139,7 +163,7 @@ class MetricsService(metrics_service_pb2_grpc.MetricsServiceServicer):
         otlp_data = MessageToDict(
             request,
             preserving_proto_field_name=False,  # Use camelCase for consistency with existing code
-            including_default_value_fields=False,
+            always_print_fields_with_no_presence=False,
             use_integers_for_enums=False
         )
         
@@ -163,20 +187,20 @@ def serve(port=4343):
     # Use 0.0.0.0 to accept both IPv4 and IPv6 connections
     server.add_insecure_port(f'0.0.0.0:{port}')
     
-    print(f"TinyOlly OTLP Receiver (gRPC) starting on port {port}...")
+    logger.info(f"TinyOlly OTLP Receiver (gRPC) starting on port {port}...")
     
     # Check Redis connection asynchronously
     redis_connected = run_async(storage.is_connected())
-    print(f"Redis connection: {redis_connected}")
+    logger.info(f"Redis connection: {redis_connected}")
     
     server.start()
-    print("✓ Server started successfully")
+    logger.info("✓ Server started successfully")
     
     try:
         while True:
             time.sleep(86400)  # Keep server running
     except KeyboardInterrupt:
-        print("\nShutting down...")
+        logger.info("\nShutting down...")
         server.stop(0)
 
 

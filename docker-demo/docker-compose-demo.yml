@@ -20,6 +20,7 @@ services:
       - demo-backend
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - PROM_REMOTE_WRITE_ENDPOINT=http://otel-collector:19291/api/v1/write
     networks:
       - tinyolly-network
 

@@ -1,8 +1,13 @@
-# Default configuration with Prometheus Remote Write receiver
+# Configuration with Prometheus Remote Write receiver
 # Extends the default config to accept Prometheus remote write metrics
-# in addition to OTLP. Useful for integrating Prometheus exporters.
-# Note: This receiver is in alpha status. Prometheus must be started with
-# --enable-feature=metadata-wal-records flag for proper functionality.
+# in addition to OTLP. Useful for integrating Prometheus exporters and
+# Prometheus-compatible clients that use the Remote Write protocol.
+#
+# The prometheusremotewrite receiver accepts metrics via Prometheus Remote Write v2 protocol.
+# Clients should configure their remote_write endpoint to:
+#   http://<collector-host>:19291/api/v1/write
+#
+# Reference: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusremotewritereceiver
 
 receivers:
   otlp:
@@ -12,10 +17,12 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
   
-  # Prometheus Remote Write receiver (alpha feature)
-  # Prometheus should send to: http://<collector>:19291/api/v1/write
+  # Prometheus Remote Write receiver
+  # Receives metrics via Prometheus Remote Write protocol
+  # Clients should send to: http://<collector-host>:19291/api/v1/write
+  # Reference: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusremotewritereceiver
   prometheusremotewrite:
-    endpoint: 0.0.0.0:19291
+    endpoint: "0.0.0.0:19291"
     # Optional: configure authentication
     # auth:
     #   authenticator: basicauth

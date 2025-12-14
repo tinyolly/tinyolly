@@ -19,6 +19,11 @@ services:
       - REDIS_HOST=tinyolly-redis
       - REDIS_PORT=6579
       - PORT=4343
+      - OTEL_SERVICE_NAME=tinyolly-otlp-receiver
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
 
   tinyolly-opamp-server:
     build:
@@ -34,6 +39,10 @@ services:
       - OPAMP_PORT=4320
       - HTTP_PORT=4321
       - COLLECTOR_CONFIG_PATH=/etc/otel-collector-config.yaml
+      - OTEL_SERVICE_NAME=tinyolly-opamp-server
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -44,6 +53,7 @@ services:
     ports:
       - "4317:4317"  # OTLP gRPC receiver (external access)
       - "4318:4318"  # OTLP HTTP receiver (external access)
+      - "19291:19291"  # Prometheus Remote Write receiver
     depends_on:
       - tinyolly-otlp-receiver
       - tinyolly-opamp-server

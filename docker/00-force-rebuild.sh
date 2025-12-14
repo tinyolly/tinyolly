@@ -50,7 +50,9 @@ fi
 echo ""
 echo "✓ Force rebuild complete!"
 echo ""
+echo "--------------------------------------"
 echo "TinyOlly UI:    http://localhost:5005"
+echo "--------------------------------------"
+echo ""
 echo "OTLP Endpoint:  http://localhost:4317 (gRPC) or http://localhost:4318 (HTTP)"
 echo ""
-

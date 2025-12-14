@@ -23,19 +23,19 @@ import (
 
 // AgentState tracks the state of a connected OTel Collector agent
 type AgentState struct {
-	InstanceID      string              `json:"instance_id"`
-	AgentType       string              `json:"agent_type"`
-	AgentVersion    string              `json:"agent_version"`
-	EffectiveConfig string              `json:"effective_config"`
-	LastSeen        time.Time           `json:"last_seen"`
-	Status          string              `json:"status"`
-	conn            types.Connection    `json:"-"`
+	InstanceID      string           `json:"instance_id"`
+	AgentType       string           `json:"agent_type"`
+	AgentVersion    string           `json:"agent_version"`
+	EffectiveConfig string           `json:"effective_config"`
+	LastSeen        time.Time        `json:"last_seen"`
+	Status          string           `json:"status"`
+	conn            types.Connection `json:"-"`
 }
 
 // OpAMPServer wraps the OpAMP server with REST API
 type OpAMPServer struct {
 	opampServer    server.OpAMPServer
-	agents         map[string]*AgentState // keyed by instance ID
+	agents         map[string]*AgentState      // keyed by instance ID
 	connToAgent    map[types.Connection]string // maps connection to instance ID
 	agentsMu       sync.RWMutex
 	pendingConfigs map[string]string // instanceID -> pending config
@@ -402,6 +402,11 @@ service:
 `
 
 func main() {
+	// Note: Go OTLP logging is experimental and not yet stable.
+	// Standard log output will be available via container logs.
+	// For full OTLP logging support, consider using a log shipper
+	// or wait for stable OpenTelemetry Go logging support.
+
 	opampPort := os.Getenv("OPAMP_PORT")
 	if opampPort == "" {
 		opampPort = "4320"

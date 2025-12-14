@@ -29,8 +29,9 @@ fi
 echo ""
 echo "Services started!"
 echo ""
-
+echo "--------------------------------------"
 echo "TinyOlly UI:    http://localhost:5005"
+echo "--------------------------------------"
 echo "OTLP Endpoint:  localhost:4317 (gRPC) or http://localhost:4318 (HTTP)"
 echo ""
 echo "Next steps:"
