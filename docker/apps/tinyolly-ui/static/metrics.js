@@ -1617,26 +1617,60 @@ window.showMetricAttributes = async (metricName, totalSeriesCount) => {
                 `;
             });
 
+            // ... (Header and Label Analysis sections remain) ...
+
+            // Raw Series Data (Scrollable & Exportable)
             contentHtml += `
-                            </tbody>
-                        </table>
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="font-size: 13px; font-weight: 600;">Raw Active Series (${activeSeriesCount})</h4>
+                    <div style="display: flex; gap: 8px;">
+                        ${renderActionButton('copy-prom-btn', '📋 Copy PromQL', 'secondary', 'dense')}
+                        ${renderActionButton('download-json-btn', '⬇ Download JSON', 'secondary', 'dense')}
                     </div>
                 </div>
-            `;
-        } else {
-            contentHtml += `<div style="padding: 20px; text-align: center; color: var(--text-muted);">No labels found for this metric.</div>`;
+                <div id="raw-series-container" style="max-height: 200px; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; white-space: pre-wrap;"></div>
+            </div>
+        `;
+
+            contentHtml += `</div>`;
+
+            // Create Modal
+            const modal = createModal(`Cardinality Explorer: ${metricName}`, contentHtml, [
+                { id: 'close', label: 'Close', style: 'secondary', handler: (modal) => closeModal(modal) }
+            ], '800px');
+
+            // Populate Raw Series Content
+            const rawContainer = modal.querySelector('#raw-series-container');
+            const rawSeriesText = activeSeries.map(series => {
+                if (!series.attributes) return '{}';
+                const props = Object.entries(series.attributes)
+                    .sort((a, b) => a[0].localeCompare(b[0]))
+                    .map(([k, v]) => `${k}="${v}"`)
+                    .join(', ');
+                return `{${props}}`;
+            }).join('\n');
+
+            rawContainer.textContent = rawSeriesText;
+
+            // Attach Export Handlers
+            const copyBtn = modal.querySelector('#copy-prom-btn');
+            copyBtn.onclick = () => {
+                copyToClipboard(rawSeriesText);
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✓ Copied!';
+                setTimeout(() => copyBtn.textContent = originalText, 2000);
+            };
+
+            const downloadBtn = modal.querySelector('#download-json-btn');
+            downloadBtn.onclick = () => {
+                downloadJson(activeSeries, `${metricName}_series.json`);
+            };
+
+        } catch (error) {
+            console.error('Error loading metric attributes:', error);
+            createModal('Error', `<p>Failed to load metric attributes: ${error.message}</p>`, [
+                { id: 'close', label: 'Close', style: 'secondary', handler: (modal) => closeModal(modal) }
+            ]);
         }
-
-        contentHtml += `</div>`;
-
-        createModal(`Cardinality Explorer: ${metricName}`, contentHtml, [
-            { id: 'close', label: 'Close', style: 'secondary', handler: (modal) => closeModal(modal) }
-        ], '800px'); // Wider modal for analysis view
-
-    } catch (error) {
-        console.error('Error loading metric attributes:', error);
-        createModal('Error', `<p>Failed to load metric attributes: ${error.message}</p>`, [
-            { id: 'close', label: 'Close', style: 'secondary', handler: (modal) => closeModal(modal) }
-        ]);
-    }
-};
+    };
