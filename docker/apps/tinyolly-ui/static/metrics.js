@@ -1,6 +1,7 @@
 /**
  * Metrics Module - OTEL Format with Resources, Attributes, and Exemplars
  */
+console.log("Metrics Module Loaded - Version 2 (Redesigned Table)");
 import { loadChartJs, renderActionButton, copyToClipboard, downloadJson, renderEmptyState, getColorForIndex, createModal, closeModal } from './utils.js';
 
 // State management
@@ -22,12 +23,12 @@ const TYPE_BADGES = {
 
 export async function renderMetrics(metricsData) {
     const container = document.getElementById('metrics-container');
-    
+
     // Only render if metrics tab is active and container exists
     if (!container) {
         return;
     }
-    
+
     const metricsTab = document.getElementById('metrics-content');
     if (!metricsTab || !metricsTab.classList.contains('active')) {
         return;
@@ -108,11 +109,13 @@ export async function renderMetrics(metricsData) {
 
     const headerHtml = `
         <div style="display: flex; align-items: center; gap: 15px; padding: 8px 12px; border-bottom: 2px solid var(--border-color); background: var(--bg-secondary); font-weight: bold; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
-            <div style="flex: 1; min-width: 200px;">Name</div>
+            <div style="flex: 0 0 250px;">Name</div>
+            <div style="flex: 1; min-width: 150px;">Description</div>
+            <div style="flex: 0 0 60px;">Unit</div>
             <div style="flex: 0 0 80px;">Type</div>
-            <div style="flex: 0 0 100px;">Resources</div>
-            <div style="flex: 0 0 120px;">Attributes</div>
-            <div style="flex: 0 0 60px; text-align: center;">Chart</div>
+            <div style="flex: 0 0 90px;">Resources</div>
+            <div style="flex: 0 0 100px;">Attributes</div>
+            <div style="flex: 0 0 50px; text-align: center;">Chart</div>
         </div>
     `;
 
@@ -249,24 +252,28 @@ function createMetricRow(metric) {
 
     rowDiv.innerHTML = `
         <div class="metric-header" style="display: flex; align-items: center; gap: 15px; padding: 8px 12px; border-bottom: 1px solid var(--border-color); font-size: 11px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
-            <div style="flex: 1; min-width: 200px;">
-                <div style="font-weight: 500; color: var(--text-main); font-size: 13px;">${metric.name}</div>
-                ${metric.description ? `<div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">${metric.description}</div>` : ''}
-                ${metric.unit ? `<div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Unit: ${metric.unit}</div>` : ''}
+            <div style="flex: 0 0 250px;">
+                <div style="font-weight: 600; color: var(--text-main); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${metric.name}">${metric.name}</div>
                 ${promNote}
             </div>
+            <div style="flex: 1; min-width: 150px; color: var(--text-muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${metric.description || ''}">
+                ${metric.description || '-'}
+            </div>
+            <div style="flex: 0 0 60px; color: var(--text-muted); font-size: 11px;">
+                ${metric.unit || '-'}
+            </div>
             <div style="flex: 0 0 80px;">
-                <span style="padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: ${typeBadge.color}20; color: ${typeBadge.color};">
+                <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: ${typeBadge.color}15; color: ${typeBadge.color}; border: 1px solid ${typeBadge.color}30;">
                     ${typeBadge.label}
                 </span>
             </div>
-            <div class="metric-resources-link" data-metric-name="${metric.name}" style="flex: 0 0 100px; font-size: 11px; color: var(--primary); cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); window.showMetricResources('${metric.name}', ${metric.resource_count});">
-                ${metric.resource_count} ${metric.resource_count === 1 ? 'resource' : 'resources'}
+            <div class="metric-resources-link" data-metric-name="${metric.name}" style="flex: 0 0 90px; font-size: 11px; color: var(--primary); cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); window.showMetricResources('${metric.name}', ${metric.resource_count});">
+                ${metric.resource_count} ${metric.resource_count === 1 ? 'res.' : 'res.'}
             </div>
-            <div class="metric-attributes-link" data-metric-name="${metric.name}" style="flex: 0 0 120px; font-size: 11px; color: var(--primary); cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); window.showMetricAttributes('${metric.name}', ${metric.attribute_combinations});">
-                ${metric.attribute_combinations} ${metric.attribute_combinations === 1 ? 'combination' : 'combinations'}
+            <div class="metric-attributes-link" data-metric-name="${metric.name}" style="flex: 0 0 100px; font-size: 11px; color: var(--primary); cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); window.showMetricAttributes('${metric.name}', ${metric.attribute_combinations});">
+                ${metric.attribute_combinations} ${metric.attribute_combinations === 1 ? 'attr.' : 'attrs.'}
             </div>
-            <div style="flex: 0 0 60px; text-align: center;">
+            <div style="flex: 0 0 50px; text-align: center;">
                 <span class="metric-expand-icon" style="display: inline-block; transition: transform 0.2s;">➤</span>
             </div>
         </div>
@@ -361,16 +368,16 @@ async function renderMetricDetail(metric, container) {
 
         // Render chart - load Chart.js and wait for canvas to be ready
         await loadChartJs();
-        
+
         // Wait for DOM to settle and container to size properly
         await new Promise(resolve => setTimeout(resolve, 100));
-        
+
         const canvas = document.getElementById(chartId);
         if (!canvas) {
             console.error('Canvas not found after render:', chartId);
             return;
         }
-        
+
         renderMetricChart(metric, data, canvas, chartId);
 
     } catch (error) {
@@ -419,7 +426,7 @@ function renderMetricChart(metric, data, canvas, chartId) {
         console.error('Canvas element not found:', chartId);
         return;
     }
-    
+
     if (!data || !data.series || data.series.length === 0) {
         // Ensure canvas has size before drawing
         const rect = canvas.getBoundingClientRect();
@@ -472,7 +479,7 @@ function renderGaugeChart(metric, data, canvas, chartId) {
         console.error('Canvas not provided to renderGaugeChart');
         return;
     }
-    
+
     // Show gauge as doughnut chart with current value
     if (!data.series || data.series.length === 0) {
         console.warn('No series for gauge chart:', metric.name);
@@ -748,7 +755,7 @@ function renderHistogramChart(metric, data, canvas, chartId) {
         console.error('Canvas not provided to renderHistogramChart');
         return;
     }
-    
+
     // Show histogram as percentile bars (P50, P75, P90, P95, P99) over time
     if (!data.series || data.series.length === 0) return;
 
