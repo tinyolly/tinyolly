@@ -115,7 +115,7 @@ export async function renderMetrics(metricsData) {
             <div style="flex: 0 0 80px;">Type</div>
             <div style="flex: 0 0 90px;">Resources</div>
             <div style="flex: 0 0 100px;">Attributes</div>
-            <div style="flex: 0 0 50px; text-align: center;">Chart</div>
+            <div style="flex: 0 0 80px;">Actions</div>
         </div>
     `;
 
@@ -252,14 +252,13 @@ function createMetricRow(metric) {
 
     rowDiv.innerHTML = `
         <div class="metric-header data-table-row">
-            <div style="flex: 0 0 250px;">
-                <div class="metric-name" title="${metric.name}">${metric.name}</div>
-                ${promNote}
+            <div style="flex: 0 0 250px; display: flex; align-items: center;">
+                <div class="metric-name text-truncate" title="${metric.name}" style="line-height: 1.2;">${metric.name}</div>
             </div>
             <div class="text-truncate text-muted" style="flex: 1; min-width: 150px; font-size: 10px;" title="${metric.description || ''}">
                 ${metric.description || '-'}
             </div>
-            <div class="text-muted" style="flex: 0 0 60px; font-size: 10px;">
+            <div class="text-muted text-truncate" style="flex: 0 0 60px; font-size: 10px;">
                 ${metric.unit || '-'}
             </div>
             <div style="flex: 0 0 80px;">
@@ -273,8 +272,8 @@ function createMetricRow(metric) {
             <div class="metric-attributes-link metric-link" data-metric-name="${metric.name}" style="flex: 0 0 100px;" onclick="event.stopPropagation(); window.showMetricAttributes('${metric.name}', ${metric.attribute_combinations});">
                 ${metric.attribute_combinations} ${metric.attribute_combinations === 1 ? 'attr.' : 'attrs.'}
             </div>
-            <div style="flex: 0 0 50px; text-align: center;">
-                <span class="metric-expand-icon" style="display: inline-block; transition: transform 0.2s;">➤</span>
+            <div style="flex: 0 0 80px;">
+                ${renderActionButton(`view-chart-${metric.name.replace(/[^a-zA-Z0-9]/g, '_')}`, 'Chart', 'primary')}
             </div>
         </div>
         <div class="metric-detail-container" style="display: none; background: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 16px;">
@@ -284,18 +283,21 @@ function createMetricRow(metric) {
     // Attach click handler
     const header = rowDiv.querySelector('.metric-header');
     const detailContainer = rowDiv.querySelector('.metric-detail-container');
-    const expandIcon = rowDiv.querySelector('.metric-expand-icon');
+    const viewChartBtn = rowDiv.querySelector(`button[id^="view-chart-"]`);
 
-    header.addEventListener('click', async () => {
+    // Toggle logic for both row click and button click
+    const toggleDetail = async (e) => {
+        if (e) e.stopPropagation();
+
         const isExpanded = detailContainer.style.display !== 'none';
 
         if (isExpanded) {
             detailContainer.style.display = 'none';
-            expandIcon.style.transform = 'rotate(0deg)';
+            if (viewChartBtn) viewChartBtn.textContent = 'Chart';
             expandedMetric = null;
         } else {
             detailContainer.style.display = 'block';
-            expandIcon.style.transform = 'rotate(90deg)';
+            if (viewChartBtn) viewChartBtn.textContent = 'Hide';
             expandedMetric = metric.name;
 
             // Load metric detail
@@ -304,7 +306,12 @@ function createMetricRow(metric) {
                 detailContainer.dataset.loaded = 'true';
             }
         }
-    });
+    };
+
+    header.addEventListener('click', toggleDetail);
+    if (viewChartBtn) {
+        viewChartBtn.onclick = toggleDetail;
+    }
 
     return rowDiv;
 }
@@ -337,6 +344,7 @@ async function renderMetricDetail(metric, container) {
                 <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">${metric.name}</div>
                 <div style="display: flex; gap: 8px;">${buttonsHtml}</div>
             </div>
+            ${isPrometheusHistogramMetric(metric.name) ? '<div style="font-size: 11px; color: #f97316; margin-bottom: 12px; font-weight: 500;">📊 Prometheus histogram metric (via Remote Write)</div>' : ''}
             <div id="attribute-filters-${chartId}" style="margin-bottom: 16px;"></div>
             <div id="chart-legend-${chartId}" style="margin-bottom: 16px;"></div>
             <div id="chart-container-${chartId}" style="position: relative; height: 300px; width: 100%;">
