@@ -632,6 +632,69 @@
         border-color: #8b5cf6 !important;
     }
 
+    /* Status code filter buttons (traces/spans) */
+    .status-filters {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+    }
+
+    .status-btn {
+        min-width: 50px;
+        padding: 10px 14px !important;
+        background: var(--bg-secondary) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 6px !important;
+        color: var(--text-muted) !important;
+        cursor: pointer;
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        text-align: center;
+        transition: all 0.15s;
+    }
+
+    .status-btn:hover {
+        background: var(--bg-hover) !important;
+        border-color: var(--text-muted) !important;
+    }
+
+    /* Default colors matching status code colors */
+    .status-btn[data-status="2xx"] {
+        color: var(--success-text) !important;
+    }
+    .status-btn[data-status="4xx"] {
+        color: #f59e0b !important;
+    }
+    .status-btn[data-status="5xx"] {
+        color: var(--error-text) !important;
+    }
+
+    /* Active states - filled background with matching color */
+    .status-btn.active {
+        color: white !important;
+    }
+
+    .status-btn[data-status="all"].active {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+    }
+
+    .status-btn[data-status="2xx"].active {
+        background: var(--success-text) !important;
+        border-color: var(--success-text) !important;
+    }
+
+    .status-btn[data-status="4xx"].active {
+        background: #f59e0b !important;
+        border-color: #f59e0b !important;
+        color: #1a1a1a !important;
+    }
+
+    .status-btn[data-status="5xx"].active {
+        background: var(--error-text) !important;
+        border-color: var(--error-text) !important;
+    }
+
     /* Shared list container style for logs, spans, traces */
     .log-list,
     .span-list,

@@ -1,6 +1,12 @@
 <div id="spans-content" class="tab-content">
     <div class="logs-controls">
         <input type="text" id="span-search" placeholder="Search spans (trace ID, span ID, service, name, status)">
+        <div class="status-filters">
+            <button class="status-btn active" data-status="all" onclick="filterSpansByStatus('all')">All</button>
+            <button class="status-btn" data-status="2xx" onclick="filterSpansByStatus('2xx')">2xx</button>
+            <button class="status-btn" data-status="4xx" onclick="filterSpansByStatus('4xx')">4xx</button>
+            <button class="status-btn" data-status="5xx" onclick="filterSpansByStatus('5xx')">5xx</button>
+        </div>
         <button onclick="clearSpanFilter()">Clear</button>
         <button onclick="window.closeAllSpans()">Close All</button>
     </div>

@@ -1258,11 +1258,76 @@ window.showResourceValueInput = (key) => {
     }
 };
 
-window.applyAttributeFilter = (chartId, key, value) => {
-    // Re-render chart with filtered series
-    // This is a simplified version - full implementation would store filters and re-fetch
-    console.log(`Filter ${key}=${value} for chart ${chartId}`);
+// Store active chart filters per chart
+const chartFilters = {};
+
+window.applyAttributeFilter = async (chartId, key, value) => {
+    // Store the filter for this chart
+    if (!chartFilters[chartId]) {
+        chartFilters[chartId] = {};
+    }
+
+    if (value) {
+        chartFilters[chartId][key] = value;
+    } else {
+        delete chartFilters[chartId][key];
+    }
+
+    // Find the metric name from the chartId
+    const metricName = chartId.replace('chart-', '').replace(/_/g, '.');
+
+    // Find the metric in allMetrics
+    const metric = allMetrics.find(m => m.name.replace(/[^a-zA-Z0-9]/g, '_') === chartId.replace('chart-', ''));
+    if (!metric) {
+        // Try exact name match
+        const exactMetric = allMetrics.find(m => m.name === metricName);
+        if (exactMetric) {
+            await reRenderChartWithFilters(exactMetric, chartId, chartFilters[chartId]);
+        }
+        return;
+    }
+
+    await reRenderChartWithFilters(metric, chartId, chartFilters[chartId]);
 };
+
+async function reRenderChartWithFilters(metric, chartId, filters) {
+    try {
+        // Fetch full metric data
+        const response = await fetch(`/api/metrics/${encodeURIComponent(metric.name)}`);
+        const data = await response.json();
+
+        if (!data.series || data.series.length === 0) return;
+
+        // Filter series based on active filters
+        let filteredData = { ...data };
+        if (filters && Object.keys(filters).length > 0) {
+            filteredData.series = data.series.filter(series => {
+                for (const [filterKey, filterValue] of Object.entries(filters)) {
+                    const seriesValue = series.attributes?.[filterKey];
+                    if (String(seriesValue) !== String(filterValue)) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
+
+        // Destroy existing chart
+        const canvas = document.getElementById(chartId);
+        if (!canvas) return;
+
+        const existingChart = Chart.getChart(canvas);
+        if (existingChart) {
+            existingChart.destroy();
+        }
+
+        // Re-render chart with filtered data
+        renderMetricChart(metric, filteredData, canvas, chartId);
+
+    } catch (error) {
+        console.error('Error re-rendering chart with filters:', error);
+    }
+}
 
 export function isMetricChartOpen() {
     return expandedMetric !== null;

@@ -5,6 +5,7 @@ import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJso
 
 let currentSpanDetail = null;
 let currentSpanData = null;
+let currentStatusFilter = 'all';
 
 export function isSpanDetailOpen() {
     return currentSpanDetail !== null;
@@ -70,6 +71,9 @@ export function renderSpans(spans) {
     // Restore search filter
     searchFilter.restore();
 
+    // Reapply filters (including status) after rendering
+    filterSpans();
+
     // Add click handlers (same pattern as traces)
     container.querySelectorAll('.trace-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -95,18 +99,71 @@ export function filterSpans() {
     const searchInput = document.getElementById('span-search');
     if (!searchInput) return;
 
+    const searchTerm = searchInput.value.toLowerCase();
     const spanRows = document.querySelectorAll('#spans-container .span-row-wrapper');
-    const selectors = ['.trace-id', '.span-id', '.span-service', '.trace-name', '.trace-method', '.trace-status'];
-    
-    filterTableRows(spanRows, searchInput.value, selectors, 'block');
+
+    spanRows.forEach(row => {
+        // Check status filter first
+        let showByStatus = true;
+        if (currentStatusFilter !== 'all') {
+            const statusDiv = row.querySelector('.trace-status');
+            if (statusDiv) {
+                const statusText = statusDiv.textContent.trim();
+                const statusCode = parseInt(statusText);
+                if (!isNaN(statusCode)) {
+                    if (currentStatusFilter === '2xx') {
+                        showByStatus = statusCode >= 200 && statusCode < 300;
+                    } else if (currentStatusFilter === '4xx') {
+                        showByStatus = statusCode >= 400 && statusCode < 500;
+                    } else if (currentStatusFilter === '5xx') {
+                        showByStatus = statusCode >= 500 && statusCode < 600;
+                    }
+                } else {
+                    // Non-numeric status (OK, ERR, etc.) - show based on context
+                    showByStatus = currentStatusFilter === 'all';
+                }
+            }
+        }
+
+        // Check search filter
+        let showBySearch = true;
+        if (searchTerm) {
+            const rowText = row.textContent.toLowerCase();
+            showBySearch = rowText.includes(searchTerm);
+        }
+
+        // Show row only if both filters pass
+        row.style.display = (showByStatus && showBySearch) ? 'block' : 'none';
+    });
 }
+
+// Filter spans by status code range
+export function filterSpansByStatus(status) {
+    currentStatusFilter = status;
+
+    // Update button states
+    document.querySelectorAll('#spans-content .status-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+    });
+
+    // Apply combined filters
+    filterSpans();
+}
+
+// Expose to window for onclick handlers
+window.filterSpansByStatus = filterSpansByStatus;
 
 export function clearSpanFilter() {
     const searchInput = document.getElementById('span-search');
     if (searchInput) {
         searchInput.value = '';
-        filterSpans();
     }
+    // Reset status filter to 'all'
+    currentStatusFilter = 'all';
+    document.querySelectorAll('#spans-content .status-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === 'all');
+    });
+    filterSpans();
 }
 
 export function getServiceFilter() {

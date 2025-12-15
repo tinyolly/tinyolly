@@ -1,12 +1,13 @@
 /**
  * Traces Module - Handles trace list and waterfall visualization
  */
-import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote } from './utils.js';
+import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter } from './utils.js';
 import { fetchTraceDetail, loadTraces } from './api.js';
 
 let currentTraceId = null;
 let currentTraceData = null;
 let selectedSpanIndex = null;
+let currentStatusFilter = 'all';
 export function renderTraces(traces) {
     const container = document.getElementById('traces-container');
 
@@ -28,7 +29,7 @@ export function renderTraces(traces) {
         { label: 'Status', flex: '0 0 60px', align: 'right' }
     ]);
 
-    container.innerHTML = limitNote + headerRow + traces.map(trace => {
+    const tracesHtml = traces.map(trace => {
         const displayTraceId = formatTraceId(trace.trace_id);
         const startTime = formatTime(trace.start_time);
 
@@ -64,6 +65,17 @@ export function renderTraces(traces) {
         `;
     }).join('');
 
+    // Preserve current search filter
+    const searchFilter = preserveSearchFilter('trace-search', filterTraces);
+
+    container.innerHTML = limitNote + headerRow + tracesHtml;
+
+    // Restore search filter
+    searchFilter.restore();
+
+    // Reapply filters (including status) after rendering
+    filterTraces();
+
     // Add click handlers
     container.querySelectorAll('.trace-item').forEach(item => {
         item.addEventListener('click', () => showTraceDetail(item.dataset.traceId));
@@ -80,18 +92,71 @@ function filterTraces() {
     const searchInput = document.getElementById('trace-search');
     if (!searchInput) return;
 
+    const searchTerm = searchInput.value.toLowerCase();
     const traceItems = document.querySelectorAll('#traces-container .trace-item');
-    const selectors = ['.trace-id', '.trace-service', '.trace-name', '.trace-method', '.trace-status'];
-    
-    filterTableRows(traceItems, searchInput.value, selectors, 'flex');
+
+    traceItems.forEach(row => {
+        // Check status filter first
+        let showByStatus = true;
+        if (currentStatusFilter !== 'all') {
+            const statusDiv = row.querySelector('.trace-status');
+            if (statusDiv) {
+                const statusText = statusDiv.textContent.trim();
+                const statusCode = parseInt(statusText);
+                if (!isNaN(statusCode)) {
+                    if (currentStatusFilter === '2xx') {
+                        showByStatus = statusCode >= 200 && statusCode < 300;
+                    } else if (currentStatusFilter === '4xx') {
+                        showByStatus = statusCode >= 400 && statusCode < 500;
+                    } else if (currentStatusFilter === '5xx') {
+                        showByStatus = statusCode >= 500 && statusCode < 600;
+                    }
+                } else {
+                    // Non-numeric status (OK, ERR, etc.) - show based on context
+                    showByStatus = currentStatusFilter === 'all';
+                }
+            }
+        }
+
+        // Check search filter
+        let showBySearch = true;
+        if (searchTerm) {
+            const rowText = row.textContent.toLowerCase();
+            showBySearch = rowText.includes(searchTerm);
+        }
+
+        // Show row only if both filters pass
+        row.style.display = (showByStatus && showBySearch) ? 'flex' : 'none';
+    });
 }
+
+// Filter traces by status code range
+export function filterTracesByStatus(status) {
+    currentStatusFilter = status;
+
+    // Update button states
+    document.querySelectorAll('#traces-content .status-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+    });
+
+    // Apply combined filters
+    filterTraces();
+}
+
+// Expose to window for onclick handlers
+window.filterTracesByStatus = filterTracesByStatus;
 
 export function clearTraceFilter() {
     const searchInput = document.getElementById('trace-search');
     if (searchInput) {
         searchInput.value = '';
-        filterTraces();
     }
+    // Reset status filter to 'all'
+    currentStatusFilter = 'all';
+    document.querySelectorAll('#traces-content .status-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === 'all');
+    });
+    filterTraces();
 }
 
 export async function showTraceDetail(traceId) {

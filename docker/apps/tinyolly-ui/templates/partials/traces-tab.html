@@ -2,6 +2,12 @@
     <div id="traces-list-view">
         <div class="logs-controls">
             <input type="text" id="trace-search" placeholder="Search traces (trace ID, service, name, status)">
+            <div class="status-filters">
+                <button class="status-btn active" data-status="all" onclick="filterTracesByStatus('all')">All</button>
+                <button class="status-btn" data-status="2xx" onclick="filterTracesByStatus('2xx')">2xx</button>
+                <button class="status-btn" data-status="4xx" onclick="filterTracesByStatus('4xx')">4xx</button>
+                <button class="status-btn" data-status="5xx" onclick="filterTracesByStatus('5xx')">5xx</button>
+            </div>
             <button onclick="clearTraceFilter()">Clear</button>
             <button onclick="window.closeAllTraceDetails()">Close All</button>
         </div>
