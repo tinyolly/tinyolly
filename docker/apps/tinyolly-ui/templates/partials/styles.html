@@ -561,6 +561,77 @@
         background: var(--primary-hover);
     }
 
+    /* Severity filter buttons */
+    .severity-filters {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+    }
+
+    .severity-btn {
+        min-width: 50px;
+        padding: 10px 14px !important;
+        background: var(--bg-secondary) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 6px !important;
+        color: var(--text-muted) !important;
+        cursor: pointer;
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        text-align: center;
+        transition: all 0.15s;
+    }
+
+    .severity-btn:hover {
+        background: var(--bg-hover) !important;
+        border-color: var(--text-muted) !important;
+    }
+
+    /* Default colors matching log severity text colors */
+    .severity-btn[data-severity="ERROR"] {
+        color: var(--error-text) !important;
+    }
+    .severity-btn[data-severity="WARN"] {
+        color: #f59e0b !important;
+    }
+    .severity-btn[data-severity="INFO"] {
+        color: var(--success-text) !important;
+    }
+    .severity-btn[data-severity="DEBUG"] {
+        color: #8b5cf6 !important;
+    }
+
+    /* Active states - filled background with matching color */
+    .severity-btn.active {
+        color: white !important;
+    }
+
+    .severity-btn[data-severity="all"].active {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+    }
+
+    .severity-btn[data-severity="ERROR"].active {
+        background: var(--error-text) !important;
+        border-color: var(--error-text) !important;
+    }
+
+    .severity-btn[data-severity="WARN"].active {
+        background: #f59e0b !important;
+        border-color: #f59e0b !important;
+        color: #1a1a1a !important;
+    }
+
+    .severity-btn[data-severity="INFO"].active {
+        background: var(--success-text) !important;
+        border-color: var(--success-text) !important;
+    }
+
+    .severity-btn[data-severity="DEBUG"].active {
+        background: #8b5cf6 !important;
+        border-color: #8b5cf6 !important;
+    }
+
     /* Shared list container style for logs, spans, traces */
     .log-list,
     .span-list,

@@ -40,8 +40,11 @@ export function renderLogs(logs, containerId = 'logs-container') {
 
     renderLogList(container, logs.slice(0, displayedLogsCount), logs.length);
 
-    // Restore search filter
+    // Restore search filter and reapply severity filter
     searchFilter.restore();
+
+    // Reapply filters (including severity) after rendering
+    filterLogs();
 
     // Add click handlers using event delegation
     // Remove existing listener to avoid duplicates if renderLogs is called multiple times
@@ -239,6 +242,9 @@ function showLogJson(index) {
     };
 }
 
+// Track current severity filter
+let currentSeverityFilter = 'all';
+
 export function clearLogFilter() {
     const filterInput = document.getElementById('trace-id-filter');
     const searchInput = document.getElementById('log-search');
@@ -248,20 +254,61 @@ export function clearLogFilter() {
     if (searchInput) {
         searchInput.value = '';
     }
+    // Reset severity filter to 'all'
+    currentSeverityFilter = 'all';
+    document.querySelectorAll('.severity-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.severity === 'all');
+    });
     // Trigger filter to show all logs
     filterLogs();
 }
 
-// Filter logs based on search input (searches all log content)
+// Filter logs by severity level
+export function filterBySeverity(severity) {
+    currentSeverityFilter = severity;
+
+    // Update button states
+    document.querySelectorAll('.severity-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.severity === severity);
+    });
+
+    // Apply combined filters
+    filterLogs();
+}
+
+// Expose to window for onclick handlers
+window.filterBySeverity = filterBySeverity;
+
+// Filter logs based on search input and severity filter
 export function filterLogs() {
     const searchInput = document.getElementById('log-search');
     if (!searchInput) return;
 
+    const searchTerm = searchInput.value.toLowerCase();
     const logRows = document.querySelectorAll('.log-row');
-    // Search entire row text content
-    const selectors = ['*']; // Searches all text in the row
-    
-    filterTableRows(logRows, searchInput.value, selectors, 'flex');
+
+    logRows.forEach(row => {
+        // Check severity filter first
+        let showBySeverity = true;
+        if (currentSeverityFilter !== 'all') {
+            // Get severity from the row - it's in a div with the severity color
+            const severityDiv = row.querySelector('div[style*="font-weight: 600"]');
+            if (severityDiv) {
+                const rowSeverity = severityDiv.textContent.trim().toUpperCase();
+                showBySeverity = rowSeverity === currentSeverityFilter;
+            }
+        }
+
+        // Check search filter
+        let showBySearch = true;
+        if (searchTerm) {
+            const rowText = row.textContent.toLowerCase();
+            showBySearch = rowText.includes(searchTerm);
+        }
+
+        // Show row only if both filters pass
+        row.style.display = (showBySeverity && showBySearch) ? 'flex' : 'none';
+    });
 }
 
 export function isLogJsonOpen() {

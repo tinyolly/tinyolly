@@ -3,6 +3,13 @@
         <input type="text" id="log-search" placeholder="Search logs (any text in message, service, trace/span IDs)">
         <input type="text" id="trace-id-filter" placeholder="Filter by trace ID (optional)" style="display:none;">
         <button onclick="loadLogs()" style="display:none;">Filter</button>
+        <div class="severity-filters">
+            <button class="severity-btn active" data-severity="all" onclick="filterBySeverity('all')">All</button>
+            <button class="severity-btn" data-severity="ERROR" onclick="filterBySeverity('ERROR')">Error</button>
+            <button class="severity-btn" data-severity="WARN" onclick="filterBySeverity('WARN')">Warn</button>
+            <button class="severity-btn" data-severity="INFO" onclick="filterBySeverity('INFO')">Info</button>
+            <button class="severity-btn" data-severity="DEBUG" onclick="filterBySeverity('DEBUG')">Debug</button>
+        </div>
         <button onclick="clearLogFilter()">Clear</button>
         <button onclick="window.closeAllLogs()">Close All</button>
     </div>
