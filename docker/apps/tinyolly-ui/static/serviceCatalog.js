@@ -1,7 +1,7 @@
 /**
  * Service Catalog Module - Displays services with RED metrics and inline charts
  */
-import { formatTime, formatDuration, loadChartJs, escapeHtml, attachHoverEffects, renderEmptyState, sortItems, getSortIndicator, destroyChart, closeAllExpandedItems } from './utils.js';
+import { formatTime, formatDuration, loadChartJs, escapeHtml, attachHoverEffects, renderEmptyState, sortItems, getSortIndicator, destroyChart, closeAllExpandedItems, formatCount, renderActionButton } from './utils.js';
 
 const chartInstances = {};
 const openCharts = new Map(); // Track which charts are open: serviceName -> {metricType, metricName, metricTypeLabel}
@@ -22,16 +22,16 @@ export function renderServiceCatalog(services) {
     const limitNote = `<div style="text-align: center; padding: 10px; font-size: 12px; color: var(--text-muted);">Showing ${services.length} service${services.length !== 1 ? 's' : ''}</div>`;
 
     const headerRow = `
-        <div class="catalog-header-row" style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 2px solid var(--border-color); background: var(--bg-secondary); font-weight: bold; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
-            <div data-sort="name" style="flex: 0 0 200px; cursor: pointer; user-select: none;" title="Click to sort">Service Name ${getSortIndicator('name', currentSort)}</div>
-            <div data-sort="rate" style="flex: 0 0 80px; text-align: right; cursor: pointer; user-select: none;" title="Click to sort">Rate ${getSortIndicator('rate', currentSort)}</div>
-            <div data-sort="error_rate" style="flex: 0 0 70px; text-align: right; cursor: pointer; user-select: none;" title="Click to sort">Errors ${getSortIndicator('error_rate', currentSort)}</div>
-            <div data-sort="duration_p50" style="flex: 0 0 70px; text-align: right; cursor: pointer; user-select: none;" title="Click to sort">P50 ${getSortIndicator('duration_p50', currentSort)}</div>
-            <div data-sort="duration_p95" style="flex: 0 0 70px; text-align: right; cursor: pointer; user-select: none;" title="Click to sort">P95 ${getSortIndicator('duration_p95', currentSort)}</div>
-            <div data-sort="span_count" style="flex: 0 0 80px; text-align: right; cursor: pointer; user-select: none;" title="Click to sort">Spans ${getSortIndicator('span_count', currentSort)}</div>
-            <div data-sort="trace_count" style="flex: 0 0 80px; text-align: right; cursor: pointer; user-select: none;" title="Click to sort">Traces ${getSortIndicator('trace_count', currentSort)}</div>
-            <div data-sort="first_seen" style="flex: 0 0 100px; cursor: pointer; user-select: none;" title="Click to sort">First Seen ${getSortIndicator('first_seen', currentSort)}</div>
-            <div data-sort="last_seen" style="flex: 0 0 100px; cursor: pointer; user-select: none;" title="Click to sort">Last Seen ${getSortIndicator('last_seen', currentSort)}</div>
+        <div class="catalog-header-row data-table-header">
+            <div data-sort="name" style="flex: 0 0 200px;" class="cursor-pointer" title="Click to sort">Service Name ${getSortIndicator('name', currentSort)}</div>
+            <div data-sort="rate" style="flex: 0 0 80px; text-align: right;" class="cursor-pointer" title="Click to sort">Rate ${getSortIndicator('rate', currentSort)}</div>
+            <div data-sort="error_rate" style="flex: 0 0 70px; text-align: right;" class="cursor-pointer" title="Click to sort">Errors ${getSortIndicator('error_rate', currentSort)}</div>
+            <div data-sort="duration_p50" style="flex: 0 0 70px; text-align: right;" class="cursor-pointer" title="Click to sort">P50 ${getSortIndicator('duration_p50', currentSort)}</div>
+            <div data-sort="duration_p95" style="flex: 0 0 70px; text-align: right;" class="cursor-pointer" title="Click to sort">P95 ${getSortIndicator('duration_p95', currentSort)}</div>
+            <div data-sort="span_count" style="flex: 0 0 80px; text-align: right;" class="cursor-pointer" title="Click to sort">Spans ${getSortIndicator('span_count', currentSort)}</div>
+            <div data-sort="trace_count" style="flex: 0 0 80px; text-align: right;" class="cursor-pointer" title="Click to sort">Traces ${getSortIndicator('trace_count', currentSort)}</div>
+            <div data-sort="first_seen" style="flex: 0 0 100px;" class="cursor-pointer" title="Click to sort">First Seen ${getSortIndicator('first_seen', currentSort)}</div>
+            <div data-sort="last_seen" style="flex: 0 0 100px;" class="cursor-pointer" title="Click to sort">Last Seen ${getSortIndicator('last_seen', currentSort)}</div>
             <div style="flex: 1;">Actions</div>
         </div>
     `;
@@ -57,26 +57,20 @@ export function renderServiceCatalog(services) {
 
         return `
             <div class="catalog-service-row" data-service-id="${serviceId}">
-                <div class="catalog-item" style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--border-color); font-size: 11px; transition: background 0.2s; cursor: pointer;">
-                    <div style="flex: 0 0 200px; font-weight: 600; color: var(--text-main); font-size: 13px;">${escapeHtml(service.name)}</div>
-                    <div data-metric="calls" data-service="${escapeHtml(service.name)}" style="flex: 0 0 80px; text-align: right; color: var(--primary); font-family: monospace; font-weight: 600; cursor: pointer; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${rate}</div>
-                    <div data-metric="calls" data-service="${escapeHtml(service.name)}" style="flex: 0 0 70px; text-align: right; color: ${errorColor}; font-family: monospace; font-weight: 600; cursor: pointer; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${errorRate}</div>
-                    <div data-metric="duration" data-service="${escapeHtml(service.name)}" style="flex: 0 0 70px; text-align: right; color: var(--text-main); font-family: monospace; cursor: pointer; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${p50}</div>
-                    <div data-metric="duration" data-service="${escapeHtml(service.name)}" style="flex: 0 0 70px; text-align: right; color: var(--text-main); font-family: monospace; cursor: pointer; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${p95}</div>
-                    <div style="flex: 0 0 80px; text-align: right; color: var(--text-muted); font-family: monospace; font-size: 12px;">${service.span_count.toLocaleString()}</div>
-                    <div style="flex: 0 0 80px; text-align: right; color: var(--text-muted); font-family: monospace; font-size: 12px;">${service.trace_count.toLocaleString()}</div>
-                    <div style="flex: 0 0 100px; font-family: monospace; color: var(--text-muted); font-size: 11px;">${firstSeen}</div>
-                    <div style="flex: 0 0 100px; font-family: monospace; color: var(--text-muted); font-size: 11px;">${lastSeen}</div>
+                <div class="catalog-item data-table-row">
+                    <div class="text-main font-semibold" style="flex: 0 0 200px; font-size: 13px;">${escapeHtml(service.name)}</div>
+                    <div data-metric="calls" data-service="${escapeHtml(service.name)}" class="text-primary text-mono font-semibold cursor-pointer" style="flex: 0 0 80px; text-align: right; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${rate}</div>
+                    <div data-metric="calls" data-service="${escapeHtml(service.name)}" class="text-mono font-semibold cursor-pointer" style="flex: 0 0 70px; text-align: right; color: ${errorColor}; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${errorRate}</div>
+                    <div data-metric="duration" data-service="${escapeHtml(service.name)}" class="text-main text-mono cursor-pointer" style="flex: 0 0 70px; text-align: right; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${p50}</div>
+                    <div data-metric="duration" data-service="${escapeHtml(service.name)}" class="text-main text-mono cursor-pointer" style="flex: 0 0 70px; text-align: right; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${p95}</div>
+                    <div class="text-muted text-mono" style="flex: 0 0 80px; text-align: right;">${formatCount(service.span_count)}</div>
+                    <div class="text-muted text-mono" style="flex: 0 0 80px; text-align: right;">${formatCount(service.trace_count)}</div>
+                    <div class="text-muted text-mono" style="flex: 0 0 100px; font-size: 10px;">${firstSeen}</div>
+                    <div class="text-muted text-mono" style="flex: 0 0 100px; font-size: 10px;">${lastSeen}</div>
                     <div style="flex: 1; display: flex; gap: 8px;">
-                        <button onclick="viewServiceSpans('${escapeHtml(service.name)}')" style="padding: 4px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: background 0.2s;">
-                            Spans
-                        </button>
-                        <button onclick="viewServiceLogs('${escapeHtml(service.name)}')" style="padding: 4px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: background 0.2s;">
-                            Logs
-                        </button>
-                        <button onclick="window.viewMetricsForService('${escapeHtml(service.name)}')" style="padding: 4px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: background 0.2s;">
-                            Metrics
-                        </button>
+                        ${renderActionButton(`view-spans-${serviceId}`, 'Spans', 'primary')}
+                        ${renderActionButton(`view-logs-${serviceId}`, 'Logs', 'primary')}
+                        ${renderActionButton(`view-metrics-${serviceId}`, 'Metrics', 'primary')}
                     </div>
                 </div>
                 <div class="catalog-chart-container" style="display: none; padding: 20px; background: var(--bg-secondary); border-bottom: 1px solid var(--border);">
@@ -199,7 +193,7 @@ export function renderServiceCatalog(services) {
         });
     });
 
-    // Add click handlers for sortable headers
+    // Add click handlers for headers
     const sortHeaders = container.querySelectorAll('[data-sort]');
     sortHeaders.forEach(header => {
         header.addEventListener('click', () => {
@@ -218,6 +212,35 @@ export function renderServiceCatalog(services) {
                 module.loadServiceCatalog();
             });
         });
+    });
+
+    // Add click handlers for action buttons
+    services.forEach((service, index) => {
+        const serviceId = `service-${index}`;
+
+        const spansBtn = document.getElementById(`view-spans-${serviceId}`);
+        if (spansBtn) {
+            spansBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (window.viewServiceSpans) window.viewServiceSpans(service.name);
+            };
+        }
+
+        const logsBtn = document.getElementById(`view-logs-${serviceId}`);
+        if (logsBtn) {
+            logsBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (window.viewServiceLogs) window.viewServiceLogs(service.name);
+            };
+        }
+
+        const metricsBtn = document.getElementById(`view-metrics-${serviceId}`);
+        if (metricsBtn) {
+            metricsBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (window.viewMetricsForService) window.viewMetricsForService(service.name);
+            };
+        }
     });
 
     // Restore previously open charts after rendering

@@ -52,15 +52,15 @@ export function renderTraces(traces) {
         const serviceName = trace.service_name || trace.root_span_service_name || '-';
 
         return `
-            <div class="trace-item" data-trace-id="${trace.trace_id}" style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--border-color); font-size: 10px; cursor: pointer;">
-                <div class="trace-time" style="font-family: monospace; color: var(--text-muted); flex: 0 0 100px;">${startTime}</div>
-                <div class="trace-service" style="flex: 0 0 120px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${serviceName}">${serviceName}</div>
-                <div class="trace-id" style="flex: 0 0 260px; font-family: monospace; color: var(--text-muted); font-size: 0.9em;">${displayTraceId}</div>
-                <div class="trace-spans" style="flex: 0 0 60px; text-align: right; color: var(--text-muted);">${trace.span_count}</div>
-                <div class="trace-duration" style="flex: 0 0 80px; text-align: right; color: var(--text-muted);">${formatDuration(trace.duration_ms)}</div>
-                <div class="trace-method" style="flex: 0 0 70px; font-weight: bold; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${method}</div>
-                <div class="trace-name" style="flex: 1; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${route}</div>
-                <div class="trace-status" style="flex: 0 0 60px; text-align: right; color: ${statusColor}; font-weight: 500;">${status || '-'}</div>
+            <div class="trace-item data-table-row" data-trace-id="${trace.trace_id}">
+                <div class="trace-time text-mono text-muted" style="flex: 0 0 100px;">${startTime}</div>
+                <div class="trace-service text-truncate" style="flex: 0 0 120px;" title="${serviceName}">${serviceName}</div>
+                <div class="trace-id text-mono text-muted" style="flex: 0 0 260px; font-size: 0.9em;">${displayTraceId}</div>
+                <div class="trace-spans text-muted" style="flex: 0 0 60px; text-align: right;">${trace.span_count}</div>
+                <div class="trace-duration text-muted" style="flex: 0 0 80px; text-align: right;">${formatDuration(trace.duration_ms)}</div>
+                <div class="trace-method text-primary font-bold text-truncate" style="flex: 0 0 70px;">${method}</div>
+                <div class="trace-name font-medium text-truncate" style="flex: 1;">${route}</div>
+                <div class="trace-status font-medium" style="flex: 0 0 60px; text-align: right; color: ${statusColor};">${status || '-'}</div>
             </div>
         `;
     }).join('');

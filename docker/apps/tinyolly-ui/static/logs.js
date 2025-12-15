@@ -77,17 +77,17 @@ function renderLogList(container, logsToShow, totalLogs) {
         const spanId = log.spanId || log.span_id;
 
         return `
-            <div class="log-row" data-log-index="${index}" style="display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--border-color); font-size: 10px; cursor: pointer;">
-                <div style="flex: 0 0 100px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">${timestamp}</div>
-                <div style="flex: 0 0 120px; color: var(--text-main); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.service_name || log.service || ''}">${log.service_name || log.service || '-'}</div>
-                <div style="flex: 0 0 60px; font-weight: 600; font-size: 10px; color: ${severityColor};">${severity}</div>
-                <div style="flex: 0 0 180px; font-family: 'JetBrains Mono', monospace; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${traceId || ''}">
-                    ${traceId ? `<a class="log-trace-link" data-trace-id="${traceId}" style="color: var(--primary); cursor: pointer; text-decoration: none; font-family: 'JetBrains Mono', monospace;">${formatTraceId(traceId)}</a>` : '<span style="color: var(--text-muted);">-</span>'}
+            <div class="log-row data-table-row" data-log-index="${index}">
+                <div class="log-timestamp text-mono" style="flex: 0 0 100px;">${timestamp}</div>
+                <div class="text-main font-medium text-truncate" style="flex: 0 0 120px;" title="${log.service_name || log.service || ''}">${log.service_name || log.service || '-'}</div>
+                <div class="log-severity ${severity}" style="flex: 0 0 60px;">${severity}</div>
+                <div class="text-mono text-truncate" style="flex: 0 0 180px; font-size: 10px;" title="${traceId || ''}">
+                    ${traceId ? `<a class="log-trace-link text-mono" data-trace-id="${traceId}">${formatTraceId(traceId)}</a>` : '<span class="text-muted">-</span>'}
                 </div>
-                <div style="flex: 0 0 140px; font-family: 'JetBrains Mono', monospace; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${spanId || ''}">
-                    ${spanId ? `<a class="log-span-link" data-span-id="${spanId}" style="color: var(--primary); cursor: pointer; text-decoration: none; font-family: 'JetBrains Mono', monospace;">${formatTraceId(spanId)}</a>` : '<span style="color: var(--text-muted);">-</span>'}
+                <div class="text-mono text-truncate" style="flex: 0 0 140px; font-size: 10px;" title="${spanId || ''}">
+                    ${spanId ? `<a class="log-span-link text-mono" data-span-id="${spanId}">${formatTraceId(spanId)}</a>` : '<span class="text-muted">-</span>'}
                 </div>
-                <div style="flex: 1; min-width: 200px; color: var(--text-main); word-break: break-word;">${log.message || ''}</div>
+                <div class="text-main" style="flex: 1; min-width: 200px; word-break: break-word;">${log.message || ''}</div>
             </div>
         `;
     }).join('');

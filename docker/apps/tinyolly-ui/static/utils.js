@@ -81,7 +81,7 @@ export function loadChartJs() {
         // Load Chart.js first
         const chartScript = document.createElement('script');
         chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-        
+
         chartScript.onload = () => {
             // Then load the date adapter for time scales
             const adapterScript = document.createElement('script');
@@ -90,7 +90,7 @@ export function loadChartJs() {
             adapterScript.onerror = () => reject(new Error('Failed to load Chart.js date adapter'));
             document.head.appendChild(adapterScript);
         };
-        
+
         chartScript.onerror = () => reject(new Error('Failed to load Chart.js'));
         document.head.appendChild(chartScript);
     });
@@ -198,7 +198,7 @@ export function renderActionButton(id, label, style = 'secondary') {
     const buttonStyle = isPrimary
         ? 'padding: 6px 12px; cursor: pointer; border: 1px solid var(--primary); background: var(--primary); color: white; border-radius: 4px; font-size: 12px; font-weight: 500;'
         : 'padding: 6px 12px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-main); border-radius: 4px; font-size: 12px;';
-    
+
     return `<button id="${id}" style="${buttonStyle}">${label}</button>`;
 }
 
@@ -246,7 +246,7 @@ export function renderTableHeader(columns) {
         flexValue = flexValue.replace(/;\s*min-width:\s*\d+px/, '').trim();
         return `<div style="flex: ${flexValue}; ${minWidth}${align}">${col.label}</div>`;
     }).join('');
-    
+
     return `
         <div style="display: flex; align-items: center; gap: 15px; padding: 8px 12px; border-bottom: 2px solid var(--border-color); background: var(--bg-secondary); font-weight: bold; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
             ${columnsHtml}
@@ -279,16 +279,16 @@ export function attachHoverEffects(elements, hoverColor = 'var(--bg-hover)') {
 /** Filters table rows by search term across specified CSS selectors or entire row content */
 export function filterTableRows(rows, searchTerm, selectors, displayStyle = 'flex') {
     const term = searchTerm.toLowerCase().trim();
-    
+
     rows.forEach(row => {
         if (!term) {
             row.style.display = displayStyle;
             row.classList.remove('hidden');
             return;
         }
-        
+
         let matches = false;
-        
+
         // If selector is '*', search entire row text content
         if (selectors.length === 1 && selectors[0] === '*') {
             matches = row.textContent.toLowerCase().includes(term);
@@ -299,7 +299,7 @@ export function filterTableRows(rows, searchTerm, selectors, displayStyle = 'fle
                 return element && element.textContent.toLowerCase().includes(term);
             });
         }
-        
+
         if (matches) {
             row.style.display = displayStyle;
             row.classList.remove('hidden');
@@ -324,11 +324,11 @@ export function sortItems(items, column, direction = 'asc') {
     items.sort((a, b) => {
         let aVal = a[column];
         let bVal = b[column];
-        
+
         // Handle null/undefined - put at end
         if (aVal === null || aVal === undefined) return 1;
         if (bVal === null || bVal === undefined) return -1;
-        
+
         // Compare based on type
         let comparison = 0;
         if (typeof aVal === 'string') {
@@ -336,7 +336,7 @@ export function sortItems(items, column, direction = 'asc') {
         } else {
             comparison = aVal - bVal;
         }
-        
+
         return direction === 'asc' ? comparison : -comparison;
     });
     return items;
@@ -345,7 +345,7 @@ export function sortItems(items, column, direction = 'asc') {
 /** Extracts OTEL attribute value from span/log, checking multiple key formats */
 export function getAttributeValue(item, keys) {
     const attributes = item.attributes || [];
-    
+
     // Handle array format (OTEL)
     if (Array.isArray(attributes)) {
         for (const key of keys) {
@@ -363,7 +363,7 @@ export function getAttributeValue(item, keys) {
             }
         }
     }
-    
+
     return null;
 }
 
@@ -371,11 +371,11 @@ export function getAttributeValue(item, keys) {
 export function createModal(title, contentHtml, buttons = []) {
     const modal = document.createElement('div');
     modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;';
-    
-    const buttonsHtml = buttons.map(btn => 
+
+    const buttonsHtml = buttons.map(btn =>
         renderActionButton(btn.id, btn.label, btn.style || 'secondary')
     ).join('');
-    
+
     modal.innerHTML = `
         <div style="background: var(--bg-card); border-radius: 8px; padding: 24px; max-width: 600px; max-height: 80vh; overflow: auto; box-shadow: var(--shadow);">
             <h3 style="margin: 0 0 16px 0; font-size: 16px;">${title}</h3>
@@ -387,7 +387,7 @@ export function createModal(title, contentHtml, buttons = []) {
             </div>
         </div>
     `;
-    
+
     // Attach button handlers
     buttons.forEach(btn => {
         const buttonEl = modal.querySelector(`#${btn.id}`);
@@ -395,14 +395,14 @@ export function createModal(title, contentHtml, buttons = []) {
             buttonEl.onclick = () => btn.handler(modal);
         }
     });
-    
+
     // Close on background click
     modal.onclick = (e) => {
         if (e.target === modal) {
             document.body.removeChild(modal);
         }
     };
-    
+
     document.body.appendChild(modal);
     return modal;
 }
@@ -417,16 +417,16 @@ export function closeModal(modal) {
 /** Extracts service.name from OTEL entity (span/trace/log) resource or attributes */
 export function extractServiceName(entity) {
     if (!entity) return null;
-    
+
     // Direct properties
     if (entity.service_name) return entity.service_name;
     if (entity.serviceName) return entity.serviceName;
-    
+
     // Check resource attributes (OTEL format)
     if (entity.resource && entity.resource['service.name']) {
         return entity.resource['service.name'];
     }
-    
+
     // Check attributes
     return getAttributeValue(entity, ['service.name']);
 }
@@ -436,7 +436,7 @@ export function navigateToTabWithFilter(tabName, inputId, filterValue, filterFnN
     if (window.switchTab) {
         window.switchTab(tabName);
     }
-    
+
     setTimeout(() => {
         const input = document.getElementById(inputId);
         if (input) {
@@ -485,7 +485,7 @@ export function destroyChart(chartId, chartInstancesMap) {
 
 /** Closes all expanded UI items (views/modals/details) based on config selectors and callbacks */
 export function closeAllExpandedItems(config) {
-    
+
     if (config.containers) {
         config.containers.forEach(selector => {
             const elements = document.querySelectorAll(selector);
@@ -498,7 +498,7 @@ export function closeAllExpandedItems(config) {
             });
         });
     }
-    
+
     if (config.classes) {
         config.classes.forEach(item => {
             document.querySelectorAll(item.selector).forEach(el => {
@@ -513,12 +513,18 @@ export function closeAllExpandedItems(config) {
             });
         });
     }
-    
+
     if (config.callbacks) {
         config.callbacks.forEach(fn => {
             if (typeof fn === 'function') fn();
         });
     }
+}
+
+/** Formats a number with commas for readability */
+export function formatCount(count) {
+    if (count === null || count === undefined) return '-';
+    return count.toLocaleString();
 }
 
 /** Renders limit/pagination note */

@@ -108,7 +108,7 @@ export async function renderMetrics(metricsData) {
     tableContainer.style.cssText = 'background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow);';
 
     const headerHtml = `
-        <div style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 2px solid var(--border-color); background: var(--bg-secondary); font-weight: bold; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+        <div class="data-table-header">
             <div style="flex: 0 0 250px;">Name</div>
             <div style="flex: 1; min-width: 150px;">Description</div>
             <div style="flex: 0 0 60px;">Unit</div>
@@ -156,70 +156,70 @@ async function renderMetricLabelsFilters() {
     // Fetch attributes for each metric
     for (const metric of allMetrics) {
         try {
-            const response = await fetch(`/api/metrics/${metric.name}/attributes`);
-            if (response.ok) {
-                const attributes = await response.json();
-                attributes.forEach(attrObj => {
-                    Object.keys(attrObj).forEach(key => {
-                        allAttributeKeys.add(key);
-                        if (!attributeValuesMap.has(key)) {
-                            attributeValuesMap.set(key, new Set());
-                        }
-                        const value = attrObj[key];
-                        if (value !== undefined && value !== null) {
-                            attributeValuesMap.get(key).add(String(value));
-                        }
-                    });
-                });
-            }
-        } catch (error) {
-            console.warn(`Failed to fetch attributes for ${metric.name}:`, error);
-        }
+            const response = await fetch(`/ api / metrics / ${ metric.name }/attributes`);
+    if (response.ok) {
+        const attributes = await response.json();
+        attributes.forEach(attrObj => {
+            Object.keys(attrObj).forEach(key => {
+                allAttributeKeys.add(key);
+                if (!attributeValuesMap.has(key)) {
+                    attributeValuesMap.set(key, new Set());
+                }
+                const value = attrObj[key];
+                if (value !== undefined && value !== null) {
+                    attributeValuesMap.get(key).add(String(value));
+                }
+            });
+        });
+    }
+} catch (error) {
+    console.warn(`Failed to fetch attributes for ${metric.name}:`, error);
+}
     }
 
-    let html = '<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">';
-    html += '<span style="font-weight: 600; font-size: 13px;">Metric Labels:</span>';
+let html = '<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">';
+html += '<span style="font-weight: 600; font-size: 13px;">Metric Labels:</span>';
 
-    // Active filter chips
-    for (const [key, value] of Object.entries(activeAttributeFilters)) {
-        html += `
+// Active filter chips
+for (const [key, value] of Object.entries(activeAttributeFilters)) {
+    html += `
             <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--primary); color: white; border-radius: 16px; font-size: 12px;">
                 <span>${key}: ${value}</span>
                 <button onclick="window.removeMetricLabelFilter('${key}')" style="background: none; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; line-height: 1;">×</button>
             </span>
         `;
-    }
+}
 
-    // Add filter dropdowns for each attribute key
-    if (allAttributeKeys.size > 0) {
-        Array.from(allAttributeKeys).sort().forEach(key => {
-            if (!activeAttributeFilters[key]) {
-                const values = Array.from(attributeValuesMap.get(key) || []).sort();
-                if (values.length > 0) {
-                    html += `
+// Add filter dropdowns for each attribute key
+if (allAttributeKeys.size > 0) {
+    Array.from(allAttributeKeys).sort().forEach(key => {
+        if (!activeAttributeFilters[key]) {
+            const values = Array.from(attributeValuesMap.get(key) || []).sort();
+            if (values.length > 0) {
+                html += `
                         <select id="metric-label-${key}" onchange="window.applyMetricLabelFilter('${key}', this.value)" style="padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); font-size: 12px;">
                             <option value="">${key} (all)</option>
                             ${values.map(v => `<option value="${v}">${v}</option>`).join('')}
                         </select>
                     `;
-                }
             }
-        });
-    } else {
-        html += '<span style="font-size: 12px; color: var(--text-muted);">No metric labels available</span>';
-    }
+        }
+    });
+} else {
+    html += '<span style="font-size: 12px; color: var(--text-muted);">No metric labels available</span>';
+}
 
-    // Clear all button
-    if (Object.keys(activeAttributeFilters).length > 0) {
-        html += `
+// Clear all button
+if (Object.keys(activeAttributeFilters).length > 0) {
+    html += `
             <button onclick="window.clearAllMetricLabelFilters()" style="padding: 4px 10px; background: var(--bg-hover); border: 1px solid var(--border); border-radius: 4px; font-size: 12px; cursor: pointer;">
                 Clear All Filters
             </button>
         `;
-    }
+}
 
-    html += '</div>';
-    filterContainer.innerHTML = html;
+html += '</div>';
+filterContainer.innerHTML = html;
     */
 }
 
@@ -251,26 +251,26 @@ function createMetricRow(metric) {
     const promNote = isPromHistogram ? `<div style="font-size: 10px; color: #f97316; margin-top: 2px;">📊 Prometheus histogram metric (via Remote Write)</div>` : '';
 
     rowDiv.innerHTML = `
-        <div class="metric-header" style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--border-color); font-size: 10px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
+        <div class="metric-header data-table-row">
             <div style="flex: 0 0 250px;">
-                <div style="font-weight: 600; color: var(--text-main); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${metric.name}">${metric.name}</div>
+                <div class="metric-name" title="${metric.name}">${metric.name}</div>
                 ${promNote}
             </div>
-            <div style="flex: 1; min-width: 150px; color: var(--text-muted); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${metric.description || ''}">
+            <div class="text-truncate text-muted" style="flex: 1; min-width: 150px; font-size: 10px;" title="${metric.description || ''}">
                 ${metric.description || '-'}
             </div>
-            <div style="flex: 0 0 60px; color: var(--text-muted); font-size: 10px;">
+            <div class="text-muted" style="flex: 0 0 60px; font-size: 10px;">
                 ${metric.unit || '-'}
             </div>
             <div style="flex: 0 0 80px;">
-                <span style="padding: 1px 5px; border-radius: 4px; font-size: 9px; font-weight: 600; background: ${typeBadge.color}15; color: ${typeBadge.color}; border: 1px solid ${typeBadge.color}30;">
+                <span class="metric-tag" style="background: ${typeBadge.color}15; color: ${typeBadge.color}; border-color: ${typeBadge.color}30;">
                     ${typeBadge.label}
                 </span>
             </div>
-            <div class="metric-resources-link" data-metric-name="${metric.name}" style="flex: 0 0 90px; font-size: 10px; color: var(--primary); cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); window.showMetricResources('${metric.name}', ${metric.resource_count});">
+            <div class="metric-resources-link metric-link" data-metric-name="${metric.name}" style="flex: 0 0 90px;" onclick="event.stopPropagation(); window.showMetricResources('${metric.name}', ${metric.resource_count});">
                 ${metric.resource_count} ${metric.resource_count === 1 ? 'res.' : 'res.'}
             </div>
-            <div class="metric-attributes-link" data-metric-name="${metric.name}" style="flex: 0 0 100px; font-size: 10px; color: var(--primary); cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); window.showMetricAttributes('${metric.name}', ${metric.attribute_combinations});">
+            <div class="metric-attributes-link metric-link" data-metric-name="${metric.name}" style="flex: 0 0 100px;" onclick="event.stopPropagation(); window.showMetricAttributes('${metric.name}', ${metric.attribute_combinations});">
                 ${metric.attribute_combinations} ${metric.attribute_combinations === 1 ? 'attr.' : 'attrs.'}
             </div>
             <div style="flex: 0 0 50px; text-align: center;">

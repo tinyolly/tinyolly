@@ -591,12 +591,15 @@
     .severity-btn[data-severity="ERROR"] {
         color: var(--error-text) !important;
     }
+
     .severity-btn[data-severity="WARN"] {
         color: #f59e0b !important;
     }
+
     .severity-btn[data-severity="INFO"] {
         color: var(--success-text) !important;
     }
+
     .severity-btn[data-severity="DEBUG"] {
         color: #8b5cf6 !important;
     }
@@ -662,9 +665,11 @@
     .status-btn[data-status="2xx"] {
         color: var(--success-text) !important;
     }
+
     .status-btn[data-status="4xx"] {
         color: #f59e0b !important;
     }
+
     .status-btn[data-status="5xx"] {
         color: var(--error-text) !important;
     }
@@ -1131,5 +1136,123 @@
     .map-container {
         background: var(--bg-card) !important;
         border: 1px solid var(--border-color) !important;
+    }
+</style>
+
+<style>
+    /* Utility Classes for JS Refactor */
+    .data-table-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 12px;
+        border-bottom: 2px solid var(--border-color);
+        background: var(--bg-secondary);
+        font-weight: bold;
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .data-table-row {
+        display: flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 10px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .data-table-row:hover {
+        background: var(--bg-hover);
+    }
+
+    .text-truncate {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .text-mono {
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .text-main {
+        color: var(--text-main);
+    }
+
+    .text-muted {
+        color: var(--text-muted);
+    }
+
+    .text-primary {
+        color: var(--primary);
+    }
+
+    .text-success {
+        color: var(--success-text);
+    }
+
+    .text-danger {
+        color: #ef4444;
+    }
+
+    .text-warning {
+        color: #f59e0b;
+    }
+
+    .font-bold {
+        font-weight: 700;
+    }
+
+    .font-semibold {
+        font-weight: 600;
+    }
+
+    .font-medium {
+        font-weight: 500;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .gap-10 {
+        gap: 10px;
+    }
+
+    .gap-15 {
+        gap: 15px;
+    }
+
+    /* Specific Component Styles (from inline) */
+    .metric-name {
+        font-weight: 600;
+        color: var(--text-main);
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .metric-tag {
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 9px;
+        font-weight: 600;
+        border: 1px solid transparent;
+    }
+
+    .metric-link {
+        font-size: 10px;
+        color: var(--primary);
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
+    .bg-hover-on-hover:hover {
+        background: var(--bg-hover);
     }
 </style>
