@@ -1129,6 +1129,45 @@
         font-weight: 600;
     }
 
+    /* Action Buttons */
+    .action-btn {
+        padding: 6px 12px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .action-btn-primary {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+
+    .action-btn-primary:hover {
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
+    }
+
+    .action-btn-secondary {
+        background: var(--bg-secondary);
+        border-color: var(--border-color);
+        color: var(--text-main);
+    }
+
+    .action-btn-secondary:hover {
+        background: var(--bg-hover);
+        border-color: var(--text-muted);
+    }
+
+    .action-btn-dense {
+        padding: 2px 8px;
+        font-size: 11px;
+    }
+
     /* Map Container */
     .map-container {
         background: var(--bg-card) !important;

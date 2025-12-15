@@ -273,7 +273,7 @@ function createMetricRow(metric) {
                 ${metric.attribute_combinations} ${metric.attribute_combinations === 1 ? 'attr.' : 'attrs.'}
             </div>
             <div style="flex: 0 0 80px;">
-                ${renderActionButton(`view-chart-${metric.name.replace(/[^a-zA-Z0-9]/g, '_')}`, 'Chart', 'primary')}
+                ${renderActionButton(`view-chart-${metric.name.replace(/[^a-zA-Z0-9]/g, '_')}`, 'Chart', 'primary', 'dense')}
             </div>
         </div>
         <div class="metric-detail-container" style="display: none; background: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 16px;">

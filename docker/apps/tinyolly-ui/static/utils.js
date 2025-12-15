@@ -193,13 +193,13 @@ export function getSeverityColor(severity) {
 }
 
 /** Renders styled button with primary (blue) or secondary (gray) theme */
-export function renderActionButton(id, label, style = 'secondary') {
+export function renderActionButton(id, label, style = 'secondary', size = 'default') {
     const isPrimary = style === 'primary';
-    const buttonStyle = isPrimary
-        ? 'padding: 6px 12px; cursor: pointer; border: 1px solid var(--primary); background: var(--primary); color: white; border-radius: 4px; font-size: 12px; font-weight: 500;'
-        : 'padding: 6px 12px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-main); border-radius: 4px; font-size: 12px;';
+    const baseClass = 'action-btn';
+    const themeClass = isPrimary ? 'action-btn-primary' : 'action-btn-secondary';
+    const sizeClass = size === 'dense' ? 'action-btn-dense' : '';
 
-    return `<button id="${id}" style="${buttonStyle}">${label}</button>`;
+    return `<button id="${id}" class="${baseClass} ${themeClass} ${sizeClass}">${label}</button>`;
 }
 
 /** Renders empty state with TinyOlly logo and message */
