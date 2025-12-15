@@ -31,11 +31,8 @@ export async function initCollector() {
     // Load templates from API
     await loadTemplates();
 
-    // Fetch the actual running config from the collector (for diff comparison)
-    await fetchRunningConfig();
-
-    // Load default template into the editor
-    await loadTemplate('default');
+    // Load the current running config into the editor
+    await loadCollectorConfig();
 }
 
 /**
