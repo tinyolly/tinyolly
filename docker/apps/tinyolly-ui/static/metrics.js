@@ -252,8 +252,8 @@ function createMetricRow(metric) {
 
     rowDiv.innerHTML = `
         <div class="metric-header data-table-row">
-            <div style="flex: 0 0 250px; display: flex; align-items: center;">
-                <div class="metric-name text-truncate" title="${metric.name}" style="line-height: 1.2;">${metric.name}</div>
+            <div style="flex: 0 0 250px;">
+                <div class="metric-name text-truncate" title="${metric.name}">${metric.name}</div>
             </div>
             <div class="text-truncate text-muted" style="flex: 1; min-width: 150px; font-size: 10px;" title="${metric.description || ''}">
                 ${metric.description || '-'}

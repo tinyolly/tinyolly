@@ -340,9 +340,9 @@ def generate_auto_traffic():
             
             logger.info(f"Auto-traffic: calling {endpoint}")
             
-            # Make internal request using container hostname
             try:
-                response = requests.get(f"http://demo-frontend:5000{endpoint}", timeout=10)
+                # Make internal request using localhost to ensure connection works within pod
+                response = requests.get(f"http://localhost:5000{endpoint}", timeout=10)
                 logger.info(f"Auto-traffic: {endpoint} -> {response.status_code}")
             except Exception as e:
                 logger.warning(f"Auto-traffic request failed: {e}")
