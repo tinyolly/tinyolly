@@ -10,7 +10,7 @@ The metrics table offers a dense, high-information view of all ingested metrics.
 
 Click the **Chart** button to visualize metric data over time:
 
-![Metrics Chart](images/merics2.png)
+![Metrics Chart](images/metrics2.png)
 
 ### Key Columns
 
