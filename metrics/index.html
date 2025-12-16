@@ -12,13 +12,13 @@
         <meta name="author" content="TinyOlly">
       
       
-        <link rel="canonical" href="https://tinyolly.github.io/tinyolly/otel-collector/">
+        <link rel="canonical" href="https://tinyolly.github.io/tinyolly/metrics/">
       
       
-        <link rel="prev" href="../kubernetes/">
+        <link rel="prev" href="..">
       
       
-        <link rel="next" href="../api/">
+        <link rel="next" href="../quickstart/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>OpenTelemetry Collector - TinyOlly Documentation</title>
+        <title>Metrics & Cardinality - TinyOlly Documentation</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#opentelemetry-collector" class="md-skip">
+        <a href="#metrics-cardinality-explorer" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              OpenTelemetry Collector
+              Metrics & Cardinality
             
           </span>
         </div>
@@ -288,8 +288,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -300,13 +302,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -327,7 +327,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -342,10 +342,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../metrics/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics & Cardinality
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -361,6 +388,126 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics Table
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics Table">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Columns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cardinality-explorer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cardinality Explorer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cardinality Explorer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-header-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Header Stats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-label-analysis-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Label Analysis Table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-raw-active-series" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Raw Active Series
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Export Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cardinality-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cardinality Protection
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -404,8 +551,6 @@
       
   
   
-    
-  
   
   
     
@@ -418,11 +563,13 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
@@ -443,7 +590,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -514,37 +661,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OpenTelemetry Collector
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../otel-collector/" class="md-nav__link">
         
   
   
@@ -560,131 +680,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#opentelemetry-collector-opamp-config-page" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpenTelemetry Collector + OpAMP Config Page
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#default-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Default Configuration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#customization-examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Customization Examples
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#applying-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Applying Changes
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Applying Changes">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#docker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docker
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kubernetes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kubernetes
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#using-your-own-collector" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using Your Own Collector
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#opamp-configuration-optional" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpAMP Configuration (Optional)
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -957,77 +952,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#opentelemetry-collector-opamp-config-page" class="md-nav__link">
+  <a href="#metrics-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        OpenTelemetry Collector + OpAMP Config Page
+        Metrics Table
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#default-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Default Configuration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#customization-examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Customization Examples
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#applying-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Applying Changes
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Applying Changes">
+    <nav class="md-nav" aria-label="Metrics Table">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#docker" class="md-nav__link">
+  <a href="#key-columns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Docker
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kubernetes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kubernetes
+        Key Columns
       
     </span>
   </a>
@@ -1040,21 +980,71 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#using-your-own-collector" class="md-nav__link">
+  <a href="#cardinality-explorer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using Your Own Collector
+        Cardinality Explorer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cardinality Explorer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-header-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Header Stats
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#opamp-configuration-optional" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#2-label-analysis-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        OpAMP Configuration (Optional)
+        2. Label Analysis Table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-raw-active-series" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Raw Active Series
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Export Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cardinality-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cardinality Protection
       
     </span>
   </a>
@@ -1081,88 +1071,62 @@
   
 
 
-<h1 id="opentelemetry-collector">OpenTelemetry Collector</h1>
-<div align="center">
-  <img src="../images/logs.png" alt="OpenTelemetry Collector" width="600">
-  <p><em>Logs flowing through the OpenTelemetry Collector to TinyOlly</em></p>
-</div>
-
+<h1 id="metrics-cardinality-explorer">Metrics &amp; Cardinality explorer</h1>
+<p>TinyOlly provides a powerful interface for analyzing OpenTelemetry metrics, with specific tools designed to help you understand the shape and cardinality of your telemetry data.</p>
+<h2 id="metrics-table">Metrics Table</h2>
+<p>The metrics table offers a dense, high-information view of all ingested metrics.</p>
+<p><img alt="Metrics Table" src="../images/metrics.png" /></p>
+<h3 id="key-columns">Key Columns</h3>
+<ul>
+<li><strong>Name</strong>: The full OTel metric name (e.g., <code>http.server.response.size</code>).</li>
+<li><strong>Unit</strong>: The unit of measurement (e.g., <code>By</code>, <code>ms</code>).</li>
+<li><strong>Type</strong>: The metric type (Histogram, Sum, Gauge, etc.).</li>
+<li><strong>Resources</strong>: Click to view the unique resource combinations associated with this metric.</li>
+<li><strong>Cardinality</strong>: Shows the number of label dimensions vs the total number of unique time series (e.g., <code>8 labels / 185 series</code>).</li>
+</ul>
 <hr />
-<p>TinyOlly uses the <a href="https://opentelemetry.io/docs/collector/">OpenTelemetry Collector</a> as the telemetry ingestion and shipping layer. The collector receives telemetry from your applications and forwards it to TinyOlly's OTLP receiver.</p>
-<h2 id="opentelemetry-collector-opamp-config-page">OpenTelemetry Collector + OpAMP Config Page</h2>
-<p>TinyOlly includes a web interface for managing OpenTelemetry Collector configurations via the OpAMP (Open Agent Management Protocol). Access this page through the <strong>"OpenTelemetry Collector + OpAMP Config"</strong> tab in the TinyOlly UI.</p>
-<p><strong>Features:</strong>
-- View current configuration from connected collectors
-- Apply configuration changes with real-time validation
-- Browse configuration templates for common use cases
-- Monitor OpAMP server status and connected agents
-- Preview configuration diffs before applying</p>
-<p><strong>Requirements:</strong>
-- Your collector must be configured with the OpAMP extension (see <a href="#opamp-configuration-optional">OpAMP Configuration</a> below)
-- Collector must be connected to the OpAMP server</p>
-<h2 id="configuration">Configuration</h2>
-<p>TinyOlly includes a sample collector configuration that you can customize for your needs. The configuration files are located at:</p>
+<h2 id="cardinality-explorer">Cardinality Explorer</h2>
+<p>Clicking on the blue <strong>Cardinality</strong> link for any metric opens the <strong>Cardinality Explorer</strong>. This tool is essential for understanding "high cardinality" issues and exploring your data's dimensions.</p>
+<h3 id="1-header-stats">1. Header Stats</h3>
 <ul>
-<li><strong>Docker</strong>: <code>docker/otelcol-configs/config.yaml</code></li>
-<li><strong>Kubernetes</strong>: <code>k8s/otel-collector-config.yaml</code></li>
+<li><strong>Total Series (Historic)</strong>: The total number of unique time series seen for this metric since startup (persisted in Redis).</li>
+<li><strong>Active Series (1h)</strong>: The count of series seen in the last hour.</li>
+<li><strong>Label Dimensions</strong>: The number of unique label keys (e.g., <code>http.method</code>, <code>http.status_code</code>).</li>
 </ul>
-<h2 id="default-configuration">Default Configuration</h2>
-<p>The default configuration includes:</p>
+<h3 id="2-label-analysis-table">2. Label Analysis Table</h3>
+<p>This table helps you identify which labels are contributing most to your cardinality.</p>
 <ul>
-<li><strong>OTLP Receivers</strong>: Accepts telemetry on ports 4317 (gRPC) and 4318 (HTTP)</li>
-<li><strong>OpAMP Extension</strong>: Enables remote configuration management via TinyOlly UI</li>
-<li><strong>Span Metrics Connector</strong>: Automatically generates RED metrics from traces</li>
-<li><strong>Batch Processor</strong>: Batches telemetry for efficient processing</li>
-<li><strong>OTLP Exporter</strong>: Forwards all telemetry to TinyOlly's OTLP receiver</li>
+<li><strong>Label Name</strong>: The key of the label.</li>
+<li><strong>Cardinality</strong>: The number of unique values for this label.</li>
+<li><strong>Values (Top 5)</strong>: A preview of the most common values.<ul>
+<li>If there are more than 5 values, a clickable <strong><code>...</code></strong> link expands the list to show all values inline.</li>
 </ul>
-<h2 id="customization-examples">Customization Examples</h2>
-<p>You can extend the collector configuration to add additional capabilities. The collector uses the <code>otel/opentelemetry-collector-contrib</code> image which includes:</p>
-<ul>
-<li><strong>Receivers</strong>: OTLP, Prometheus, Jaeger, Zipkin, and many more</li>
-<li><strong>Processors</strong>: Batch, Memory Limiter, Resource Detection, Tail Sampling, Filtering</li>
-<li><strong>Connectors</strong>: Span Metrics, Service Graph</li>
-<li><strong>Exporters</strong>: OTLP, Prometheus, Logging, and many more</li>
+</li>
 </ul>
-<p>For a complete list of available components, see the <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib">OpenTelemetry Collector Contrib documentation</a>.</p>
-<h2 id="applying-changes">Applying Changes</h2>
-<h3 id="docker">Docker</h3>
-<p>After modifying <code>docker/otelcol-configs/config.yaml</code> rebuild/restart using:<br />
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./01-start-core.sh
-</code></pre></div></p>
-<h3 id="kubernetes">Kubernetes</h3>
-<p>After modifying <code>k8s/otel-collector-config.yaml</code>: rebuild/restart using:<br />
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>k8s/otel-collector-config.yaml
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment/otel-collector
-</code></pre></div></p>
-<h2 id="using-your-own-collector">Using Your Own Collector</h2>
-<p>You can use your own OpenTelemetry Collector instance instead of the one bundled with TinyOlly. This is useful if you have an existing collector setup or want to test specific collector configurations.</p>
-<p>To do this, deploy the <strong>Core-Only</strong> version of TinyOlly (see <a href="../docker/#5-tinyolly-core-only-deployment-use-your-own-docker-opentelemetry-collector">Docker Deployment</a> or <a href="../kubernetes/#4-tinyolly-core-only-deployment-use-your-own-kubernetes-opentelemetry-collector">Kubernetes Deployment</a>).</p>
-<p>Then, configure your collector's OTLP exporter to send data to the TinyOlly Receiver:</p>
-<ul>
-<li><strong>Endpoint</strong>: <code>tinyolly-otlp-receiver:4343</code> (or <code>localhost:4343</code> from host)</li>
-<li><strong>Protocol</strong>: gRPC</li>
-<li><strong>TLS</strong>: Insecure (or configured as needed)</li>
-</ul>
-<p>Example Exporter Configuration:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">exporters</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">otlp</span><span class="p">:</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tinyolly-otlp-receiver:4343&quot;</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">tls</span><span class="p">:</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">insecure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</code></pre></div></p>
-<h2 id="opamp-configuration-optional">OpAMP Configuration (Optional)</h2>
-<p>The <strong>OpenTelemetry Collector + OpAMP Config</strong> page in the TinyOlly UI allows you to view and manage collector configurations remotely. To enable this feature, add the OpAMP extension to your collector config:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">extensions</span><span class="p">:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">opamp</span><span class="p">:</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">server</span><span class="p">:</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="nt">ws</span><span class="p">:</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">        </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ws://localhost:4320/v1/opamp</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="nt">service</span><span class="p">:</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nt">extensions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">opamp</span><span class="p p-Indicator">]</span>
+<h3 id="3-raw-active-series">3. Raw Active Series</h3>
+<p>A scrollable view of all active series in a PromQL-like syntax:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span><span class="err">container.</span><span class="nl">id</span><span class="o">=</span><span class="p">&quot;</span><span class="s">...</span><span class="p">&quot;,</span><span class="w"> </span><span class="err">http.</span><span class="nl">method</span><span class="o">=</span><span class="p">&quot;</span><span class="s">GET</span><span class="p">&quot;,</span><span class="w"> </span><span class="err">http.</span><span class="nl">route</span><span class="o">=</span><span class="p">&quot;</span><span class="s">/api/traces</span><span class="p">&quot;,</span><span class="w"> </span><span class="err">http.</span><span class="nl">status_code</span><span class="o">=</span><span class="p">&quot;</span><span class="s">200</span><span class="p">&quot;,</span><span class="w"> </span><span class="err">service.</span><span class="nl">name</span><span class="o">=</span><span class="p">&quot;</span><span class="s">tinyolly-ui</span><span class="p">&quot;}</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="p">{</span><span class="err">container.</span><span class="nl">id</span><span class="o">=</span><span class="p">&quot;</span><span class="s">...</span><span class="p">&quot;,</span><span class="w"> </span><span class="err">http.</span><span class="nl">method</span><span class="o">=</span><span class="p">&quot;</span><span class="s">GET</span><span class="p">&quot;,</span><span class="w"> </span><span class="err">http.</span><span class="nl">route</span><span class="o">=</span><span class="p">&quot;</span><span class="s">/health</span><span class="p">&quot;,</span><span class="w"> </span><span class="err">http.</span><span class="nl">status_code</span><span class="o">=</span><span class="p">&quot;</span><span class="s">200</span><span class="p">&quot;,</span><span class="w"> </span><span class="err">service.</span><span class="nl">name</span><span class="o">=</span><span class="p">&quot;</span><span class="s">tinyolly-ui</span><span class="p">&quot;}</span>
 </code></pre></div>
-<p>The default configuration template (located at <code>docker/otelcol-configs/config.yaml</code>) shows a complete example with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.</p>
+<h3 id="export-actions">Export Actions</h3>
+<p>Use the buttons in the "Raw Active Series" section to export data for offline analysis:</p>
+<ul>
+<li><strong>Copy PromQL</strong>: Copies the visible series list to your clipboard.</li>
+<li><strong>Download JSON</strong>: Downloads the full series object as a JSON file.</li>
+</ul>
+<hr />
+<h2 id="cardinality-protection">Cardinality Protection</h2>
+<p>TinyOlly includes built-in protection against cardinality explosions to prevent memory exhaustion during local development.</p>
+<ul>
+<li><strong>Hard Limit</strong>: 1000 unique metric names (configurable).</li>
+<li><strong>Visual Warnings</strong>: <ul>
+<li>⚠️ <strong>Yellow</strong>: &gt; 70% capacity</li>
+<li>🔴 <strong>Red</strong>: &gt; 90% capacity</li>
+</ul>
+</li>
+<li><strong>Behavior</strong>: Metrics exceeding the limit are dropped, and a system alert is triggered.</li>
+</ul>
+<p>See <a href="../CARDINALITY-PROTECTION/">Cardinality Protection</a> for more details.</p>
 
 
 
