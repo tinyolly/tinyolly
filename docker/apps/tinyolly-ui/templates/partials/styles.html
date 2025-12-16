@@ -17,7 +17,9 @@
         --error-text: #991b1b;
         --info-bg: #dbeafe;
         --info-text: #1e40af;
+        --info-text: #1e40af;
         --text-brand: #0000AA;
+        --text-pause-btn: #0000AA;
         --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     }
 
@@ -39,7 +41,9 @@
         --error-text: #fca5a5;
         --info-bg: #1e3a8a;
         --info-text: #93c5fd;
+        --info-text: #93c5fd;
         --text-brand: #93c5fd;
+        --text-pause-btn: #ffffff;
         --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
     }
 
@@ -216,6 +220,25 @@
 
     .tab-content.active {
         display: block;
+    }
+
+    .pause-btn {
+        padding: 6px 12px;
+        font-size: 14px;
+        background: var(--primary);
+        border: none;
+        border-radius: 6px;
+        color: #ffffff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        transition: background 0.2s, transform 0.1s;
+    }
+
+    .pause-btn:hover {
+        background: var(--primary-hover);
     }
 
     /* Traces View */

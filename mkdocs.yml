@@ -56,8 +56,6 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Features:
-      - Metrics & Cardinality: metrics.md
   - Quick Start: quickstart.md
   - Deployment:
       - Docker: docker.md

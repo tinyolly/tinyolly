@@ -5,5 +5,11 @@
     <button class="tab" onclick="switchTab('spans', this)" data-tab="spans">Spans</button>
     <button class="tab" onclick="switchTab('catalog', this)" data-tab="catalog">APM Service Catalog</button>
     <button class="tab" onclick="switchTab('map', this)" data-tab="map">APM Service Map</button>
-    <button class="tab" onclick="switchTab('collector', this)" data-tab="collector">OpenTelemetry Collector + OpAMP Config</button>
+    <button class="tab" onclick="switchTab('collector', this)" data-tab="collector">OpenTelemetry Collector + OpAMP
+        Config</button>
+    <div style="margin-left: auto; display: flex; align-items: center; padding-bottom: 0;">
+        <button onclick="toggleAutoRefresh()" title="Pause auto-refresh" id="auto-refresh-btn" class="pause-btn">
+            <span id="refresh-icon">⏸</span>
+        </button>
+    </div>
 </div>
