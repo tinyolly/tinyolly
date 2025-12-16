@@ -60,10 +60,13 @@
 
         <div class="config-editor-container">
             <div class="config-status" id="config-status"></div>
-            <textarea id="collector-config-editor"
-                      class="config-editor"
-                      spellcheck="false"
-                      placeholder="Loading collector configuration..."></textarea>
+            <div class="config-editor-wrapper">
+                <div id="collector-line-numbers" class="line-numbers">1</div>
+                <textarea id="collector-config-editor"
+                          class="config-editor"
+                          spellcheck="false"
+                          placeholder="Loading collector configuration..."></textarea>
+            </div>
         </div>
     </div>
 
@@ -316,13 +319,44 @@
 
 .config-editor-container {
     position: relative;
+    /* Remove overflow here to let wrapper handle it */
+}
+
+.config-editor-wrapper {
+    display: flex;
+    flex-direction: row;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-body);
+    height: 500px;
+    max-height: 70vh;
     overflow: hidden;
+}
+
+.line-numbers {
+    width: 48px;
+    background: var(--bg-hover);
+    border-right: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 12px 8px;
+    text-align: right;
+    user-select: none; /* Key requirement */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    overflow: hidden;
+    white-space: pre;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .config-status {
     position: absolute;
     top: 8px;
-    right: 8px;
+    right: 28px; /* Move left to avoid scrollbar overlap */
     z-index: 10;
     font-size: 11px;
     padding: 4px 8px;
@@ -349,27 +383,26 @@
 }
 
 .config-editor {
+    flex: 1;
     width: 100%;
-    height: 500px;
-    max-height: 70vh;
+    height: 100%;
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     line-height: 1.5;
     padding: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--bg-body);
+    border: none;
+    background: transparent;
     color: var(--text-main);
     resize: none;
     overflow-y: auto;
     tab-size: 2;
     display: block;
+    box-sizing: border-box;
 }
 
 .config-editor:focus {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    /* Focus outline on wrapper if needed, or just none */
 }
 
 .config-validation {

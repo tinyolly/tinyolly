@@ -24,6 +24,11 @@ export async function initCollector() {
             editor.addEventListener('keydown', handleEditorKeydown);
             // Add real-time validation
             editor.addEventListener('input', debounce(() => validateConfig(), 500));
+            // Add line numbers and scrolling support
+            editor.addEventListener('input', updateLineNumbers);
+            editor.addEventListener('scroll', syncEditorScroll);
+            // Initial render
+            updateLineNumbers();
             collectorInitialized = true;
         }
     }
@@ -225,6 +230,7 @@ export async function loadCollectorConfig() {
 
         if (data.config) {
             editor.value = data.config;
+            updateLineNumbers();
             currentConfig = data.config;
             setConfigStatus('success', 'Loaded');
             setTimeout(() => setConfigStatus(''), 2000);
@@ -280,12 +286,12 @@ function computeDiff(oldConfig, newConfig) {
     const safeNewConfig = newConfig || '';
     const oldLines = safeOldConfig.split('\n');
     const newLines = safeNewConfig.split('\n');
-    
+
     // Simple line-by-line diff algorithm
     const diff = [];
     let oldIndex = 0;
     let newIndex = 0;
-    
+
     while (oldIndex < oldLines.length || newIndex < newLines.length) {
         if (oldIndex >= oldLines.length) {
             // Only new lines left
@@ -315,7 +321,7 @@ function computeDiff(oldConfig, newConfig) {
                     break;
                 }
             }
-            
+
             if (!foundMatch) {
                 // Check if old line appears later in new config
                 let foundOld = false;
@@ -330,7 +336,7 @@ function computeDiff(oldConfig, newConfig) {
                         break;
                     }
                 }
-                
+
                 if (!foundOld) {
                     // Lines are different - mark as removed and added
                     diff.push({ type: 'removed', line: oldLines[oldIndex] });
@@ -341,7 +347,7 @@ function computeDiff(oldConfig, newConfig) {
             }
         }
     }
-    
+
     return diff;
 }
 
@@ -362,10 +368,10 @@ function renderDiff(diff) {
         diffContent.innerHTML = '<div class="diff-no-changes">No changes detected</div>';
         return;
     }
-    
+
     let html = '';
     let hasChanges = false;
-    
+
     for (const item of diff) {
         if (item.type === 'context') {
             html += `<div class="diff-line context">${escapeHtml(item.line)}</div>`;
@@ -374,7 +380,7 @@ function renderDiff(diff) {
             html += `<div class="diff-line ${item.type}">${escapeHtml(item.line)}</div>`;
         }
     }
-    
+
     if (!hasChanges) {
         diffContent.innerHTML = '<div class="diff-no-changes">No changes detected</div>';
     } else {
@@ -411,7 +417,7 @@ function formatValidationErrors(errors) {
             const maxDisplay = 8;
             const displayValues = error.valid_values.slice(0, maxDisplay);
             const remaining = error.total_valid - maxDisplay;
-            
+
             html += '<div class="error-hint">Valid options: ';
             // Display as comma-separated list with better spacing
             html += `<code>${displayValues.map(v => escapeHtml(v)).join(', ')}</code>`;
@@ -434,16 +440,16 @@ function formatValidationErrors(errors) {
 export async function showConfigDiff() {
     const editor = document.getElementById('collector-config-editor');
     if (!editor) return;
-    
+
     const newConfig = editor.value;
-    
+
     // Validate first
     const isValid = await validateConfig();
     if (!isValid) {
         setConfigStatus('error', 'Invalid YAML');
         return;
     }
-    
+
     // Always fetch the latest running config from the collector for accurate diff
     try {
         const response = await fetch('/api/opamp/config');
@@ -460,14 +466,14 @@ export async function showConfigDiff() {
 
     // If still no current config, use empty string
     const oldConfig = currentConfig || '';
-    
+
     // Compute and render diff
     const diff = computeDiff(oldConfig, newConfig);
     renderDiff(diff);
-    
+
     // Store pending config
     pendingConfig = newConfig;
-    
+
     // Show modal
     const modal = document.getElementById('config-diff-modal');
     if (modal) {
@@ -504,6 +510,7 @@ export async function confirmApplyConfig() {
     const editor = document.getElementById('collector-config-editor');
     if (editor) {
         editor.value = configToApply;
+        updateLineNumbers();
     }
 
     // Now apply it
@@ -525,7 +532,7 @@ async function applyCollectorConfigDirect(config) {
     try {
         const payload = { config };
         console.log('Sending config update request, config length:', config.length);
-        
+
         const response = await fetch('/api/opamp/config', {
             method: 'POST',
             headers: {
@@ -544,7 +551,7 @@ async function applyCollectorConfigDirect(config) {
                 const contentType = response.headers.get('content-type');
                 if (contentType && contentType.includes('application/json')) {
                     const errorData = await response.json();
-                    
+
                     // Handle FastAPI validation errors (422) - detail is an array
                     if (response.status === 422 && Array.isArray(errorData.detail)) {
                         const validationErrors = errorData.detail.map(err => {
@@ -589,8 +596,8 @@ async function applyCollectorConfigDirect(config) {
             throw new Error('Empty response from server');
         }
 
-        const affectedCount = (data.affected_instance_ids && Array.isArray(data.affected_instance_ids)) 
-            ? data.affected_instance_ids.length 
+        const affectedCount = (data.affected_instance_ids && Array.isArray(data.affected_instance_ids))
+            ? data.affected_instance_ids.length
             : 0;
         setConfigStatus('success', `Applied to ${affectedCount} agent(s)`);
         currentConfig = config;
@@ -606,7 +613,7 @@ async function applyCollectorConfigDirect(config) {
         console.error('Error type:', typeof error);
         console.error('Error constructor:', error?.constructor?.name);
         console.error('Error keys:', error ? Object.keys(error) : 'N/A');
-        
+
         // Extract error message properly - handle various error object types
         let errorMessage = 'Unknown error';
         if (error instanceof Error) {
@@ -628,7 +635,7 @@ async function applyCollectorConfigDirect(config) {
         } else {
             errorMessage = String(error);
         }
-        
+
         setConfigStatus('error', `Failed: ${errorMessage}`);
     }
 }
@@ -648,7 +655,7 @@ export async function applyCollectorConfig() {
         setConfigStatus('error', 'Invalid YAML');
         return;
     }
-    
+
     // Show diff first, then user can confirm
     await showConfigDiff();
 }
@@ -800,6 +807,7 @@ export async function loadTemplate(templateId) {
         const data = await response.json();
         if (data.config) {
             editor.value = data.config;
+            updateLineNumbers();
             // Do NOT update currentConfig here - it should only reflect the running config
             await validateConfig();
             setConfigStatus('success', `Loaded "${templateId}" template`);
@@ -822,3 +830,33 @@ window.showConfigDiff = showConfigDiff;
 window.closeConfigDiff = closeConfigDiff;
 window.confirmApplyConfig = confirmApplyConfig;
 window.loadTemplate = loadTemplate;
+
+/**
+ * Update line numbers based on editor content
+ */
+function updateLineNumbers() {
+    const editor = document.getElementById('collector-config-editor');
+    const lineNumbers = document.getElementById('collector-line-numbers');
+    if (!editor || !lineNumbers) return;
+
+    const lines = editor.value.split('\n').length;
+
+    // Create text content like "1\n2\n3..."
+    const linesText = Array.from({ length: lines }, (_, i) => i + 1).join('\n');
+
+    // Only update if different to verify DOM unnecessary updates
+    if (lineNumbers.textContent !== linesText) {
+        lineNumbers.textContent = linesText;
+    }
+}
+
+/**
+ * Sync scroll between editor and line numbers
+ */
+function syncEditorScroll() {
+    const editor = document.getElementById('collector-config-editor');
+    const lineNumbers = document.getElementById('collector-line-numbers');
+    if (editor && lineNumbers) {
+        lineNumbers.scrollTop = editor.scrollTop;
+    }
+}
