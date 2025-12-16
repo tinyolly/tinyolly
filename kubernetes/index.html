@@ -1016,7 +1016,7 @@ Use the Kubernetes service name:<br />
 <li>
 <p><strong>Clean Up:</strong></p>
 <p>Use the cleanup script to remove all TinyOlly resources:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./k8s/01-cleanup.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./k8s/03-cleanup.sh
 </code></pre></div>
 <p>Shut down Minikube:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>minikube<span class="w"> </span>stop
@@ -1030,13 +1030,13 @@ Use the Kubernetes service name:<br />
 <h2 id="2-demo-applications-optional">2. Demo Applications (Optional)</h2>
 <p>To see TinyOlly in action with instrumented microservices:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-demo
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>./01-deploy.sh
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>./02-deploy.sh
 </code></pre></div>
 <p>The deploy script automatically builds the demo images if needed. To manually rebuild images:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>./00-build-images.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>./01-build-images.sh
 </code></pre></div></p>
 <p>To clean up the demo:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>./02-cleanup.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>./03-cleanup.sh
 </code></pre></div></p>
 <p>The demo includes two microservices that automatically generate traffic, showcasing distributed tracing across service boundaries.</p>
 <hr />
@@ -1067,7 +1067,7 @@ Use the Kubernetes service name:<br />
 <li>
 <p><strong>Deploy Core:</strong>
     <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nb">cd</span><span class="w"> </span>k8s-core-only
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>./deploy.sh
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>./01-deploy.sh
 </code></pre></div></p>
 </li>
 <li>
@@ -1076,7 +1076,7 @@ Use the Kubernetes service name:<br />
 </li>
 <li>
 <p><strong>Cleanup:</strong>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>./cleanup.sh
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>./02-cleanup.sh
 </code></pre></div></p>
 </li>
 </ol>
