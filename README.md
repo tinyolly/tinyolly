@@ -108,19 +108,39 @@ Two Flask microservices with automatic traffic generation. Wait 30 seconds for t
 
 ---
 
-### 3. OpenTelemetry Demo (~20 Services - Optional)
+### 3. AI Agent Demo with Ollama (Optional)
+
+Deploy an AI agent demo with zero-code OpenTelemetry auto-instrumentation:
+
+```bash
+cd docker-ai-agent-demo
+./01-deploy-ai-demo.sh
+```
+
+This starts:
+- **Ollama** with TinyLlama model for local LLM inference
+- **AI Agent** with automatic GenAI span instrumentation via `opentelemetry-instrumentation-ollama`
+
+View AI traces in the **AI Agents** tab - see prompts, responses, token usage (in/out), and latency for each LLM call.
+
+**Stop:** `./02-stop-ai-demo.sh`
+**Cleanup (remove volumes):** `./03-cleanup-ai-demo.sh`
+
+---
+
+### 4. OpenTelemetry Demo (~20 Services - Optional)
 
 Clone and configure the [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) to route telemetry to TinyOlly. Edit `src/otel-collector/otelcol-config-extras.yml` to add TinyOlly as an exporter, then deploy with built-in observability tools disabled.
 
 ---
 
-### 4. Use TinyOlly with Your Own Apps
+### 5. Use TinyOlly with Your Own Apps
 
 Point your OpenTelemetry exporter to:
 - **gRPC**: `http://otel-collector:4317`
 - **HTTP**: `http://otel-collector:4318`
 
-### 5. Core-Only Deployment (Use Your Own OTel Collector)
+### 6. Core-Only Deployment (Use Your Own OTel Collector)
 
 ```bash
 cd docker-core-only
@@ -206,6 +226,15 @@ cd k8s-core-only
 - Distributed trace waterfall with correlated logs
 - Metric cardinality protection with visual warnings
 - OpAMP-based OpenTelemetry Collector configuration management
+- AI Agents tab for GenAI observability
+
+### AI Agents
+- View LLM calls with prompts, responses, and token usage
+- Zero-code auto-instrumentation via OpenTelemetry GenAI semantic conventions
+- Token tracking (input/output) with visual indicators
+- Latency monitoring per LLM call
+- Click-to-expand JSON span details
+- Supports any OpenTelemetry-instrumented LLM (Ollama, OpenAI, etc.)
 
 
 ### Metrics

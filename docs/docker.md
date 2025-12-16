@@ -65,7 +65,47 @@ cd docker
 
 ---
 
-## 3. OpenTelemetry Demo (~20 Services - Optional)
+## 3. AI Agent Demo with Ollama (Optional)
+
+Deploy an AI agent demo with zero-code OpenTelemetry auto-instrumentation for GenAI:
+
+```bash
+cd docker-ai-agent-demo
+./01-deploy-ai-demo.sh
+```
+
+!!! note
+    First run will pull the Ollama image and TinyLlama model (~1.5GB total). This may take a few minutes.
+
+This starts:
+- **Ollama**: Local LLM server with TinyLlama model (`http://localhost:11434`)
+- **AI Agent**: Python agent making LLM calls every 15 seconds, auto-instrumented with `opentelemetry-instrumentation-ollama`
+
+**View AI Traces:** Navigate to the **AI Agents** tab in TinyOlly UI to see:
+
+- Prompts and responses for each LLM call
+- Token usage (input ↓ / output ↑) with color coding
+- Latency per request
+- Click any row to expand the full span JSON
+
+**Watch agent logs:**
+```bash
+docker-compose logs -f ai-agent
+```
+
+**Stop AI demo:**
+```bash
+./02-stop-ai-demo.sh
+```
+
+**Cleanup (remove Ollama model volumes):**
+```bash
+./03-cleanup-ai-demo.sh
+```
+
+---
+
+## 4. OpenTelemetry Demo (~20 Services - Optional)
 
 **Prerequisites:** Clone the OpenTelemetry Demo first:
 ```bash
@@ -109,7 +149,7 @@ docker compose down
 
 ---
 
-## 4. Use TinyOlly with Your Own Apps
+## 5. Use TinyOlly with Your Own Apps
 
 After deploying TinyOlly core (step 1 above), instrument your application to send telemetry:
 
@@ -130,7 +170,7 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 
 The Otel Collector will forward everything to TinyOlly's OTLP receiver, which process telemetry and stores it in Redis in OTEL format for the backend and UI to access.
 
-## 5. TinyOlly **Core-Only** Deployment: Use Your Own Docker OpenTelemetry Collector
+## 6. TinyOlly **Core-Only** Deployment: Use Your Own Docker OpenTelemetry Collector
 
 If you already have an OpenTelemetry Collector or want to send telemetry directly to the TinyOlly Receiver, you can deploy the core components without the bundled OTel Collector.
 

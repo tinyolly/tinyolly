@@ -96,11 +96,12 @@ function renderAISessions() {
     // Build table header using shared utility (like logs.js)
     const headerRow = renderTableHeader([
         { label: 'Time', flex: '0 0 100px' },
-        { label: 'Session', flex: '0 0 100px' },
-        { label: 'Model', flex: '0 0 100px' },
-        { label: 'Prompt', flex: '1; min-width: 200px' },
+        { label: 'Session', flex: '0 0 80px' },
+        { label: 'Model', flex: '0 0 90px' },
+        { label: 'Prompt', flex: '1; min-width: 150px' },
+        { label: 'Response', flex: '1; min-width: 150px' },
         { label: 'Tokens', flex: '0 0 100px' },
-        { label: 'Latency', flex: '0 0 80px' }
+        { label: 'Latency', flex: '0 0 70px' }
     ]);
 
     // Build rows using data-table-row pattern (like logs.js)
@@ -117,14 +118,17 @@ function renderAISessions() {
 
         const model = modelSpan ? getAttr(modelSpan.attributes, 'gen_ai.request.model') : 'Unknown';
 
-        // Get prompt
+        // Get prompt and response
         let prompt = '';
-        const promptSpan = session.spans.find(s =>
+        let response = '';
+        const aiSpan = session.spans.find(s =>
             getAttr(s.attributes, 'gen_ai.prompt') || getAttr(s.attributes, 'gen_ai.prompt.0.content')
         );
-        if (promptSpan) {
-            prompt = getAttr(promptSpan.attributes, 'gen_ai.prompt') ||
-                     getAttr(promptSpan.attributes, 'gen_ai.prompt.0.content') || '';
+        if (aiSpan) {
+            prompt = getAttr(aiSpan.attributes, 'gen_ai.prompt') ||
+                     getAttr(aiSpan.attributes, 'gen_ai.prompt.0.content') || '';
+            response = getAttr(aiSpan.attributes, 'gen_ai.completion') ||
+                       getAttr(aiSpan.attributes, 'gen_ai.completion.0.content') || '';
         }
 
         // Tokens
@@ -142,11 +146,12 @@ function renderAISessions() {
         return `
             <div class="ai-session-row data-table-row" data-session-index="${index}" data-trace-id="${traceId}">
                 <div class="text-mono" style="flex: 0 0 100px;">${startTime}</div>
-                <div class="text-mono" style="flex: 0 0 100px; color: var(--primary); cursor: pointer;" title="${traceId}">${sessionId}</div>
-                <div style="flex: 0 0 100px;"><span class="badge badge-model">${escapeHtml(model)}</span></div>
-                <div class="text-main text-truncate" style="flex: 1; min-width: 200px;" title="${escapeHtml(prompt)}">${escapeHtml(truncate(prompt, 80))}</div>
-                <div class="text-mono" style="flex: 0 0 100px;">${inputTokens} / ${outputTokens}</div>
-                <div class="text-mono" style="flex: 0 0 80px;">${latency.toFixed(2)}s</div>
+                <div class="text-mono" style="flex: 0 0 80px; color: var(--primary); cursor: pointer;" title="${traceId}">${sessionId}</div>
+                <div style="flex: 0 0 90px;"><span class="badge badge-model">${escapeHtml(model)}</span></div>
+                <div class="text-main text-truncate" style="flex: 1; min-width: 150px;" title="${escapeHtml(prompt)}">${escapeHtml(truncate(prompt, 60))}</div>
+                <div class="text-main text-truncate" style="flex: 1; min-width: 150px;" title="${escapeHtml(response)}">${escapeHtml(truncate(response, 60))}</div>
+                <div class="text-mono" style="flex: 0 0 100px;"><span style="color: var(--success-text);">${inputTokens}↓</span> <span style="color: var(--primary);">${outputTokens}↑</span></div>
+                <div class="text-mono" style="flex: 0 0 70px;">${latency.toFixed(2)}s</div>
             </div>
         `;
     }).join('');

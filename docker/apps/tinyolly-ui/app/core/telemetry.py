@@ -2,6 +2,7 @@
 
 import os
 import logging
+import sys
 from opentelemetry import metrics
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
@@ -11,6 +12,7 @@ from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
 from ..config import settings
 
@@ -19,30 +21,40 @@ def setup_telemetry():
     """Configure OpenTelemetry metrics and logging"""
     # Create resource with service name
     resource = Resource.create({"service.name": settings.otel_service_name})
-    
+
     # Set up OTLP metric exporter
     metric_exporter = OTLPMetricExporter(
         endpoint=settings.otel_exporter_otlp_metrics_endpoint
     )
-    
+
     # Configure metric reader with 60s export interval
     metric_reader = PeriodicExportingMetricReader(metric_exporter, export_interval_millis=60000)
     meter_provider = MeterProvider(metric_readers=[metric_reader], resource=resource)
     metrics.set_meter_provider(meter_provider)
-    
+
     # Set up OTLP log exporter
     log_exporter = OTLPLogExporter(
         endpoint=settings.otel_exporter_otlp_logs_endpoint
     )
-    
+
     # Configure logger provider with batch processor
     logger_provider = LoggerProvider(resource=resource)
     logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
     set_logger_provider(logger_provider)
-    
-    # Add OTLP handler to root logger
-    handler = LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider)
-    logging.getLogger().addHandler(handler)
+
+    # Add OTLP handler to root logger - this sends logs to OTLP
+    otlp_handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
+    root_logger = logging.getLogger()
+    root_logger.addHandler(otlp_handler)
+
+    # Also add handler to uvicorn loggers to capture HTTP requests
+    for logger_name in ['uvicorn', 'uvicorn.access', 'uvicorn.error']:
+        uv_logger = logging.getLogger(logger_name)
+        uv_logger.addHandler(otlp_handler)
+
+    # Initialize LoggingInstrumentor AFTER logger provider is set up
+    # This injects trace_id and span_id into log records
+    LoggingInstrumentor().instrument(set_logging_format=False)
     
     # Create meter for tinyolly-ui
     meter = metrics.get_meter("tinyolly-ui")

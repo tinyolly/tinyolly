@@ -2,12 +2,6 @@
     <div id="ai-agents-list-view">
         <div class="logs-controls">
             <input type="text" id="ai-search" placeholder="Search sessions (ID, model, prompt)">
-            <div class="status-filters">
-                <button class="status-btn active" data-model="all" onclick="filterAIByModel('all')">All Models</button>
-                <button class="status-btn" data-model="tinyllama" onclick="filterAIByModel('tinyllama')">TinyLlama</button>
-                <button class="status-btn" data-model="llama" onclick="filterAIByModel('llama')">Llama</button>
-                <button class="status-btn" data-model="mistral" onclick="filterAIByModel('mistral')">Mistral</button>
-            </div>
             <button onclick="refreshAIView()">Refresh</button>
         </div>
 

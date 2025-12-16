@@ -129,8 +129,17 @@ export function startAutoRefresh() {
             loadServiceCatalog();
         } else if (currentTab === 'map') {
             loadServiceMap();
-        } else if (currentTab === 'ai-agents' && !document.getElementById('ai-detail-view').style.display.includes('block')) {
-            import('./aiAgents.js').then(module => module.loadAISessions());
+        } else if (currentTab === 'ai-agents') {
+            import('./aiAgents.js').then(module => {
+                // Don't refresh if JSON view is open or detail view is open
+                if (module.isAISessionJsonOpen && module.isAISessionJsonOpen()) {
+                    return;
+                }
+                if (document.getElementById('ai-detail-view').style.display.includes('block')) {
+                    return;
+                }
+                module.loadAISessions();
+            });
         }
         // Don't auto-refresh collector tab - user is editing config
 
