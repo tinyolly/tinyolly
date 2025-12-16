@@ -1294,8 +1294,8 @@
 <p>Open your browser to: <strong><code>http://localhost:5005</code></strong></p>
 <p>You should see:</p>
 <div align="center">
-  <img src="../images/traces.png" alt="TinyOlly Traces View" width="600">
-  <p><em>Distributed traces view with service correlation</em></p>
+  <img src="images/traces.png" alt="TinyOlly Traces View" width="700">
+  <p><em>Trace waterfall with correlated logs and span timing</em></p>
 </div>
 
 <hr />
@@ -1303,40 +1303,64 @@
 <h3 id="traces-tab">Traces Tab</h3>
 <p>View distributed traces across microservices with timing waterfall.</p>
 <div align="center">
-  <img src="../images/spans.png" alt="Span Waterfall" width="600">
-  <p><em>Span waterfall showing request timing breakdown</em></p>
+  <img src="images/traces.png" alt="Span Waterfall" width="700">
+  <p><em>Span waterfall showing request timing breakdown with correlated logs</em></p>
+</div>
+
+<p>Click on a span to view detailed JSON data:</p>
+<div align="center">
+  <img src="images/traces2.png" alt="Span Details" width="700">
+  <p><em>Span detail view with full OpenTelemetry attributes</em></p>
 </div>
 
 <h3 id="logs-tab">Logs Tab</h3>
-<p>Browse logs with trace/span correlation.</p>
+<p>Browse logs with trace/span correlation. Filter by severity (Error, Warn, Info, Debug).</p>
 <div align="center">
-  <img src="../images/logs.png" alt="Logs View" width="600">
+  <img src="images/logs1.png" alt="Logs View" width="700">
   <p><em>Real-time logs with trace and span correlation</em></p>
+</div>
+
+<p>Click on a log entry to view full details:</p>
+<div align="center">
+  <img src="images/logs2.png" alt="Log Details" width="700">
+  <p><em>Log detail view with full attributes and resource info</em></p>
+</div>
+
+<p>Filter to show only errors:</p>
+<div align="center">
+  <img src="images/logs3.png" alt="Error Logs" width="700">
+  <p><em>Filtered error logs with trace correlation</em></p>
 </div>
 
 <h3 id="metrics-tab">Metrics Tab</h3>
 <p>Visualize metrics with automatic charting.</p>
 <div align="center">
-  <img src="../images/metrics.png" alt="Metrics View" width="600">
-  <p><em>Time-series metrics visualization</em></p>
+  <img src="images/metrics.png" alt="Metrics View" width="700">
+  <p><em>Time-series metrics visualization with rate charts</em></p>
 </div>
 
 <h3 id="service-catalog">Service Catalog</h3>
 <p>View all services with RED metrics (Rate, Errors, Duration).</p>
 <div align="center">
-  <img src="../images/servicecatalog.png" alt="Service Catalog" width="600">
+  <img src="images/servicecatalog.png" alt="Service Catalog" width="700">
   <p><em>Service catalog with RED metrics for all services</em></p>
 </div>
 
 <h3 id="service-map">Service Map</h3>
 <p>Visualize service dependencies with an interactive graph.</p>
 <div align="center">
-  <img src="../images/servicemap.png" alt="Service Map" width="600">
-  <p><em>Interactive service dependency map</em></p>
+  <img src="images/servicemap.png" alt="Service Map" width="700">
+  <p><em>Interactive service dependency map with latency information</em></p>
 </div>
 
 <h3 id="opentelemetry-collector-opamp-config">OpenTelemetry Collector + OpAMP Config</h3>
-<p>View and manage your OpenTelemetry Collector configuration remotely via the OpAMP protocol. This page allows you to:</p>
+<p>View and manage your OpenTelemetry Collector configuration remotely via the OpAMP protocol.</p>
+<div align="center">
+  <img src="images/collector.png" alt="OpAMP Config" width="700">
+  <p><em>OpenTelemetry Collector configuration management via OpAMP</em></p>
+</div>
+
+<p>This page allows you to:</p>
 <ul>
 <li><strong>View current configuration</strong> from connected collectors</li>
 <li><strong>Apply configuration changes</strong> with validation and diff preview</li>
