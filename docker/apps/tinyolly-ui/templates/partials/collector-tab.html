@@ -14,7 +14,8 @@
         <div class="status-card">
             <div class="status-card-header">
                 <h4>OpAMP Server</h4>
-                <button class="collector-btn collector-btn-secondary collector-btn-xs" onclick="refreshOpampStatus()">Refresh</button>
+                <button class="collector-btn collector-btn-secondary collector-btn-xs"
+                    onclick="refreshOpampStatus()">Refresh</button>
             </div>
             <div id="opamp-status-container" class="status-card-content">
                 <div class="loading-indicator">Loading...</div>
@@ -36,7 +37,8 @@
     <div class="config-templates-section">
         <div class="templates-header">
             <h3>Configuration Templates</h3>
-            <span class="templates-description">Quick-start templates for common use cases (from <code>otelcol-configs/templates/</code>):</span>
+            <span class="templates-description">Quick-start templates for common use cases (from
+                <code>otelcol-configs/templates/</code>):</span>
         </div>
         <div class="templates-grid">
             <div class="loading-indicator">Loading templates...</div>
@@ -48,10 +50,14 @@
         <div class="config-header">
             <h3>Collector Configuration</h3>
             <div class="config-actions">
-                <button class="collector-btn collector-btn-secondary" onclick="loadCollectorConfig()">Load Current</button>
-                <button class="collector-btn collector-btn-secondary" onclick="resetConfigToDefault()">Reset to Default</button>
+                <button class="collector-btn collector-btn-secondary" onclick="loadCollectorConfig()">Load
+                    Current</button>
+                <button class="collector-btn collector-btn-secondary" onclick="copyCurrentConfig()">Copy Config</button>
+                <button class="collector-btn collector-btn-secondary" onclick="resetConfigToDefault()">Reset to
+                    Default</button>
                 <button class="collector-btn collector-btn-secondary" onclick="showConfigDiff()">Show Diff</button>
-                <button class="collector-btn collector-btn-primary" onclick="applyCollectorConfig()">Apply Configuration</button>
+                <button class="collector-btn collector-btn-primary" onclick="applyCollectorConfig()">Apply
+                    Configuration</button>
             </div>
         </div>
 
@@ -62,16 +68,15 @@
             <div class="config-status" id="config-status"></div>
             <div class="config-editor-wrapper">
                 <div id="collector-line-numbers" class="line-numbers">1</div>
-                <textarea id="collector-config-editor"
-                          class="config-editor"
-                          spellcheck="false"
-                          placeholder="Loading collector configuration..."></textarea>
+                <textarea id="collector-config-editor" class="config-editor" spellcheck="false"
+                    placeholder="Loading collector configuration..."></textarea>
             </div>
         </div>
     </div>
 
     <!-- Config Diff Modal -->
-    <div id="config-diff-modal" class="diff-modal" style="display: none;" onclick="if(event.target === this) closeConfigDiff()">
+    <div id="config-diff-modal" class="diff-modal" style="display: none;"
+        onclick="if(event.target === this) closeConfigDiff()">
         <div class="diff-modal-content" onclick="event.stopPropagation()">
             <div class="diff-modal-header">
                 <h3>Configuration Changes</h3>
@@ -83,640 +88,643 @@
             </div>
             <div class="diff-modal-footer">
                 <button class="collector-btn collector-btn-secondary" onclick="closeConfigDiff()">Cancel</button>
-                <button class="collector-btn collector-btn-primary" onclick="confirmApplyConfig()">Apply Changes</button>
+                <button class="collector-btn collector-btn-primary" onclick="confirmApplyConfig()">Apply
+                    Changes</button>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-.collector-header {
-    margin-bottom: 12px;
-}
-
-.collector-header h2 {
-    margin: 0 0 4px 0;
-    color: var(--text-main);
-    font-size: 18px;
-}
-
-.collector-description {
-    color: var(--text-muted);
-    margin: 0;
-    font-size: 12px;
-}
-
-.config-editor-section,
-.config-templates-section {
-    background: var(--bg-card);
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 16px;
-    border: 1px solid var(--border-color);
-}
-
-/* Status and Agents Row - Side by side */
-.status-agents-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-.status-card {
-    background: var(--bg-hover);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 4px 8px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-height: auto;
-}
-
-.status-card:hover {
-    border-color: var(--primary);
-    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
-}
-
-.status-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2px;
-}
-
-.status-card-header h4 {
-    margin: 0;
-    color: var(--text-main);
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.2;
-}
-
-.status-card-content {
-    font-size: 11px;
-    color: var(--text-main);
-    line-height: 1.3;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0;
-}
-
-.config-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.config-header h3 {
-    margin: 0;
-    color: var(--text-main);
-    font-size: 14px;
-}
-
-.templates-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
-}
-
-.config-templates-section h3 {
-    margin: 0;
-    color: var(--text-main);
-    font-size: 14px;
-}
-
-.templates-description {
-    color: var(--text-muted);
-    margin: 0;
-    font-size: 11px;
-}
-
-/* Status card content styling - compact single line */
-.status-card-content .status-item {
-    display: inline-flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 6px;
-    margin-right: 16px;
-    padding: 0;
-    line-height: 1.3;
-    min-width: 60px;
-}
-
-.status-card-content .status-item:last-child {
-    margin-right: 0;
-}
-
-.status-card-content .status-item:last-child {
-    margin-bottom: 0;
-}
-
-.status-label {
-    font-size: 10px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-}
-
-.status-value {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-main);
-}
-
-.status-value.connected {
-    color: var(--success-text);
-}
-
-.status-value.disconnected {
-    color: var(--error-text);
-}
-
-/* Agents container in status card - compact single line */
-.status-card-content .agents-container {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    width: 100%;
-}
-
-.status-card-content .agent-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 3px;
-    padding: 2px 5px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-wrap: nowrap;
-    overflow: hidden;
-}
-
-.status-card-content .agent-card-header {
-    display: flex;
-    align-items: center;
-    margin: 0;
-}
-
-.status-card-content .agent-id {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: var(--text-muted);
-    line-height: 1.2;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.status-card-content .agent-status {
-    padding: 1px 4px;
-    border-radius: 6px;
-    font-size: 9px;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.status-card-content .agent-status.connected {
-    background: var(--success-bg);
-    color: var(--success-text);
-}
-
-.status-card-content .agent-status.disconnected {
-    background: var(--error-bg);
-    color: var(--error-text);
-}
-
-.status-card-content .agent-info {
-    display: inline-flex;
-    gap: 3px;
-    font-size: 10px;
-    line-height: 1.2;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.status-card-content .agent-info-label {
-    color: var(--text-muted);
-}
-
-.status-card-content .agent-info-value {
-    color: var(--text-main);
-}
-
-.config-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.config-editor-container {
-    position: relative;
-    /* Remove overflow here to let wrapper handle it */
-}
-
-.config-editor-wrapper {
-    display: flex;
-    flex-direction: row;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--bg-body);
-    height: 500px;
-    max-height: 70vh;
-    overflow: hidden;
-}
-
-.line-numbers {
-    width: 48px;
-    background: var(--bg-hover);
-    border-right: 1px solid var(--border-color);
-    color: var(--text-muted);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    line-height: 1.5;
-    padding: 12px 8px;
-    text-align: right;
-    user-select: none; /* Key requirement */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    overflow: hidden;
-    white-space: pre;
-    box-sizing: border-box;
-    flex-shrink: 0;
-}
-
-.config-status {
-    position: absolute;
-    top: 8px;
-    right: 28px; /* Move left to avoid scrollbar overlap */
-    z-index: 10;
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    display: none;
-}
-
-.config-status.success {
-    display: block;
-    background: var(--success-bg);
-    color: var(--success-text);
-}
-
-.config-status.error {
-    display: block;
-    background: var(--error-bg);
-    color: var(--error-text);
-}
-
-.config-status.pending {
-    display: block;
-    background: var(--warning-bg);
-    color: var(--warning-text);
-}
-
-.config-editor {
-    flex: 1;
-    width: 100%;
-    height: 100%;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    line-height: 1.5;
-    padding: 12px;
-    border: none;
-    background: transparent;
-    color: var(--text-main);
-    resize: none;
-    overflow-y: auto;
-    tab-size: 2;
-    display: block;
-    box-sizing: border-box;
-}
-
-.config-editor:focus {
-    outline: none;
-    /* Focus outline on wrapper if needed, or just none */
-}
-
-.config-validation {
-    margin-bottom: 12px;
-    font-size: 11px;
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.config-validation.valid {
-    color: var(--success-text);
-}
-
-.config-validation.invalid {
-    color: var(--error-text);
-}
-
-.config-validation.warning {
-    color: var(--warning-text);
-}
-
-.templates-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 8px;
-}
-
-.template-card {
-    background: var(--bg-hover);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 5px 10px;
-    cursor: pointer;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    min-height: 32px;
-}
-
-.template-card:hover {
-    border-color: var(--primary);
-    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.2);
-}
-
-.template-card h4 {
-    margin: 0;
-    color: var(--text-main);
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.2;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.template-card p {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: 11px;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 0;
-}
-
-
-.collector-btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.collector-btn-sm {
-    padding: 4px 12px;
-    font-size: 12px;
-}
-
-.collector-btn-xs {
-    padding: 2px 6px;
-    font-size: 10px;
-    line-height: 1.2;
-    height: 18px;
-}
-
-.collector-btn-primary {
-    background: var(--primary);
-    color: white;
-}
-
-.collector-btn-primary:hover {
-    background: var(--primary-hover);
-}
-
-.collector-btn-secondary {
-    background: var(--primary);
-    color: white;
-    border: 1px solid var(--primary);
-}
-
-.collector-btn-secondary:hover {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
-}
-
-.loading-indicator {
-    color: var(--text-muted);
-    font-style: italic;
-    font-size: 11px;
-}
-
-#collector-content .empty-state {
-    color: var(--text-muted);
-    font-style: italic;
-    padding: 8px;
-    text-align: center;
-    font-size: 11px;
-}
-
-/* Diff Modal Styles */
-.diff-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.diff-modal-content {
-    background: var(--bg-body);
-    border-radius: 8px;
-    width: 90%;
-    max-width: 900px;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.diff-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.diff-modal-header h3 {
-    margin: 0;
-    color: var(--text-main);
-    font-size: 14px;
-}
-
-.diff-modal-close {
-    background: none;
-    border: none;
-    font-size: 20px;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-}
-
-.diff-modal-close:hover {
-    background: var(--bg-hover);
-    color: var(--text-main);
-}
-
-.diff-modal-body {
-    padding: 20px;
-    overflow-y: auto;
-    flex: 1;
-}
-
-.diff-description {
-    color: var(--text-muted);
-    margin: 0 0 16px 0;
-    font-size: 12px;
-}
-
-.diff-content {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    line-height: 1.6;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 16px;
-    max-height: 500px;
-    overflow-y: auto;
-}
-
-.diff-line {
-    padding: 2px 8px;
-    margin: 1px 0;
-    white-space: pre-wrap;
-    word-break: break-all;
-}
-
-.diff-line.added {
-    background: rgba(76, 175, 80, 0.15);
-    border-left: 3px solid #4caf50;
-}
-
-.diff-line.removed {
-    background: rgba(244, 67, 54, 0.15);
-    border-left: 3px solid #f44336;
-}
-
-.diff-line.context {
-    color: var(--text-main);
-}
-
-.diff-line.added::before {
-    content: '+ ';
-    color: #4caf50;
-    font-weight: bold;
-}
-
-.diff-line.removed::before {
-    content: '- ';
-    color: #f44336;
-    font-weight: bold;
-}
-
-.diff-line.context::before {
-    content: '  ';
-}
-
-.diff-section-header {
-    font-weight: 600;
-    color: var(--text-main);
-    margin: 16px 0 8px 0;
-    padding: 8px;
-    background: var(--bg-hover);
-    border-radius: 4px;
-}
-
-.diff-section-header:first-child {
-    margin-top: 0;
-}
-
-.diff-no-changes {
-    color: var(--text-muted);
-    text-align: center;
-    padding: 24px;
-    font-style: italic;
-}
-
-.diff-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 20px;
-    border-top: 1px solid var(--border-color);
-}
-
-/* Validation Errors Styles */
-.validation-errors {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.validation-error-item {
-    padding: 8px 12px;
-    background: var(--error-bg);
-    border-radius: 4px;
-    border-left: 3px solid var(--error-text);
-}
-
-.validation-error-item .error-section {
-    font-weight: 600;
-    color: var(--error-text);
-    font-size: 11px;
-}
-
-.validation-error-item .error-message {
-    color: var(--text-main);
-    font-size: 11px;
-}
-
-.validation-error-item .error-hint {
-    margin-top: 4px;
-    font-size: 10px;
-    color: var(--text-muted);
-}
-
-.validation-error-item .error-hint code {
-    background: var(--bg-hover);
-    padding: 1px 4px;
-    border-radius: 3px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-}
-
-.validation-error-item .hint-more {
-    color: var(--text-muted);
-    font-style: italic;
-}
+    .collector-header {
+        margin-bottom: 12px;
+    }
+
+    .collector-header h2 {
+        margin: 0 0 4px 0;
+        color: var(--text-main);
+        font-size: 18px;
+    }
+
+    .collector-description {
+        color: var(--text-muted);
+        margin: 0;
+        font-size: 12px;
+    }
+
+    .config-editor-section,
+    .config-templates-section {
+        background: var(--bg-card);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+        border: 1px solid var(--border-color);
+    }
+
+    /* Status and Agents Row - Side by side */
+    .status-agents-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .status-card {
+        background: var(--bg-hover);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 4px 8px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: auto;
+    }
+
+    .status-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
+    }
+
+    .status-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2px;
+    }
+
+    .status-card-header h4 {
+        margin: 0;
+        color: var(--text-main);
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    .status-card-content {
+        font-size: 11px;
+        color: var(--text-main);
+        line-height: 1.3;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0;
+    }
+
+    .config-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .config-header h3 {
+        margin: 0;
+        color: var(--text-main);
+        font-size: 14px;
+    }
+
+    .templates-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+    }
+
+    .config-templates-section h3 {
+        margin: 0;
+        color: var(--text-main);
+        font-size: 14px;
+    }
+
+    .templates-description {
+        color: var(--text-muted);
+        margin: 0;
+        font-size: 11px;
+    }
+
+    /* Status card content styling - compact single line */
+    .status-card-content .status-item {
+        display: inline-flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+        margin-right: 16px;
+        padding: 0;
+        line-height: 1.3;
+        min-width: 60px;
+    }
+
+    .status-card-content .status-item:last-child {
+        margin-right: 0;
+    }
+
+    .status-card-content .status-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .status-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+
+    .status-value {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .status-value.connected {
+        color: var(--success-text);
+    }
+
+    .status-value.disconnected {
+        color: var(--error-text);
+    }
+
+    /* Agents container in status card - compact single line */
+    .status-card-content .agents-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        width: 100%;
+    }
+
+    .status-card-content .agent-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 3px;
+        padding: 2px 5px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: nowrap;
+        overflow: hidden;
+    }
+
+    .status-card-content .agent-card-header {
+        display: flex;
+        align-items: center;
+        margin: 0;
+    }
+
+    .status-card-content .agent-id {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--text-muted);
+        line-height: 1.2;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .status-card-content .agent-status {
+        padding: 1px 4px;
+        border-radius: 6px;
+        font-size: 9px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .status-card-content .agent-status.connected {
+        background: var(--success-bg);
+        color: var(--success-text);
+    }
+
+    .status-card-content .agent-status.disconnected {
+        background: var(--error-bg);
+        color: var(--error-text);
+    }
+
+    .status-card-content .agent-info {
+        display: inline-flex;
+        gap: 3px;
+        font-size: 10px;
+        line-height: 1.2;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .status-card-content .agent-info-label {
+        color: var(--text-muted);
+    }
+
+    .status-card-content .agent-info-value {
+        color: var(--text-main);
+    }
+
+    .config-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .config-editor-container {
+        position: relative;
+        /* Remove overflow here to let wrapper handle it */
+    }
+
+    .config-editor-wrapper {
+        display: flex;
+        flex-direction: row;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background: var(--bg-body);
+        height: 500px;
+        max-height: 70vh;
+        overflow: hidden;
+    }
+
+    .line-numbers {
+        width: 48px;
+        background: var(--bg-hover);
+        border-right: 1px solid var(--border-color);
+        color: var(--text-muted);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 12px 8px;
+        text-align: right;
+        user-select: none;
+        /* Key requirement */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        overflow: hidden;
+        white-space: pre;
+        box-sizing: border-box;
+        flex-shrink: 0;
+    }
+
+    .config-status {
+        position: absolute;
+        top: 8px;
+        right: 28px;
+        /* Move left to avoid scrollbar overlap */
+        z-index: 10;
+        font-size: 11px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: none;
+    }
+
+    .config-status.success {
+        display: block;
+        background: var(--success-bg);
+        color: var(--success-text);
+    }
+
+    .config-status.error {
+        display: block;
+        background: var(--error-bg);
+        color: var(--error-text);
+    }
+
+    .config-status.pending {
+        display: block;
+        background: var(--warning-bg);
+        color: var(--warning-text);
+    }
+
+    .config-editor {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 12px;
+        border: none;
+        background: transparent;
+        color: var(--text-main);
+        resize: none;
+        overflow-y: auto;
+        tab-size: 2;
+        display: block;
+        box-sizing: border-box;
+    }
+
+    .config-editor:focus {
+        outline: none;
+        /* Focus outline on wrapper if needed, or just none */
+    }
+
+    .config-validation {
+        margin-bottom: 12px;
+        font-size: 11px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .config-validation.valid {
+        color: var(--success-text);
+    }
+
+    .config-validation.invalid {
+        color: var(--error-text);
+    }
+
+    .config-validation.warning {
+        color: var(--warning-text);
+    }
+
+    .templates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 8px;
+    }
+
+    .template-card {
+        background: var(--bg-hover);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 5px 10px;
+        cursor: pointer;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        min-height: 32px;
+    }
+
+    .template-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(0, 102, 204, 0.2);
+    }
+
+    .template-card h4 {
+        margin: 0;
+        color: var(--text-main);
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.2;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .template-card p {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 11px;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        min-width: 0;
+    }
+
+
+    .collector-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .collector-btn-sm {
+        padding: 4px 12px;
+        font-size: 12px;
+    }
+
+    .collector-btn-xs {
+        padding: 2px 6px;
+        font-size: 10px;
+        line-height: 1.2;
+        height: 18px;
+    }
+
+    .collector-btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .collector-btn-primary:hover {
+        background: var(--primary-hover);
+    }
+
+    .collector-btn-secondary {
+        background: var(--primary);
+        color: white;
+        border: 1px solid var(--primary);
+    }
+
+    .collector-btn-secondary:hover {
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
+    }
+
+    .loading-indicator {
+        color: var(--text-muted);
+        font-style: italic;
+        font-size: 11px;
+    }
+
+    #collector-content .empty-state {
+        color: var(--text-muted);
+        font-style: italic;
+        padding: 8px;
+        text-align: center;
+        font-size: 11px;
+    }
+
+    /* Diff Modal Styles */
+    .diff-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .diff-modal-content {
+        background: var(--bg-body);
+        border-radius: 8px;
+        width: 90%;
+        max-width: 900px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .diff-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .diff-modal-header h3 {
+        margin: 0;
+        color: var(--text-main);
+        font-size: 14px;
+    }
+
+    .diff-modal-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+    }
+
+    .diff-modal-close:hover {
+        background: var(--bg-hover);
+        color: var(--text-main);
+    }
+
+    .diff-modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .diff-description {
+        color: var(--text-muted);
+        margin: 0 0 16px 0;
+        font-size: 12px;
+    }
+
+    .diff-content {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        line-height: 1.6;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 16px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .diff-line {
+        padding: 2px 8px;
+        margin: 1px 0;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    .diff-line.added {
+        background: rgba(76, 175, 80, 0.15);
+        border-left: 3px solid #4caf50;
+    }
+
+    .diff-line.removed {
+        background: rgba(244, 67, 54, 0.15);
+        border-left: 3px solid #f44336;
+    }
+
+    .diff-line.context {
+        color: var(--text-main);
+    }
+
+    .diff-line.added::before {
+        content: '+ ';
+        color: #4caf50;
+        font-weight: bold;
+    }
+
+    .diff-line.removed::before {
+        content: '- ';
+        color: #f44336;
+        font-weight: bold;
+    }
+
+    .diff-line.context::before {
+        content: '  ';
+    }
+
+    .diff-section-header {
+        font-weight: 600;
+        color: var(--text-main);
+        margin: 16px 0 8px 0;
+        padding: 8px;
+        background: var(--bg-hover);
+        border-radius: 4px;
+    }
+
+    .diff-section-header:first-child {
+        margin-top: 0;
+    }
+
+    .diff-no-changes {
+        color: var(--text-muted);
+        text-align: center;
+        padding: 24px;
+        font-style: italic;
+    }
+
+    .diff-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 20px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    /* Validation Errors Styles */
+    .validation-errors {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .validation-error-item {
+        padding: 8px 12px;
+        background: var(--error-bg);
+        border-radius: 4px;
+        border-left: 3px solid var(--error-text);
+    }
+
+    .validation-error-item .error-section {
+        font-weight: 600;
+        color: var(--error-text);
+        font-size: 11px;
+    }
+
+    .validation-error-item .error-message {
+        color: var(--text-main);
+        font-size: 11px;
+    }
+
+    .validation-error-item .error-hint {
+        margin-top: 4px;
+        font-size: 10px;
+        color: var(--text-muted);
+    }
+
+    .validation-error-item .error-hint code {
+        background: var(--bg-hover);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+    }
+
+    .validation-error-item .hint-more {
+        color: var(--text-muted);
+        font-style: italic;
+    }
 </style>

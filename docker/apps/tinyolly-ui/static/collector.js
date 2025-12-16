@@ -829,7 +829,10 @@ window.applyCollectorConfig = applyCollectorConfig;
 window.showConfigDiff = showConfigDiff;
 window.closeConfigDiff = closeConfigDiff;
 window.confirmApplyConfig = confirmApplyConfig;
+window.closeConfigDiff = closeConfigDiff;
+window.confirmApplyConfig = confirmApplyConfig;
 window.loadTemplate = loadTemplate;
+window.copyCurrentConfig = copyCurrentConfig;
 
 /**
  * Update line numbers based on editor content
@@ -858,5 +861,22 @@ function syncEditorScroll() {
     const lineNumbers = document.getElementById('collector-line-numbers');
     if (editor && lineNumbers) {
         lineNumbers.scrollTop = editor.scrollTop;
+    }
+}
+
+/**
+ * Copy current config to clipboard
+ */
+export async function copyCurrentConfig() {
+    const editor = document.getElementById('collector-config-editor');
+    if (!editor) return;
+
+    try {
+        await navigator.clipboard.writeText(editor.value);
+        setConfigStatus('success', 'Copied to clipboard!');
+        setTimeout(() => setConfigStatus(''), 2000);
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        setConfigStatus('error', 'Failed to copy');
     }
 }
