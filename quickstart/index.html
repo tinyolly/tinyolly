@@ -1272,7 +1272,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>docker
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./01-start-core.sh
 </code></pre></div>
-<p>This starts:</p>
+<p>This pulls pre-built images from Docker Hub and starts:</p>
 <ul>
 <li><strong>OpenTelemetry Collector</strong> (ports 4317/4318)</li>
 <li><strong>OpAMP Server</strong> (ports 4320/4321)</li>
@@ -1280,15 +1280,17 @@
 <li><strong>TinyOlly UI</strong> (port 5005)</li>
 <li><strong>Redis storage</strong> (internal)</li>
 </ul>
-<p>Wait for the containers to start (~30 seconds).</p>
+<p><strong>Deployment time:</strong> ~30 seconds (pulls from Docker Hub)</p>
+<p><strong>For local development:</strong> Use <code>./01-start-core-local.sh</code> to build images locally.</p>
 <hr />
 <h2 id="step-3-deploy-demo-apps-optional-but-recommended">Step 3: Deploy Demo Apps (Optional but Recommended)</h2>
 <p>In a new terminal:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./01-deploy-demo.sh
 </code></pre></div>
-<p>This deploys two Flask microservices that automatically generate traffic.</p>
+<p>This pulls demo images from Docker Hub and deploys two Flask microservices that automatically generate traffic.</p>
 <p><strong>Wait 30 seconds</strong> for telemetry to appear!</p>
+<p><strong>For local development:</strong> Use <code>./01-deploy-demo-local.sh</code> to build images locally.</p>
 <hr />
 <h2 id="step-4-open-the-ui">Step 4: Open the UI</h2>
 <p>Open your browser to: <strong><code>http://localhost:5005</code></strong></p>
