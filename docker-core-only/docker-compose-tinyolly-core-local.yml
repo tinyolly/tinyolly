@@ -14,7 +14,11 @@ services:
       retries: 5
 
   tinyolly-otlp-receiver:
-    image: tinyolly/otlp-receiver:latest
+    build:
+      context: ../docker
+      dockerfile: dockerfiles/Dockerfile.tinyolly-otlp-receiver
+      args:
+        - APP_DIR=tinyolly-otlp-receiver
     container_name: tinyolly-otlp-receiver
     depends_on:
       tinyolly-redis:
@@ -30,7 +34,9 @@ services:
       - tinyolly-core-network
 
   tinyolly-opamp-server:
-    image: tinyolly/opamp-server:latest
+    build:
+      context: ../docker
+      dockerfile: ../docker/dockerfiles/Dockerfile.tinyolly-opamp-server
     container_name: tinyolly-opamp-server
     ports:
       - "4320:4320"  # OpAMP WebSocket port
@@ -49,7 +55,11 @@ services:
   # Optional: Configure your external collector to connect to OpAMP server at: ws://localhost:4320/v1/opamp
 
   tinyolly-ui:
-    image: tinyolly/ui:latest
+    build:
+      context: ../docker
+      dockerfile: dockerfiles/Dockerfile.tinyolly-ui
+      args:
+        - APP_DIR=tinyolly-ui
     container_name: tinyolly-ui
     ports:
       - "5005:5002"  # Exposed on 5005 to avoid conflict if running alongside full demo

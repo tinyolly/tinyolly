@@ -12,7 +12,11 @@ services:
       retries: 5
 
   tinyolly-otlp-receiver:
-    image: tinyolly/otlp-receiver:latest
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.tinyolly-otlp-receiver
+      args:
+        - APP_DIR=tinyolly-otlp-receiver
     container_name: tinyolly-otlp-receiver
     ports:
       - "4343:4343"
@@ -30,7 +34,9 @@ services:
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
 
   tinyolly-opamp-server:
-    image: tinyolly/opamp-server:latest
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.tinyolly-opamp-server
     container_name: tinyolly-opamp-server
     ports:
       - "4320:4320"  # OpAMP WebSocket port
@@ -50,7 +56,9 @@ services:
   # The supervisor accepts remote configuration from tinyolly-opamp-server
   # and automatically restarts the collector when config changes
   otel-collector:
-    image: tinyolly/otel-supervisor:latest
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.otel-supervisor
     container_name: otel-collector
     volumes:
       # Supervisor config
@@ -68,7 +76,12 @@ services:
       - tinyolly-opamp-server
 
   tinyolly-ui:
-    image: tinyolly/ui:latest
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.tinyolly-ui
+      args:
+        - APP_DIR=tinyolly-ui
+    image: tinyolly-ui:latest
     container_name: tinyolly-ui
     ports:
       - "5005:5002"  # Changed to 5005 to avoid conflict with K8s (which uses 5002)

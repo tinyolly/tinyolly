@@ -1,5 +1,5 @@
 # TinyOlly OTLP Receiver Dockerfile (gRPC)
-FROM tinyolly-python-base:latest
+FROM tinyolly/python-base:latest
 
 ARG APP_DIR=tinyolly-otlp-receiver
 

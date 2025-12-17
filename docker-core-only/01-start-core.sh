@@ -21,14 +21,15 @@ echo ""
 echo "Starting services..."
 echo ""
 
-# Build the shared Python base image first (using ../docker as context)
-echo "Building shared Python base image..."
-docker build -t tinyolly-python-base:latest -f ../docker/dockerfiles/Dockerfile.tinyolly-python-base ../docker
+# Pull latest images from Docker Hub
+echo "Pulling latest TinyOlly images from Docker Hub..."
+docker compose -f docker-compose-tinyolly-core.yml pull
 if [ $? -ne 0 ]; then
-    echo "✗ Failed to build shared base image"
+    echo "✗ Failed to pull images from Docker Hub"
+    echo "  Note: For local builds, use docker-compose-tinyolly-core-local.yml"
     exit 1
 fi
-echo "✓ Base image built"
+echo "✓ Images pulled successfully"
 echo ""
 
 # This prevents stale remote configs from persisting across restarts
@@ -40,7 +41,7 @@ docker volume rm tinyolly-otel-supervisor-data 2>/dev/null || true
 echo "Clearing Redis data..."
 docker exec tinyolly-redis redis-cli -p 6579 FLUSHALL 2>/dev/null || true
 
-docker compose -f docker-compose-tinyolly-core.yml up -d --build --force-recreate 2>&1
+docker compose -f docker-compose-tinyolly-core.yml up -d --force-recreate 2>&1
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then

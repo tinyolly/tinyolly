@@ -1,5 +1,5 @@
 # TinyOlly UI Dockerfile
-FROM tinyolly-python-base:latest
+FROM tinyolly/python-base:latest
 
 ARG APP_DIR=tinyolly-ui
 # OTel Collector version for config validation
