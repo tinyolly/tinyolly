@@ -22,6 +22,14 @@ services:
       timeout: 10s
       retries: 30
       start_period: 120s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'      # Limit to 2 CPU cores
+          memory: 4G       # Limit to 4GB RAM
+        reservations:
+          cpus: '0.5'      # Reserve at least 0.5 CPU cores
+          memory: 1G       # Reserve at least 1GB RAM
 
   # AI Agent with zero-code auto-instrumentation
   ai-agent:

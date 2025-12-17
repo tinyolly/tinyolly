@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+spec:
+  selector:
+    app: ollama
+  ports:
+    - protocol: TCP
+      port: 11434
+      targetPort: 11434
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+        volumeMounts:
+        - name: ollama-data
+          mountPath: /root/.ollama
+        # CPU and memory limits
+        resources:
+          limits:
+            cpu: "2000m"      # 2 CPU cores (2000 millicores)
+            memory: "4Gi"     # 4GB RAM
+          requests:
+            cpu: "500m"       # 0.5 CPU cores minimum
+            memory: "1Gi"     # 1GB RAM minimum
+        # Pull tinyllama model on startup
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - |
+                sleep 10
+                ollama pull tinyllama
+        # Health check
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - ollama list | grep -q tinyllama
+          initialDelaySeconds: 120
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - ollama list | grep -q tinyllama
+          initialDelaySeconds: 120
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 30
+      volumes:
+      - name: ollama-data
+        persistentVolumeClaim:
+          claimName: ollama-data

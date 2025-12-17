@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-agent
+spec:
+  selector:
+    app: ai-agent
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-agent
+  template:
+    metadata:
+      labels:
+        app: ai-agent
+    spec:
+      containers:
+      - name: ai-agent
+        image: tinyolly/ai-agent-demo:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        env:
+        # Zero-code OpenTelemetry instrumentation
+        - name: OTEL_SERVICE_NAME
+          value: "ai-agent-demo"
+        - name: OTEL_TRACES_EXPORTER
+          value: "otlp"
+        - name: OTEL_METRICS_EXPORTER
+          value: "none"
+        - name: OTEL_LOGS_EXPORTER
+          value: "none"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://otel-collector:4317"
+        - name: OTEL_EXPORTER_OTLP_INSECURE
+          value: "true"
+        # Application config
+        - name: OLLAMA_HOST
+          value: "http://ollama:11434"
+        resources:
+          limits:
+            cpu: "500m"       # 0.5 CPU cores
+            memory: "512Mi"   # 512MB RAM
+          requests:
+            cpu: "100m"       # 0.1 CPU cores minimum
+            memory: "128Mi"   # 128MB RAM minimum
