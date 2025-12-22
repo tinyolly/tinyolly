@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Backend only needs flask - no OTel SDK needed
+# Traces are captured by eBPF agent automatically
+RUN pip install --no-cache-dir flask>=3.0.0
+
+COPY backend-service.py .
+
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=backend-service.py
+
+EXPOSE 5000
+
+CMD ["python", "-u", "backend-service.py"]

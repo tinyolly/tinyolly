@@ -61,6 +61,8 @@ nav:
       - Docker: docker.md
       - Kubernetes: kubernetes.md
       - OpenTelemetry Collector: otel-collector.md
+  - Demos:
+      - eBPF Zero-Code Tracing: ebpf.md
   - API Reference:
       - REST API & Examples: api.md
   - Advanced:

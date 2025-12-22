@@ -113,7 +113,27 @@ Two Flask microservices with automatic traffic generation (pulls from Docker Hub
 
 ---
 
-### 3. AI Agent Demo with Ollama (Optional)
+### 3. eBPF Zero-Code Tracing Demo (Optional)
+
+Deploy a demo showing OpenTelemetry eBPF Instrumentation (OBI) - traces captured at the kernel level with zero code changes:
+
+```bash
+cd docker-demo-ebpf
+./01-deploy-ebpf-demo.sh
+```
+
+This demonstrates:
+- **eBPF Agent** captures HTTP traces automatically at kernel level
+- **No tracing SDK** in application code - traces come from eBPF
+- **Logs & Metrics** still use OTel SDK (shows hybrid approach)
+
+See [eBPF Demo Documentation](docs/ebpf.md) for details on how traces differ from SDK-instrumented apps.
+
+**Stop:** `./02-cleanup.sh`
+
+---
+
+### 5. AI Agent Demo with Ollama (Optional)
 
 Deploy an AI agent demo with zero-code OpenTelemetry auto-instrumentation:
 
@@ -134,19 +154,19 @@ View AI traces in the **AI Agents** tab - see prompts, responses, token usage (i
 
 ---
 
-### 4. OpenTelemetry Demo (~20 Services - Optional)
+### 6. OpenTelemetry Demo (~20 Services - Optional)
 
 Clone and configure the [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) to route telemetry to TinyOlly. Edit `src/otel-collector/otelcol-config-extras.yml` to add TinyOlly as an exporter, then deploy with built-in observability tools disabled.
 
 ---
 
-### 5. Use TinyOlly with Your Own Apps
+### 7. Use TinyOlly with Your Own Apps
 
 Point your OpenTelemetry exporter to:
 - **gRPC**: `http://otel-collector:4317`
 - **HTTP**: `http://otel-collector:4318`
 
-### 6. Core-Only Deployment (Use Your Own OTel Collector)
+### 8. Core-Only Deployment (Use Your Own OTel Collector)
 
 ```bash
 cd docker-core-only

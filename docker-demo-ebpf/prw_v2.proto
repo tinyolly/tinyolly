@@ -1,0 +1,106 @@
+// Prometheus Remote Write v2 protobuf definition
+// Simplified version for Python client
+// Based on: https://github.com/prometheus/prometheus/blob/main/prompb/io/prometheus/write/v2/types.proto
+
+syntax = "proto3";
+
+package io.prometheus.write.v2;
+
+// Request represents a request to write the given timeseries to a remote destination.
+message Request {
+  // Fields 1-3 are reserved for backward compatibility
+  reserved 1 to 3;
+
+  // symbols contains a de-duplicated array of string elements.
+  // MUST start with empty string for optional fields.
+  repeated string symbols = 4;
+
+  // timeseries represents an array of distinct series with 0 or more samples.
+  repeated TimeSeries timeseries = 5;
+}
+
+// TimeSeries represents a single series.
+message TimeSeries {
+  // labels_refs is a list of label name-value pair references, encoded
+  // as indices to the Request.symbols array. Length is always multiple of 2.
+  repeated uint32 labels_refs = 1;
+
+  // samples for this series
+  repeated Sample samples = 2;
+
+  // histograms for this series (not used in this simple implementation)
+  repeated Histogram histograms = 3;
+
+  // exemplars attached to this series' samples
+  repeated Exemplar exemplars = 4;
+
+  // metadata associated with the given series' samples
+  Metadata metadata = 5;
+}
+
+// Sample represents series sample.
+message Sample {
+  double value = 1;
+  int64 timestamp = 2;  // milliseconds since epoch
+  int64 start_timestamp = 3;  // optional, for counters
+}
+
+// Exemplar is additional information attached to samples.
+message Exemplar {
+  repeated uint32 labels_refs = 1;
+  double value = 2;
+  int64 timestamp = 3;
+}
+
+// Metadata represents the metadata associated with the series.
+message Metadata {
+  enum MetricType {
+    METRIC_TYPE_UNSPECIFIED = 0;
+    METRIC_TYPE_COUNTER = 1;
+    METRIC_TYPE_GAUGE = 2;
+    METRIC_TYPE_HISTOGRAM = 3;
+    METRIC_TYPE_GAUGEHISTOGRAM = 4;
+    METRIC_TYPE_SUMMARY = 5;
+    METRIC_TYPE_INFO = 6;
+    METRIC_TYPE_STATESET = 7;
+  }
+  MetricType type = 1;
+  uint32 help_ref = 3;  // reference to symbols array
+  uint32 unit_ref = 4;  // reference to symbols array
+}
+
+// Histogram for native histogram support (simplified)
+message Histogram {
+  enum ResetHint {
+    RESET_HINT_UNSPECIFIED = 0;
+    RESET_HINT_YES = 1;
+    RESET_HINT_NO = 2;
+    RESET_HINT_GAUGE = 3;
+  }
+
+  oneof count {
+    uint64 count_int = 1;
+    double count_float = 2;
+  }
+  double sum = 3;
+  sint32 schema = 4;
+  double zero_threshold = 5;
+  oneof zero_count {
+    uint64 zero_count_int = 6;
+    double zero_count_float = 7;
+  }
+  repeated BucketSpan negative_spans = 8;
+  repeated sint64 negative_deltas = 9;
+  repeated double negative_counts = 10;
+  repeated BucketSpan positive_spans = 11;
+  repeated sint64 positive_deltas = 12;
+  repeated double positive_counts = 13;
+  ResetHint reset_hint = 14;
+  int64 timestamp = 15;
+  repeated double custom_values = 16;
+}
+
+message BucketSpan {
+  sint32 offset = 1;
+  uint32 length = 2;
+}

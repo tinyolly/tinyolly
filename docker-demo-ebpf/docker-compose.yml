@@ -1,0 +1,55 @@
+services:
+  # Backend service - pure Flask, NO OTel SDK
+  # Traces captured automatically by eBPF agent
+  ebpf-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: ebpf-backend
+    ports:
+      - "5004:5000"
+    networks:
+      - tinyolly-network
+
+  # Frontend service - uses OTel SDK for METRICS only
+  # Traces captured automatically by eBPF agent
+  ebpf-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ebpf-frontend
+    ports:
+      - "5001:5000"
+    depends_on:
+      - ebpf-backend
+    environment:
+      # Metrics export endpoint (NOT for traces - those come from eBPF)
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=ebpf-frontend
+      - BACKEND_URL=http://ebpf-backend:5000
+    networks:
+      - tinyolly-network
+
+  # OpenTelemetry eBPF Instrumentation (OBI)
+  # Automatically captures traces from all HTTP services without code changes
+  otel-ebpf-agent:
+    image: docker.io/otel/ebpf-instrument:main
+    container_name: otel-ebpf-instrumentation
+    privileged: true
+    pid: host
+    environment:
+      # Export traces to OTel Collector
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      # Instrument services on port 5000 (both frontend and backend use this port)
+      - OTEL_EBPF_OPEN_PORT=5000
+      # Service name discovery - OBI will detect service names from process info
+      - OTEL_EBPF_SERVICE_NAME=ebpf-demo
+    volumes:
+      - /sys/kernel/debug:/sys/kernel/debug:rw
+    networks:
+      - tinyolly-network
+
+networks:
+  tinyolly-network:
+    external: true
+    name: tinyolly-network
