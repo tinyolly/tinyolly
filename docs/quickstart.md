@@ -92,7 +92,7 @@ View distributed traces across microservices with timing waterfall.
 Click on a span to view detailed JSON data:
 
 <div align="center">
-  <img src="../images/traces2.png" alt="Span Details" width="700">
+  <img src="../images/traces1.png" alt="Span Details" width="700">
   <p><em>Span detail view with full OpenTelemetry attributes</em></p>
 </div>
 
