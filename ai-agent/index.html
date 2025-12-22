@@ -12,11 +12,13 @@
         <meta name="author" content="TinyOlly">
       
       
-        <link rel="canonical" href="https://tinyolly.github.io/tinyolly/licensing/">
+        <link rel="canonical" href="https://tinyolly.github.io/tinyolly/ai-agent/">
       
       
-        <link rel="prev" href="../CARDINALITY-PROTECTION/">
+        <link rel="prev" href="../ebpf/">
       
+      
+        <link rel="next" href="../api/">
       
       
         
@@ -27,7 +29,7 @@
     
     
       
-        <title>Licensing - TinyOlly Documentation</title>
+        <title>AI Agent with Ollama - TinyOlly Documentation</title>
       
     
     
@@ -80,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#licensing" class="md-skip">
+        <a href="#ai-agent-demo" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Licensing
+              AI Agent with Ollama
             
           </span>
         </div>
@@ -458,8 +460,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -470,13 +474,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
@@ -497,7 +499,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -540,10 +542,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../ai-agent/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI Agent with Ollama
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -559,6 +588,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-genai-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is GenAI Observability?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-youll-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What You'll See
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-llms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported LLMs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -781,37 +924,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Licensing
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../licensing/" class="md-nav__link">
         
   
   
@@ -827,59 +943,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#community-and-small-scale-use" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Community and Small-Scale Use
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#commercial-and-large-scale-use" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Commercial and Large-Scale Use
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -911,10 +974,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#community-and-small-scale-use" class="md-nav__link">
+  <a href="#what-is-genai-observability" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Community and Small-Scale Use
+        What is GenAI Observability?
       
     </span>
   </a>
@@ -922,10 +985,38 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#commercial-and-large-scale-use" class="md-nav__link">
+  <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Commercial and Large-Scale Use
+        Quick Start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
       
     </span>
   </a>
@@ -933,10 +1024,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
+  <a href="#what-youll-see" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rationale
+        What You'll See
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-llms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported LLMs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
       
     </span>
   </a>
@@ -963,34 +1087,125 @@
   
 
 
-<h1 id="licensing">Licensing</h1>
-<p>TinyOlly is released under the <strong>BSD 3-Clause License</strong>.<br />
-The full license text is available in the <a href="https://github.com/tinyolly/tinyolly/blob/main/LICENSE">LICENSE</a> file. This license permits free use, modification, and redistribution for individuals, researchers, and small organizations.</p>
-<h2 id="community-and-small-scale-use">Community and Small-Scale Use</h2>
-<p>TinyOlly may be used freely under the BSD license for:</p>
+<h1 id="ai-agent-demo">AI Agent Demo</h1>
+<p>This demo showcases <strong>GenAI observability</strong> with OpenTelemetry - automatic instrumentation of LLM calls using the <code>opentelemetry-instrumentation-ollama</code> package.</p>
+<h2 id="what-is-genai-observability">What is GenAI Observability?</h2>
+<p>GenAI observability captures telemetry from LLM interactions including:</p>
 <ul>
-<li>Individual developers and hobby projects  </li>
-<li>Academic and research use  </li>
-<li>Startups or small organizations  </li>
-<li>Limited internal development, tooling, experimentation, or evaluation  </li>
+<li><strong>Prompts and responses</strong> - Full text of user prompts and model outputs</li>
+<li><strong>Token usage</strong> - Input and output token counts</li>
+<li><strong>Latency</strong> - Response time for each LLM call</li>
+<li><strong>Model information</strong> - Which model was used</li>
 </ul>
-<p>No additional agreements are required for these scenarios.</p>
-<h2 id="commercial-and-large-scale-use">Commercial and Large-Scale Use</h2>
-<p>Organizations deploying TinyOlly in a broader or more intensive capacity are required to obtain a commercial license. This includes use cases such as:</p>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="docker">Docker</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Start TinyOlly core first</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>docker
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>./01-start-core.sh
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Deploy AI agent demo (pulls pre-built images from Docker Hub)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nb">cd</span><span class="w"> </span>../docker-ai-agent-demo
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>./01-deploy-ai-demo.sh
+</code></pre></div>
+<p>This starts:</p>
 <ul>
-<li>Organizations with approximately 50 or more employees  </li>
-<li>Deployments across multiple engineering teams  </li>
-<li>Production or mission-critical observability workflows  </li>
-<li>Integration into commercial software, platforms, or SaaS products  </li>
-<li>High-volume or distributed environments</li>
+<li><strong>Ollama</strong> with TinyLlama model for local LLM inference</li>
+<li><strong>AI Agent</strong> with automatic GenAI span instrumentation</li>
 </ul>
-<p>For commercial licensing inquiries, contact:  </p>
-<div align="center">
-  <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDAiIGZpbGw9IiMxZTI5M2IiIHJ4PSI0Ii8+CiAgPHRleHQgeD0iMTUwIiB5PSIyNSIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2ZmZmZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+CiAgICBjb250YWN0QHRpbnlvbGx5LmNvCiAgPC90ZXh0Pgo8L3N2Zz4K" alt="Contact Email" width="300" height="40">
-</div>
-
-<h2 id="rationale">Rationale</h2>
-<p>This model ensures that TinyOlly remains fully open source and accessible to the community while providing a sustainable path for supporting organizations that rely on it at scale.</p>
+<p>Access the UI at <code>http://localhost:5005</code> and navigate to the <strong>AI Agents</strong> tab.</p>
+<p><strong>For local development:</strong> Use <code>./01-deploy-ai-demo-local.sh</code> to build locally</p>
+<p><strong>Stop:</strong> <code>./02-stop-ai-demo.sh</code></p>
+<p><strong>Cleanup (remove volumes):</strong> <code>./03-cleanup-ai-demo.sh</code></p>
+<h2 id="how-it-works">How It Works</h2>
+<p>The demo uses zero-code auto-instrumentation - no OpenTelemetry imports in the application code:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># agent.py - NO OpenTelemetry imports needed!</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ollama</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;http://ollama:11434&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># This call is AUTO-INSTRUMENTED</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;tinyllama&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">messages</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;What is OpenTelemetry?&quot;</span><span class="p">}]</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">)</span>
+</code></pre></div>
+<p>The magic happens in the Dockerfile:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c"># Install auto-instrumentation packages</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>opentelemetry-distro<span class="w"> </span>opentelemetry-instrumentation-ollama
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c"># Run with auto-instrumentation wrapper</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;opentelemetry-instrument&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;python&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-u&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;agent.py&quot;</span><span class="p">]</span>
+</code></pre></div>
+<h2 id="what-youll-see">What You'll See</h2>
+<p>In the <strong>AI Agents</strong> tab:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Prompt</strong></td>
+<td>The user's input to the LLM</td>
+</tr>
+<tr>
+<td><strong>Response</strong></td>
+<td>The model's output</td>
+</tr>
+<tr>
+<td><strong>Tokens In</strong></td>
+<td>Number of input tokens</td>
+</tr>
+<tr>
+<td><strong>Tokens Out</strong></td>
+<td>Number of output tokens</td>
+</tr>
+<tr>
+<td><strong>Latency</strong></td>
+<td>Response time in milliseconds</td>
+</tr>
+<tr>
+<td><strong>Model</strong></td>
+<td>Model name (e.g., <code>tinyllama</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Click any row to expand the full span details in JSON format.</p>
+<h2 id="supported-llms">Supported LLMs</h2>
+<p>The OpenTelemetry GenAI semantic conventions work with any instrumented LLM provider:</p>
+<ul>
+<li><strong>Ollama</strong> - Local LLM inference (this demo)</li>
+<li><strong>OpenAI</strong> - GPT models via <code>opentelemetry-instrumentation-openai</code></li>
+<li><strong>Anthropic</strong> - Claude models</li>
+<li><strong>Other providers</strong> - Any with OpenTelemetry instrumentation</li>
+</ul>
+<h2 id="configuration">Configuration</h2>
+<p>The demo is configured via environment variables in <code>docker-compose.yml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">ai-agent</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">environment</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OTEL_SERVICE_NAME=ai-agent-demo</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OLLAMA_HOST=http://ollama:11434</span>
+</code></pre></div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p><strong>No AI traces appearing?</strong></p>
+<ul>
+<li>Ensure TinyOlly core is running</li>
+<li>Check agent logs: <code>docker logs ai-agent-demo</code></li>
+<li>Verify Ollama is ready: <code>docker logs ollama</code></li>
+</ul>
+<p><strong>Model download taking long?</strong></p>
+<ul>
+<li>TinyLlama is ~600MB, first download may take a few minutes</li>
+<li>Check Ollama logs for download progress</li>
+</ul>
+<p><strong>Agent errors?</strong></p>
+<ul>
+<li>Ollama needs time to load the model after container starts</li>
+<li>The agent waits 10 seconds before first call</li>
+</ul>
 
 
 
