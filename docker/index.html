@@ -509,63 +509,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#building-images-locally-optional" class="md-nav__link">
+  <a href="#building-images" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Building Images Locally (Optional)
+        Building Images
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Building Images Locally (Optional)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#core-images" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Core Images
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#demo-applications" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Demo Applications
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#when-to-build-locally" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to Build Locally
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#publishing-to-docker-hub-maintainers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Publishing to Docker Hub (Maintainers)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1095,63 +1045,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#building-images-locally-optional" class="md-nav__link">
+  <a href="#building-images" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Building Images Locally (Optional)
+        Building Images
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Building Images Locally (Optional)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#core-images" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Core Images
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#demo-applications" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Demo Applications
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#when-to-build-locally" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to Build Locally
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#publishing-to-docker-hub-maintainers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Publishing to Docker Hub (Maintainers)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1351,51 +1251,8 @@ i.e.<br />
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>./02-stop-core.sh
 </code></pre></div></p>
 <hr />
-<h2 id="building-images-locally-optional">Building Images Locally (Optional)</h2>
-<p>By default, all deployment scripts pull pre-built images from Docker Hub for faster deployment (~30 seconds). For development or customization, you can build images locally.</p>
-<h3 id="core-images">Core Images</h3>
-<p><strong>Build and deploy locally:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>./01-start-core-local.sh
-</code></pre></div></p>
-<p>This builds all core images locally and then starts the services.</p>
-<p><strong>Build core-only locally:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nb">cd</span><span class="w"> </span>docker-core-only
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>./01-start-core-local.sh
-</code></pre></div></p>
-<h3 id="demo-applications">Demo Applications</h3>
-<p><strong>Build demo apps locally:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>./01-deploy-demo-local.sh
-</code></pre></div></p>
-<p><strong>Build AI agent demo locally:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nb">cd</span><span class="w"> </span>docker-ai-agent-demo
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>./01-deploy-ai-demo-local.sh
-</code></pre></div></p>
-<h3 id="when-to-build-locally">When to Build Locally</h3>
-<ul>
-<li><strong>Modifying code</strong>: When you've changed TinyOlly or demo app code</li>
-<li><strong>Custom features</strong>: Adding your own customizations</li>
-<li><strong>Development</strong>: Testing changes before publishing</li>
-<li><strong>Offline work</strong>: No internet connection to Docker Hub</li>
-<li><strong>Custom base images</strong>: Using different base images</li>
-</ul>
-<h3 id="publishing-to-docker-hub-maintainers">Publishing to Docker Hub (Maintainers)</h3>
-<p>If you're a maintainer or want to publish to your own Docker Hub organization:</p>
-<p><strong>Core images:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>./build-and-push-images.sh<span class="w"> </span>v2.0.0
-</code></pre></div></p>
-<p><strong>Demo images:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>./build-and-push-demo-images.sh<span class="w"> </span>v2.0.0
-<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
-<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="nb">cd</span><span class="w"> </span>../docker-ai-agent-demo
-<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>./build-and-push-ai-demo-image.sh<span class="w"> </span>v2.0.0
-</code></pre></div></p>
-<p>To use your own organization, set the environment variable:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DOCKER_HUB_ORG</span><span class="o">=</span>myusername
-</code></pre></div></p>
+<h2 id="building-images">Building Images</h2>
+<p>By default, all deployment scripts pull pre-built images from Docker Hub. For building images locally or publishing to Docker Hub, see <a href="../build/README.md">build/README.md</a>.</p>
 
 
 
