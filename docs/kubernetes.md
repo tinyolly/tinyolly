@@ -200,7 +200,7 @@ service:
       exporters: [debug, otlp]
 ```
 
-The Otel Collector will forward everything to TinyOlly's OTLP receiver, which process telemetry and stores it in Redis in OTEL format for the backend and UI to access.
+The Otel Collector will forward everything to TinyOlly's OTLP receiver, which processes telemetry and stores it in SQLite in OTEL format for the backend and UI to access.
 
 ## OpAMP Configuration (Optional)
 

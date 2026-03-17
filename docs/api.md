@@ -344,7 +344,7 @@ Retrieve the service dependency graph:
 
 ### 7. Check System Statistics
 
-Get Redis memory usage and cardinality metrics:
+Get SQLite database usage and cardinality metrics:
 
 === "cURL"
     ```bash
@@ -363,7 +363,7 @@ Get Redis memory usage and cardinality metrics:
     print(f"Total Logs: {stats.get('total_logs', 0)}")
     print(f"Total Metrics: {stats.get('total_metrics', 0)}")
     print(f"Unique Metric Names: {stats.get('unique_metric_names', 0)}")
-    print(f"Redis Memory: {stats.get('redis_memory_mb', 0):.2f} MB")
+    print(f"DB Size: {stats.get('db_size_mb', 0):.2f} MB")
     ```
 
 **Response Format:**
@@ -374,7 +374,8 @@ Get Redis memory usage and cardinality metrics:
   "total_logs": 15230,
   "total_metrics": 45,
   "unique_metric_names": 12,
-  "redis_memory_mb": 45.7,
+  "db_size_mb": 45.7,
+  "db_size_limit_mb": 256,
   "cardinality_limit": 1000,
   "cardinality_usage_pct": 1.2,
   "uptime_seconds": 3600
@@ -443,7 +444,7 @@ openapi-generator-cli generate \
 
 TinyOlly is designed for local development and has no rate limits. However:
 
-- **Memory limits** apply based on Redis configuration (default: 256MB)
+- **Storage limits** apply based on SQLite database size (default: 256 MB, configurable via `MAX_DB_SIZE_MB`)
 - **Cardinality protection** limits unique metric names to 1000 (configurable)
 - **TTL**: All data expires after 30 minutes
 

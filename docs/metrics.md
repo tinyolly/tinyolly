@@ -27,7 +27,7 @@ Click the **Chart** button to visualize metric data over time:
 Clicking on the blue **Cardinality** link for any metric opens the **Cardinality Explorer**. This tool is essential for understanding "high cardinality" issues and exploring your data's dimensions.
 
 ### 1. Header Stats
-- **Total Series (Historic)**: The total number of unique time series seen for this metric since startup (persisted in Redis).
+- **Total Series (Historic)**: The total number of unique time series seen for this metric since startup (persisted in SQLite).
 - **Active Series (1h)**: The count of series seen in the last hour.
 - **Label Dimensions**: The number of unique label keys (e.g., `http.method`, `http.status_code`).
 

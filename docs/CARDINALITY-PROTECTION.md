@@ -16,7 +16,7 @@ TinyOlly includes built-in protection against metric cardinality explosion with 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MAX_METRIC_CARDINALITY` | 1000 | Maximum unique metric names |
-| `REDIS_TTL` | 1800 | Metric retention (seconds) |
+| `SQLITE_TTL_SECONDS` | 1800 | Data retention in seconds (alias: `REDIS_TTL`) |
 
 ### Kubernetes Deployment
 
@@ -26,7 +26,7 @@ Update `k8s/tinyolly-otlp-receiver.yaml`:
 env:
   - name: MAX_METRIC_CARDINALITY
     value: "2000"  # Increase limit
-  - name: REDIS_TTL
+  - name: SQLITE_TTL_SECONDS
     value: "3600"  # 1 hour retention
 ```
 
@@ -37,7 +37,7 @@ Update `docker-compose-tinyolly-core.yml` in the `docker/` directory:
 ```yaml
 environment:
   MAX_METRIC_CARDINALITY: 2000
-  REDIS_TTL: 3600
+  SQLITE_TTL_SECONDS: 3600
 ```
 
 ## Monitoring

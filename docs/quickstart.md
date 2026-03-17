@@ -41,7 +41,7 @@ This pulls pre-built images from Docker Hub and starts:
 - **OpAMP Server** (ports 4320/4321)
 - **TinyOlly OTLP Receiver** (internal)
 - **TinyOlly UI** (port 5005)
-- **Redis storage** (internal)
+- **SQLite storage** (embedded)
 
 **Deployment time:** ~30 seconds (pulls from Docker Hub)
 

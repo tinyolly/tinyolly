@@ -17,7 +17,7 @@ git clone https://github.com/tinyolly/tinyolly
 
 Why send telemetry to a cloud observability platform while coding? Why not have one on your desktop?
 
-TinyOlly is a **lightweight OpenTelemetry-native observability platform** built from scratch to visualize and correlate logs, metrics, and traces. No 3rd party observability tools - just Python (FastAPI), Redis, OpenAPI, and JavaScript.
+TinyOlly is a **lightweight OpenTelemetry-native observability platform** built from scratch to visualize and correlate logs, metrics, and traces. No 3rd party observability tools - just Python (FastAPI), SQLite, OpenAPI, and JavaScript.
 
 ### Key Features
 

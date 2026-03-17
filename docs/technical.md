@@ -11,11 +11,11 @@
 ## Data Storage
 
 - **Format**: Full OpenTelemetry (OTEL) format for traces, logs, and metrics  
-- **Redis**: All telemetry stored with 30-minute TTL (compressed with ZSTD + msgpack)  
-- **Sorted Sets**: Time-series data indexed by timestamp  
+- **SQLite**: All telemetry stored in an embedded SQLite database with 30-minute TTL (compressed with ZSTD + msgpack)  
+- **WAL Mode**: Write-Ahead Logging for concurrent reads during writes  
 - **Correlation**: Native trace-metric-log correlation via trace/span IDs  
 - **Cardinality Protection**: Prevents metric explosion  
-- **No Persistence**: Data vanishes after TTL (ephemeral dev tool)  
+- **No Persistence**: Data vanishes after TTL (ephemeral dev tool); configurable database size limit (default 256 MB)  
 
 ---
 

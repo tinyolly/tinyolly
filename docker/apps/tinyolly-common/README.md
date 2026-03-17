@@ -4,10 +4,13 @@ Shared Python package containing common utilities used across TinyOlly component
 
 ## Components
 
-- **storage.py**: Redis storage layer with ZSTD compression and msgpack serialization
+- **storage_sqlite.py**: SQLite storage layer (default) with ZSTD compression and msgpack serialization
   - Handles traces, spans, logs, and metrics storage
   - Implements TTL-based automatic cleanup
-  - Provides async/await interface with connection pooling
+  - WAL mode for concurrent read/write performance
+  - Provides async/await interface via `aiosqlite`
+- **storage.py**: Redis storage layer (archived—see [Redis Archive](../../docs/redis-archive.md))
+  - Legacy backend, no longer the default
 
 ## Installation
 

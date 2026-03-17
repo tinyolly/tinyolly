@@ -16,7 +16,7 @@ git clone https://github.com/tinyolly/tinyolly
 
 ## 1. Deploy TinyOlly Core (Required)
 
-Start the observability backend (OTel Collector, TinyOlly Receiver, Redis, UI):
+Start the observability backend (OTel Collector, TinyOlly Receiver, SQLite, UI):
 
 ```bash
 cd docker
@@ -27,7 +27,7 @@ This starts:
 - **OTel Collector**: Listening on `localhost:4317` (gRPC) and `localhost:4318` (HTTP)  
 - **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)  
 - **TinyOlly UI**: `http://localhost:5005`  
-- **TinyOlly OTLP Receiver and its Redis storage**: OTLP observability back end and storage  
+- **TinyOlly OTLP Receiver and its SQLite storage**: OTLP observability back end and storage  
 - Rebuilds images if code changes are detected  
 
 **Open the UI:** `http://localhost:5005` (empty until you send data)
@@ -168,7 +168,7 @@ Docker Desktop automatically exposes container ports to `localhost`. Point your 
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 ```
 
-The Otel Collector will forward everything to TinyOlly's OTLP receiver, which process telemetry and stores it in Redis in OTEL format for the backend and UI to access.
+The Otel Collector will forward everything to TinyOlly's OTLP receiver, which processes telemetry and stores it in SQLite in OTEL format for the backend and UI to access.
 
 ## 6. TinyOlly **Core-Only** Deployment: Use Your Own Docker OpenTelemetry Collector
 
@@ -183,7 +183,6 @@ This starts:
 - **TinyOlly OTLP Receiver**: Listening on `localhost:4343` (gRPC only)
 - **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)
 - **TinyOlly UI**: `http://localhost:5005`
-- **TinyOlly Redis**: `localhost:6579`
 
 Swap out the included Otel Collector for any distro of Otel Collector.
 
@@ -217,7 +216,7 @@ service:
       exporters: [debug, otlp]
 ```
 
-The Otel Collector will forward everything to TinyOlly's OTLP receiver, which process telemetry and stores it in Redis in OTEL format for the backend and UI to access.
+The Otel Collector will forward everything to TinyOlly's OTLP receiver, which processes telemetry and stores it in SQLite in OTEL format for the backend and UI to access.
 
 ## OpAMP Configuration (Optional)
 

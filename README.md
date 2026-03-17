@@ -23,7 +23,7 @@ Visualize and correlate logs, metrics, and traces without sending data to the cl
 - REST API with OpenAPI documentation
 - Service catalog, dependency maps, and distributed tracing
 - Works with any OTel Collector distro
-- Built with Python (FastAPI), Redis, and JavaScript
+- Built with Python (FastAPI), SQLite, and JavaScript
 - Pre-built Docker images available on Docker Hub
 
 **Platform Support:** Tested on Docker Desktop and Minikube Kubernetes (Apple Silicon Mac)
@@ -92,7 +92,7 @@ cd docker
 - **OTLP Receiver**: `localhost:4343` (gRPC)
 - **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)
 - **UI**: `http://localhost:5005`
-- **Redis**: `localhost:6579`
+
 - **OTel Collector**: `localhost:4317` (gRPC), `localhost:4318` (HTTP)
 
 **Stop:** `./02-stop-core.sh`
@@ -179,7 +179,6 @@ Deploys TinyOlly without the bundled OTel Collector. Includes:
 - **OTLP Receiver**: `localhost:4343` (gRPC only)
 - **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)
 - **UI**: `http://localhost:5005`
-- **Redis**: `localhost:6579`
 
 Point your external collector to `localhost:4343` for telemetry ingestion.
 
@@ -336,7 +335,7 @@ All responses return OpenTelemetry-native JSON with full trace/span context.
 ## Technical Details
 
 ### Stack
-- **Backend**: FastAPI (async), Redis with ZSTD compression + msgpack
+- **Backend**: FastAPI (async), SQLite with ZSTD compression + msgpack
 - **Frontend**: Vanilla JavaScript, HTML, CSS
 - **Ingestion**: OTLP/gRPC and OTLP/HTTP
 - **Storage**: 30-minute TTL, sorted sets indexed by timestamp
@@ -352,7 +351,7 @@ All responses return OpenTelemetry-native JSON with full trace/span context.
 ---
 
 ### Admin Endpoints
-- `GET /admin/stats` - Redis memory, cardinality, uptime
+- `GET /admin/stats` - SQLite database size, cardinality, uptime
 - `GET/POST/DELETE /admin/alerts` - Alert management
 - `GET /health` - Connectivity status
 
