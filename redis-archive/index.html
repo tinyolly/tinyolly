@@ -12,11 +12,13 @@
         <meta name="author" content="TinyOlly">
       
       
-        <link rel="canonical" href="https://tinyolly.github.io/tinyolly/licensing/">
+        <link rel="canonical" href="https://tinyolly.github.io/tinyolly/redis-archive/">
       
       
-        <link rel="prev" href="../redis-archive/">
+        <link rel="prev" href="../CARDINALITY-PROTECTION/">
       
+      
+        <link rel="next" href="../licensing/">
       
       
         
@@ -27,7 +29,7 @@
     
     
       
-        <title>Licensing - TinyOlly Documentation</title>
+        <title>Redis Storage (Archive) - TinyOlly Documentation</title>
       
     
     
@@ -80,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#licensing" class="md-skip">
+        <a href="#redis-storage-archive" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Licensing
+              Redis Storage (Archive)
             
           </span>
         </div>
@@ -664,8 +666,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -676,13 +680,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
@@ -703,7 +705,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -774,41 +776,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../redis-archive/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Redis Storage (Archive)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
     
   
   
@@ -828,7 +795,7 @@
   <span class="md-ellipsis">
     
   
-    Licensing
+    Redis Storage (Archive)
   
 
     
@@ -846,7 +813,7 @@
   <span class="md-ellipsis">
     
   
-    Licensing
+    Redis Storage (Archive)
   
 
     
@@ -872,10 +839,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#community-and-small-scale-use" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Community and Small-Scale Use
+        Overview
       
     </span>
   </a>
@@ -883,10 +850,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#commercial-and-large-scale-use" class="md-nav__link">
+  <a href="#why-we-migrated-to-sqlite" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Commercial and Large-Scale Use
+        Why We Migrated to SQLite
       
     </span>
   </a>
@@ -894,10 +861,88 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
+  <a href="#legacy-architecture-redis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rationale
+        Legacy Architecture (Redis)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Legacy Architecture (Redis)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-environment-variables-redis-era" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key environment variables (Redis era)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redis-index-keys-legacy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis index keys (legacy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-resources-redis-era" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes resources (Redis era)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-storage-sqlite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Storage (SQLite)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Current Storage (SQLite)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#current-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current environment variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source Files
       
     </span>
   </a>
@@ -908,6 +953,41 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../licensing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Licensing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -939,10 +1019,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#community-and-small-scale-use" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Community and Small-Scale Use
+        Overview
       
     </span>
   </a>
@@ -950,10 +1030,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#commercial-and-large-scale-use" class="md-nav__link">
+  <a href="#why-we-migrated-to-sqlite" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Commercial and Large-Scale Use
+        Why We Migrated to SQLite
       
     </span>
   </a>
@@ -961,10 +1041,88 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
+  <a href="#legacy-architecture-redis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rationale
+        Legacy Architecture (Redis)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Legacy Architecture (Redis)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-environment-variables-redis-era" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key environment variables (Redis era)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redis-index-keys-legacy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis index keys (legacy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-resources-redis-era" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes resources (Redis era)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-storage-sqlite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Storage (SQLite)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Current Storage (SQLite)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#current-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current environment variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source Files
       
     </span>
   </a>
@@ -991,34 +1149,285 @@
   
 
 
-<h1 id="licensing">Licensing</h1>
-<p>TinyOlly is released under the <strong>BSD 3-Clause License</strong>.<br />
-The full license text is available in the <a href="https://github.com/tinyolly/tinyolly/blob/main/LICENSE">LICENSE</a> file. This license permits free use, modification, and redistribution for individuals, researchers, and small organizations.</p>
-<h2 id="community-and-small-scale-use">Community and Small-Scale Use</h2>
-<p>TinyOlly may be used freely under the BSD license for:</p>
-<ul>
-<li>Individual developers and hobby projects  </li>
-<li>Academic and research use  </li>
-<li>Startups or small organizations  </li>
-<li>Limited internal development, tooling, experimentation, or evaluation  </li>
-</ul>
-<p>No additional agreements are required for these scenarios.</p>
-<h2 id="commercial-and-large-scale-use">Commercial and Large-Scale Use</h2>
-<p>Organizations deploying TinyOlly in a broader or more intensive capacity are required to obtain a commercial license. This includes use cases such as:</p>
-<ul>
-<li>Organizations with approximately 50 or more employees  </li>
-<li>Deployments across multiple engineering teams  </li>
-<li>Production or mission-critical observability workflows  </li>
-<li>Integration into commercial software, platforms, or SaaS products  </li>
-<li>High-volume or distributed environments</li>
-</ul>
-<p>For commercial licensing inquiries, contact:  </p>
-<div align="center">
-  <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDAiIGZpbGw9IiMxZTI5M2IiIHJ4PSI0Ii8+CiAgPHRleHQgeD0iMTUwIiB5PSIyNSIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2ZmZmZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+CiAgICBjb250YWN0QHRpbnlvbGx5LmNvCiAgPC90ZXh0Pgo8L3N2Zz4K" alt="Contact Email" width="300" height="40">
+<h1 id="redis-storage-archive">Redis Storage — Archive</h1>
+<div class="admonition note">
+<p class="admonition-title">Archived</p>
+<p>Redis was the original storage backend for TinyOlly. As of v3.0, <strong>SQLite is the default and only actively maintained backend</strong>. The Redis code (<code>storage.py</code>) is preserved in the repository for reference but is no longer used by default.</p>
 </div>
-
-<h2 id="rationale">Rationale</h2>
-<p>This model ensures that TinyOlly remains fully open source and accessible to the community while providing a sustainable path for supporting organizations that rely on it at scale.</p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>TinyOlly originally used <strong>Redis</strong> as its storage backend for all OpenTelemetry telemetry data (traces, spans, logs, metrics). Redis was chosen for its:</p>
+<ul>
+<li>In-memory speed with native TTL support</li>
+<li>Sorted Sets for time-series indexing</li>
+<li>Simple key/value model that mapped well to ephemeral telemetry</li>
+</ul>
+<hr />
+<h2 id="why-we-migrated-to-sqlite">Why We Migrated to SQLite</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Redis</th>
+<th>SQLite</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>External process required</td>
+<td>✅ Yes (separate container/pod)</td>
+<td>❌ No (embedded)</td>
+</tr>
+<tr>
+<td>Deployment complexity</td>
+<td>Higher (extra service, port, auth)</td>
+<td>Lower (single file)</td>
+</tr>
+<tr>
+<td>Resource usage</td>
+<td>~128 MB baseline RAM</td>
+<td>Near-zero at idle</td>
+</tr>
+<tr>
+<td>Data size limit</td>
+<td><code>maxmemory</code> cap (eviction risk)</td>
+<td>Configurable file size cap</td>
+</tr>
+<tr>
+<td>WAL concurrent reads</td>
+<td>No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Cold-start persistence</td>
+<td>❌ Volatile by default</td>
+<td>✅ File-based (TTL cleanup still applies)</td>
+</tr>
+<tr>
+<td>Kubernetes footprint</td>
+<td>Extra pod + Service</td>
+<td>Shared PVC volume</td>
+</tr>
+</tbody>
+</table>
+<p>The primary driver was <strong>deployment simplicity</strong> — eliminating the Redis sidecar reduced the number of containers in every deployment (Docker and Kubernetes) and removed the external network dependency between services.</p>
+<hr />
+<h2 id="legacy-architecture-redis">Legacy Architecture (Redis)</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>OTLP Receiver ──► Redis :6579
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                      ▲
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>TinyOlly UI   ──────►─┘
+</code></pre></div>
+<ul>
+<li><strong>Data serialization</strong>: msgpack + optional ZSTD compression (above 512-byte threshold)</li>
+<li><strong>Index structures</strong>: Redis Sorted Sets keyed by timestamp for traces, spans, logs, and metric series</li>
+<li><strong>TTL</strong>: Managed via Redis <code>EXPIRE</code> on individual keys (default 1800 s / 30 min)</li>
+<li><strong>Cardinality protection</strong>: Enforced in application code by checking set cardinality before writes</li>
+</ul>
+<h3 id="key-environment-variables-redis-era">Key environment variables (Redis era)</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>REDIS_HOST</code></td>
+<td><code>localhost</code></td>
+<td>Redis hostname</td>
+</tr>
+<tr>
+<td><code>REDIS_PORT_NUMBER</code></td>
+<td><code>6579</code></td>
+<td>Redis port</td>
+</tr>
+<tr>
+<td><code>REDIS_TTL</code></td>
+<td><code>1800</code></td>
+<td>Key TTL in seconds</td>
+</tr>
+<tr>
+<td><code>MAX_METRIC_CARDINALITY</code></td>
+<td><code>1000</code></td>
+<td>Max unique metric names</td>
+</tr>
+<tr>
+<td><code>COMPRESSION_THRESHOLD_BYTES</code></td>
+<td><code>512</code></td>
+<td>Compress payloads above this size</td>
+</tr>
+</tbody>
+</table>
+<h3 id="redis-index-keys-legacy">Redis index keys (legacy)</h3>
+<table>
+<thead>
+<tr>
+<th>Key pattern</th>
+<th>Type</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>trace_index</code></td>
+<td>Sorted Set</td>
+<td>Trace IDs indexed by start time</td>
+</tr>
+<tr>
+<td><code>span_index</code></td>
+<td>Sorted Set</td>
+<td>Span IDs indexed by start time</td>
+</tr>
+<tr>
+<td><code>log_index</code></td>
+<td>Sorted Set</td>
+<td>Log record IDs indexed by timestamp</td>
+</tr>
+<tr>
+<td><code>trace:{id}</code></td>
+<td>Hash</td>
+<td>Trace metadata</td>
+</tr>
+<tr>
+<td><code>spans:{trace_id}</code></td>
+<td>List</td>
+<td>Span IDs belonging to a trace</td>
+</tr>
+<tr>
+<td><code>span:{id}</code></td>
+<td>Hash (compressed)</td>
+<td>Full span data</td>
+</tr>
+<tr>
+<td><code>log:{id}</code></td>
+<td>Hash (compressed)</td>
+<td>Full log record</td>
+</tr>
+<tr>
+<td><code>metric_series</code></td>
+<td>Set</td>
+<td>All known metric series</td>
+</tr>
+</tbody>
+</table>
+<h3 id="kubernetes-resources-redis-era">Kubernetes resources (Redis era)</h3>
+<p>The file <code>k8s/redis.yaml</code> (and <code>k8s-core-only/redis.yaml</code>) deployed Redis as a Kubernetes Deployment + Service:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># redis:7-alpine</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># Port: 6579</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># maxmemory: 256mb</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># maxmemory-policy: allkeys-lru</span>
+</code></pre></div>
+<p>These files are retained in the repository for historical reference but are <strong>not applied</strong> by the current deploy scripts.</p>
+<hr />
+<h2 id="current-storage-sqlite">Current Storage (SQLite)</h2>
+<p>The equivalent concepts in the SQLite backend (<code>storage_sqlite.py</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Redis concept</th>
+<th>SQLite equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sorted Set (time index)</td>
+<td><code>ORDER BY timestamp</code> on indexed column</td>
+</tr>
+<tr>
+<td>Key TTL (<code>EXPIRE</code>)</td>
+<td>Periodic background cleanup task</td>
+</tr>
+<tr>
+<td><code>maxmemory</code> cap</td>
+<td><code>MAX_PAGE_COUNT</code> PRAGMA (from <code>MAX_DB_SIZE_MB</code>)</td>
+</tr>
+<tr>
+<td>Connection pooling</td>
+<td><code>aiosqlite</code> with WAL mode</td>
+</tr>
+<tr>
+<td>Binary compression</td>
+<td>Same: ZSTD + msgpack, same threshold</td>
+</tr>
+</tbody>
+</table>
+<h3 id="current-environment-variables">Current environment variables</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>STORAGE_BACKEND</code></td>
+<td><code>sqlite</code></td>
+<td>Storage backend selector</td>
+</tr>
+<tr>
+<td><code>SQLITE_DB_PATH</code></td>
+<td><code>/data/tinyolly.db</code></td>
+<td>Path to SQLite database file</td>
+</tr>
+<tr>
+<td><code>SQLITE_TTL_SECONDS</code></td>
+<td><code>1800</code></td>
+<td>Data retention in seconds (alias: <code>REDIS_TTL</code>)</td>
+</tr>
+<tr>
+<td><code>MAX_DB_SIZE_MB</code></td>
+<td><code>256</code></td>
+<td>Maximum SQLite file size</td>
+</tr>
+<tr>
+<td><code>MAX_METRIC_CARDINALITY</code></td>
+<td><code>1000</code></td>
+<td>Max unique metric names</td>
+</tr>
+<tr>
+<td><code>COMPRESSION_THRESHOLD_BYTES</code></td>
+<td><code>512</code></td>
+<td>Compress payloads above this size</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="source-files">Source Files</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docker/apps/tinyolly-common/tinyolly_common/storage.py</code></td>
+<td><strong>Archived</strong></td>
+<td>Original Redis async client</td>
+</tr>
+<tr>
+<td><code>docker/apps/tinyolly-common/tinyolly_common/storage_sqlite.py</code></td>
+<td><strong>Active</strong></td>
+<td>Current SQLite backend</td>
+</tr>
+<tr>
+<td><code>k8s/redis.yaml</code></td>
+<td><strong>Archived</strong></td>
+<td>Kubernetes Redis Deployment + Service</td>
+</tr>
+<tr>
+<td><code>k8s-core-only/redis.yaml</code></td>
+<td><strong>Archived</strong></td>
+<td>Core-only variant</td>
+</tr>
+</tbody>
+</table>
 
 
 
