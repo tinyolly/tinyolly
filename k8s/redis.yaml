@@ -1,3 +1,7 @@
+# ARCHIVED: Redis is no longer the storage backend for TinyOlly.
+# SQLite (tinyolly-sqlite-pvc.yaml) is used instead.
+# This file is retained for reference. Do NOT apply it — it is not used by any deploy script.
+# See docs/redis-archive.md for migration details.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

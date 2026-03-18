@@ -11,6 +11,11 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/../../docker"
 
+# Always use Docker Desktop daemon, never Minikube's
+# (minikube docker-env pollutes the shell and causes images to be built into
+#  Minikube instead of the Docker Desktop daemon used by docker push)
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
+
 VERSION=${1:-"latest"}
 DOCKER_HUB_ORG=${DOCKER_HUB_ORG:-"tinyolly"}
 PLATFORMS="linux/amd64,linux/arm64"

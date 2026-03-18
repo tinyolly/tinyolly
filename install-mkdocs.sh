@@ -20,11 +20,20 @@ if ! command -v pip3 &> /dev/null; then
     exit 1
 fi
 
-echo "Installing MkDocs and required plugins..."
+echo "Installing MkDocs and required plugins into a virtual environment..."
 echo ""
 
-# Install MkDocs and plugins
-pip3 install mkdocs mkdocs-material pymdown-extensions
+VENV_DIR="$HOME/.venv/mkdocs"
+
+# Create venv if it doesn't exist
+if [ ! -d "$VENV_DIR" ]; then
+    echo "Creating virtual environment at $VENV_DIR..."
+    python3 -m venv "$VENV_DIR"
+fi
+
+# Install packages into the venv
+"$VENV_DIR/bin/pip" install --upgrade pip
+"$VENV_DIR/bin/pip" install mkdocs mkdocs-material pymdown-extensions
 
 echo ""
 echo "========================================================"
@@ -35,6 +44,11 @@ echo "Installed packages:"
 echo "  - mkdocs: Static site generator"
 echo "  - mkdocs-material: Material theme for MkDocs"
 echo "  - pymdown-extensions: Markdown extensions"
+echo ""
+echo "Virtual environment: $HOME/.venv/mkdocs"
+echo ""
+echo "To activate the venv:"
+echo "  source ~/.venv/mkdocs/bin/activate"
 echo ""
 echo "To serve documentation locally:"
 echo "  mkdocs serve"

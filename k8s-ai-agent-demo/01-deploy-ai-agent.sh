@@ -38,7 +38,7 @@ echo ""
 
 # Check if TinyOlly core is running
 echo -e "${BLUE}Checking TinyOlly core services...${NC}"
-if ! kubectl get service tinyolly-redis &> /dev/null || \
+if ! kubectl get service tinyolly-otlp-receiver &> /dev/null || \
    ! kubectl get service otel-collector &> /dev/null; then
     echo -e "${YELLOW}Warning: TinyOlly core services may not be running${NC}"
     echo -e "${YELLOW}Make sure to deploy core first: cd ../k8s && ./01-deploy.sh${NC}"

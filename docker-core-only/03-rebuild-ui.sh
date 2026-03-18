@@ -5,7 +5,7 @@ echo "Rebuilding TinyOlly UI..."
 echo "=================================================="
 
 # Rebuild only the tinyolly-ui service
-# --no-deps: Don't restart dependent services (Redis, etc.)
+# --no-deps: Don't restart dependent services
 # --force-recreate: Ensure container is replaced
 # --build: Force image rebuild
 docker compose -f docker-compose-tinyolly-core.yml build --no-cache tinyolly-ui

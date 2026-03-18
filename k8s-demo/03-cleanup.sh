@@ -118,6 +118,6 @@ echo -e "${BLUE}========================================${NC}"
 echo -e "${GREEN}Demo cleanup complete!${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
-echo -e "${YELLOW}Note: TinyOlly core services (Redis, OTel Collector, UI) are still running${NC}"
+echo -e "${YELLOW}Note: TinyOlly core services (SQLite, OTel Collector, UI) are still running${NC}"
 echo -e "To remove them, run: ${CYAN}cd ../k8s && ./cleanup.sh${NC}"
 

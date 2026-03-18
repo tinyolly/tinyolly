@@ -45,8 +45,6 @@ spec:
           value: "true"
         - name: OPAMP_SERVER_URL
           value: "http://tinyolly-opamp-server:4321"
-        - name: OPAMP_SERVER_URL
-          value: "http://tinyolly-opamp-server:4321"
         - name: OTELCOL_DEFAULT_CONFIG
           value: "/app/otelcol-config.yaml"
         volumeMounts:

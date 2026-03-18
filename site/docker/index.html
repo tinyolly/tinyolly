@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../images/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -907,6 +907,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../redis-archive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Redis Storage (Archive)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1087,7 +1115,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tinyolly/tinyolly
 </code></pre></div></p>
 <h2 id="1-deploy-tinyolly-core-required">1. Deploy TinyOlly Core (Required)</h2>
-<p>Start the observability backend (OTel Collector, TinyOlly Receiver, Redis, UI):</p>
+<p>Start the observability backend (OTel Collector, TinyOlly Receiver, SQLite, UI):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>docker
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./01-start-core.sh
 </code></pre></div>
@@ -1095,7 +1123,7 @@
 - <strong>OTel Collector</strong>: Listening on <code>localhost:4317</code> (gRPC) and <code>localhost:4318</code> (HTTP)<br />
 - <strong>OpAMP Server</strong>: <code>ws://localhost:4320/v1/opamp</code> (WebSocket), <code>localhost:4321</code> (HTTP REST API)<br />
 - <strong>TinyOlly UI</strong>: <code>http://localhost:5005</code><br />
-- <strong>TinyOlly OTLP Receiver and its Redis storage</strong>: OTLP observability back end and storage<br />
+- <strong>TinyOlly OTLP Receiver and its SQLite storage</strong>: OTLP observability back end and storage<br />
 - Rebuilds images if code changes are detected  </p>
 <p><strong>Open the UI:</strong> <code>http://localhost:5005</code> (empty until you send data)</p>
 <p><strong>OpenTelemetry Collector + OpAMP Config Page:</strong> Navigate to the "OpenTelemetry Collector + OpAMP Config" tab in the UI to view and manage collector configurations remotely. See the <a href="#opamp-configuration-optional">OpAMP Configuration</a> section below for setup instructions.</p>
@@ -1194,7 +1222,7 @@ Docker Desktop automatically exposes container ports to <code>localhost</code>. 
 <p><strong>Example environment variables:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://localhost:4318
 </code></pre></div></p>
-<p>The Otel Collector will forward everything to TinyOlly's OTLP receiver, which process telemetry and stores it in Redis in OTEL format for the backend and UI to access.</p>
+<p>The Otel Collector will forward everything to TinyOlly's OTLP receiver, which processes telemetry and stores it in SQLite in OTEL format for the backend and UI to access.</p>
 <h2 id="6-tinyolly-core-only-deployment-use-your-own-docker-opentelemetry-collector">6. TinyOlly <strong>Core-Only</strong> Deployment: Use Your Own Docker OpenTelemetry Collector</h2>
 <p>If you already have an OpenTelemetry Collector or want to send telemetry directly to the TinyOlly Receiver, you can deploy the core components without the bundled OTel Collector.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">cd</span><span class="w"> </span>docker-core-only
@@ -1203,8 +1231,7 @@ Docker Desktop automatically exposes container ports to <code>localhost</code>. 
 <p>This starts:
 - <strong>TinyOlly OTLP Receiver</strong>: Listening on <code>localhost:4343</code> (gRPC only)
 - <strong>OpAMP Server</strong>: <code>ws://localhost:4320/v1/opamp</code> (WebSocket), <code>localhost:4321</code> (HTTP REST API)
-- <strong>TinyOlly UI</strong>: <code>http://localhost:5005</code>
-- <strong>TinyOlly Redis</strong>: <code>localhost:6579</code></p>
+- <strong>TinyOlly UI</strong>: <code>http://localhost:5005</code></p>
 <p>Swap out the included Otel Collector for any distro of Otel Collector.</p>
 <p><strong>Point your OpenTelemetry exporters to tinyolly-otlp-receiver:4343:</strong>
 i.e.<br />
@@ -1234,7 +1261,7 @@ i.e.<br />
 <a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a><span class="w">      </span><span class="nt">processors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">batch</span><span class="p p-Indicator">]</span>
 <a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a><span class="w">      </span><span class="nt">exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">debug</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">otlp</span><span class="p p-Indicator">]</span>
 </code></pre></div></p>
-<p>The Otel Collector will forward everything to TinyOlly's OTLP receiver, which process telemetry and stores it in Redis in OTEL format for the backend and UI to access.</p>
+<p>The Otel Collector will forward everything to TinyOlly's OTLP receiver, which processes telemetry and stores it in SQLite in OTEL format for the backend and UI to access.</p>
 <h2 id="opamp-configuration-optional">OpAMP Configuration (Optional)</h2>
 <p>The <strong>OpenTelemetry Collector + OpAMP Config</strong> page in the TinyOlly UI allows you to view and manage collector configurations remotely. To enable this feature, add the OpAMP extension to your collector config:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nt">extensions</span><span class="p">:</span>
@@ -1326,10 +1353,10 @@ i.e.<br />
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.index", "navigation.sections", "navigation.expand", "navigation.instant", "navigation.tracking", "search.suggest", "search.highlight", "content.tabs", "content.code.annotate"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.index", "navigation.sections", "navigation.expand", "navigation.instant", "navigation.tracking", "search.suggest", "search.highlight", "content.tabs", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

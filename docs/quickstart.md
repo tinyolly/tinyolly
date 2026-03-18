@@ -213,7 +213,7 @@ cd docker
 - Check demo app logs: `docker compose -f docker-demo/docker-compose-demo.yml logs`
 
 ### Port conflicts
-- TinyOlly uses ports 4317, 4318, 4320, 4321, 4343, 5005, 6579, 19291
+- TinyOlly uses ports 4317, 4318, 4320, 4321, 4343, 5005, 19291
 - Stop conflicting services or modify ports in `docker-compose-tinyolly-core.yml`
 
 ### Demo apps not generating traffic
