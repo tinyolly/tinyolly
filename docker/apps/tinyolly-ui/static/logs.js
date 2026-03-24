@@ -1,7 +1,7 @@
 /**
  * Logs Module - Handles log list, filtering, and detail views
  */
-import { formatTraceId, copyToClipboard, downloadJson, formatTimestamp, renderJsonDetailView, getSeverityColor, renderActionButton, renderEmptyState, filterTableRows, copyJsonWithFeedback, downloadTelemetryJson, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter } from './utils.js';
+import { formatTraceId, copyToClipboard, downloadJson, formatTimestamp, renderJsonDetailView, getSeverityColor, renderActionButton, renderEmptyState, filterTableRows, copyJsonWithFeedback, downloadTelemetryJson, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter, setupCopyableIds } from './utils.js';
 
 const MAX_LOGS_IN_MEMORY = 1000; // Prevent unbounded memory growth
 let currentLogs = [];
@@ -82,10 +82,10 @@ function renderLogList(container, logsToShow, totalLogs) {
                 <div class="text-main font-medium text-truncate" style="flex: 0 0 120px;" title="${log.service_name || log.service || ''}">${log.service_name || log.service || '-'}</div>
                 <div class="log-severity ${severity}" style="flex: 0 0 60px;">${severity}</div>
                 <div class="text-mono text-truncate" style="flex: 0 0 180px; font-size: 10px;" title="${traceId || ''}">
-                    ${traceId ? `<a class="log-trace-link text-mono" data-trace-id="${traceId}">${formatTraceId(traceId)}</a>` : '<span class="text-muted">-</span>'}
+                    ${traceId ? `<a class="log-trace-link text-mono copyable-id" data-trace-id="${traceId}" data-copy="${traceId}" title="Click to copy, navigate to trace">${formatTraceId(traceId)}</a>` : '<span class="text-muted">-</span>'}
                 </div>
                 <div class="text-mono text-truncate" style="flex: 0 0 140px; font-size: 10px;" title="${spanId || ''}">
-                    ${spanId ? `<a class="log-span-link text-mono" data-span-id="${spanId}">${formatTraceId(spanId)}</a>` : '<span class="text-muted">-</span>'}
+                    ${spanId ? `<a class="log-span-link text-mono copyable-id" data-span-id="${spanId}" data-copy="${spanId}" title="Click to copy, navigate to span">${formatTraceId(spanId)}</a>` : '<span class="text-muted">-</span>'}
                 </div>
                 <div class="text-main" style="flex: 1; min-width: 200px; word-break: break-word;">${log.message || ''}</div>
             </div>
@@ -123,13 +123,16 @@ function handleLogClick(e) {
         e.preventDefault();
         e.stopPropagation(); // Prevent row click
         const traceId = traceLink.dataset.traceId;
-        if (traceId && window.showTraceDetail) {
-            // Switch to traces tab first
-            if (window.switchTab) {
-                window.switchTab('traces');
+        if (traceId) {
+            navigator.clipboard.writeText(traceId).catch(() => {});
+            if (window.showTraceDetail) {
+                // Switch to traces tab first
+                if (window.switchTab) {
+                    window.switchTab('traces');
+                }
+                // Then show the trace detail
+                setTimeout(() => window.showTraceDetail(traceId), 100);
             }
-            // Then show the trace detail
-            setTimeout(() => window.showTraceDetail(traceId), 100);
         }
         return;
     }
@@ -142,6 +145,7 @@ function handleLogClick(e) {
         const spanId = spanLink.dataset.spanId;
 
         if (spanId) {
+            navigator.clipboard.writeText(spanId).catch(() => {});
             // Switch to spans tab
             if (window.switchTab) {
                 window.switchTab('spans');

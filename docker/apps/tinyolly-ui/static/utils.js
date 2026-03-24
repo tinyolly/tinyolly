@@ -11,6 +11,47 @@ export function formatTraceId(id) {
     return id.replace(/^0+(?=.)/, '');
 }
 
+/** Sets up click-to-copy handlers on all .copyable-id elements within a container */
+export function setupCopyableIds(container) {
+    container.querySelectorAll('.copyable-id').forEach(el => {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const text = el.dataset.copy || el.textContent.trim();
+            const orig = el.textContent;
+            // Try clipboard API first, fall back to execCommand
+            const copyFallback = () => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            };
+            const showFeedback = () => {
+                el.classList.add('copied');
+                el.textContent = 'Copied!';
+                setTimeout(() => {
+                    el.textContent = orig;
+                    el.classList.remove('copied');
+                }, 1000);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(showFeedback).catch(() => {
+                    copyFallback();
+                    showFeedback();
+                });
+            } else {
+                copyFallback();
+                showFeedback();
+            }
+        });
+    });
+}
+
 /** Formats duration in ms to appropriate unit (µs/ms/s) */
 export function formatDuration(ms) {
     if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;

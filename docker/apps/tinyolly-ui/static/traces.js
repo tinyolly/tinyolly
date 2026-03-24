@@ -1,7 +1,7 @@
 /**
  * Traces Module - Handles trace list and waterfall visualization
  */
-import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter } from './utils.js';
+import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter, setupCopyableIds } from './utils.js';
 import { fetchTraceDetail, loadTraces } from './api.js';
 
 let currentTraceId = null;
@@ -55,7 +55,7 @@ export function renderTraces(traces) {
             <div class="trace-item data-table-row" data-trace-id="${trace.trace_id}">
                 <div class="trace-time text-mono text-muted" style="flex: 0 0 100px;">${startTime}</div>
                 <div class="trace-service text-truncate" style="flex: 0 0 120px;" title="${serviceName}">${serviceName}</div>
-                <div class="trace-id text-mono text-muted" style="flex: 0 0 260px; font-size: 0.9em;">${displayTraceId}</div>
+                <div class="trace-id text-mono text-muted" style="flex: 0 0 260px; font-size: 0.9em;"><span class="copyable-id" data-copy="${trace.trace_id}" title="Click to copy">${displayTraceId}</span></div>
                 <div class="trace-spans text-muted" style="flex: 0 0 60px; text-align: right;">${trace.span_count}</div>
                 <div class="trace-duration text-muted" style="flex: 0 0 80px; text-align: right;">${formatDuration(trace.duration_ms)}</div>
                 <div class="trace-method text-primary font-bold text-truncate" style="flex: 0 0 70px;">${method}</div>
@@ -80,6 +80,9 @@ export function renderTraces(traces) {
     container.querySelectorAll('.trace-item').forEach(item => {
         item.addEventListener('click', () => showTraceDetail(item.dataset.traceId));
     });
+
+    // Add copy-on-click for IDs
+    setupCopyableIds(container);
 
     // Add search functionality
     const searchInput = document.getElementById('trace-search');
@@ -241,10 +244,17 @@ async function renderWaterfall(trace) {
     currentTraceData = trace;
     selectedSpanIndex = null;
 
+    // Filter out noisy ASGI internal sub-spans (http send, http receive)
+    // These are low-level HTTP chunk spans that clutter the waterfall
+    const filteredSpans = allSpans.filter(s => {
+        const name = s.name || '';
+        return !name.endsWith(' http send') && !name.endsWith(' http receive');
+    });
+
     // For large traces, initially show only first 100 spans to avoid UI freeze
     const MAX_INITIAL_SPANS = 100;
-    const isLargeTrace = allSpans.length > MAX_INITIAL_SPANS;
-    const spans = isLargeTrace ? allSpans.slice(0, MAX_INITIAL_SPANS) : allSpans;
+    const isLargeTrace = filteredSpans.length > MAX_INITIAL_SPANS;
+    const spans = isLargeTrace ? filteredSpans.slice(0, MAX_INITIAL_SPANS) : filteredSpans;
 
     // Find trace bounds (use all spans for accurate timeline)
     const startTimes = spans.map(s => s.startTimeUnixNano || s.start_time || 0);
@@ -283,10 +293,18 @@ async function renderWaterfall(trace) {
         return `<div class="${className}" style="${positionStyle}">${timeMs.toFixed(2)}ms</div>`;
     }).join('');
 
+    // Info about filtered spans
+    const hiddenCount = allSpans.length - filteredSpans.length;
+    const filteredNote = hiddenCount > 0 ? `
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            ${hiddenCount} internal HTTP spans hidden. View "Trace JSON" for complete data.
+        </div>
+    ` : '';
+
     // Warning for large traces
     const largeTraceWarning = isLargeTrace ? `
         <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; margin: 12px 0; color: #92400e;">
-            ⚠️ Large trace detected (${allSpans.length} spans). Showing first ${MAX_INITIAL_SPANS} spans for performance. Use "Trace JSON" to view complete data.
+            ⚠️ Large trace detected (${filteredSpans.length} spans). Showing first ${MAX_INITIAL_SPANS} spans for performance. Use "Trace JSON" to view complete data.
         </div>
     ` : '';
 
@@ -295,10 +313,11 @@ async function renderWaterfall(trace) {
         <div class="json-detail-view" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin: 12px 0;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">
-                    Trace: ${displayTraceId}
+                    Trace: <span class="copyable-id" data-copy="${trace.trace_id}" title="Click to copy">${displayTraceId}</span>
                     <span style="font-weight: normal; color: var(--text-muted); font-size: 0.9em; margin-left: 8px;">
-                        ${trace.span_count} spans - ${traceDurationMs.toFixed(2)}ms total
+                        ${spans.length} spans - ${traceDurationMs.toFixed(2)}ms total
                     </span>
+                    ${filteredNote}
                 </div>
                 <div style="display: flex; gap: 8px;">
                     ${renderActionButton('back-to-traces-btn', 'Back to Traces', 'primary')}
@@ -329,7 +348,7 @@ async function renderWaterfall(trace) {
         };
         const color = severityColors[severity] || '#6b7280';
         return `
-                        <div style="padding: 6px; border-bottom: 1px solid var(--border-color); font-size: 11px; display: flex; gap: 12px; align-items: start;">
+                        <div class="correlated-log-row" style="padding: 6px; border-bottom: 1px solid var(--border-color); font-size: 11px; display: flex; gap: 12px; align-items: start; cursor: pointer;" title="Click to view in Logs tab">
                             <span style="font-family: monospace; color: var(--text-muted); white-space: nowrap;">${timestamp}</span>
                             <span style="font-weight: 600; color: ${color}; min-width: 50px;">${severity}</span>
                             <span style="flex: 1; color: var(--text-main);">${log.message || ''}</span>
@@ -339,6 +358,9 @@ async function renderWaterfall(trace) {
             </div>
         </div>
     ` : '';
+
+    // Build a mapping from filtered index to original allSpans index
+    const filteredToOriginal = spans.map(span => allSpans.indexOf(span));
 
     container.innerHTML = `
         ${actionButtonsHtml}
@@ -352,13 +374,14 @@ async function renderWaterfall(trace) {
 
         const leftPercent = (offset / traceDuration) * 100;
         const widthPercent = (duration / traceDuration) * 100;
+        const originalIdx = filteredToOriginal[idx];
 
         return `
                     <div class="span-row">
                         <div class="span-info">
                             <div class="span-name" title="${span.name}">${span.name}</div>
                             <div class="span-timeline">
-                                <div class="span-bar" data-span-index="${idx}" style="left: ${leftPercent}%; width: ${widthPercent}%;">
+                                <div class="span-bar" data-span-index="${originalIdx}" style="left: ${leftPercent}%; width: ${widthPercent}%;">
                                     ${duration > traceDuration * 0.1 ? (duration / 1_000_000).toFixed(2) + 'ms' : ''}
                                 </div>
                             </div>
@@ -382,6 +405,14 @@ async function renderWaterfall(trace) {
             const spanIndex = parseInt(e.currentTarget.getAttribute('data-span-index'));
             showSpanJson(spanIndex);
         });
+    });
+
+    // Add copy-on-click for trace ID in header
+    setupCopyableIds(container);
+
+    // Add click handlers for correlated log rows
+    container.querySelectorAll('.correlated-log-row').forEach(row => {
+        row.addEventListener('click', () => showLogsForTrace());
     });
 
     // Add click handlers for action buttons

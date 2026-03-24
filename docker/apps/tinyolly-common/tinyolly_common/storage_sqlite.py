@@ -297,22 +297,11 @@ class StorageSQLite:
         async with self._write_lock:
             conn = await self._connect()
             try:
-                await conn.execute("DELETE FROM trace_index WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM span_index WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM trace_spans WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM traces WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM spans WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM trace_logs WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM logs WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM metrics_names WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM metrics_meta WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM metrics_resources WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM metrics_attributes WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM metrics_series WHERE expires_at <= ?", (now,))
-                await conn.execute("DELETE FROM metrics_exemplars WHERE expires_at <= ?", (now,))
+                # Only expire KV cache entries (ephemeral caches, not telemetry)
                 await conn.execute("DELETE FROM kv WHERE expires_at <= ?", (now,))
                 await conn.commit()
 
+                # Trim oldest data when DB approaches size limit
                 await self._enforce_size_bounds(conn)
                 await conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
                 await conn.execute("PRAGMA incremental_vacuum(100)")
@@ -347,9 +336,15 @@ class StorageSQLite:
         trim_plan: List[Tuple[str, str]] = [
             ("metrics_series", "ts"),
             ("metrics_exemplars", "ts"),
+            ("metrics_resources", "expires_at"),
+            ("metrics_attributes", "expires_at"),
+            ("metrics_meta", "expires_at"),
+            ("metrics_names", "expires_at"),
             ("spans", "start_time"),
+            ("span_index", "ts"),
             ("trace_spans", "start_time"),
             ("traces", "ts"),
+            ("trace_index", "ts"),
             ("logs", "ts"),
             ("trace_logs", "ts"),
             ("kv", "expires_at"),
@@ -507,10 +502,9 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             async with conn.execute(
-                "SELECT trace_id FROM trace_index WHERE expires_at > ? ORDER BY ts DESC LIMIT ?",
-                (now, limit),
+                "SELECT trace_id FROM trace_index ORDER BY ts DESC LIMIT ?",
+                (limit,),
             ) as cur:
                 rows = await cur.fetchall()
             return [r[0] for r in rows]
@@ -521,10 +515,9 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             async with conn.execute(
-                "SELECT span_id FROM span_index WHERE expires_at > ? ORDER BY ts DESC LIMIT ?",
-                (now, limit),
+                "SELECT span_id FROM span_index ORDER BY ts DESC LIMIT ?",
+                (limit,),
             ) as cur:
                 rows = await cur.fetchall()
             return [r[0] for r in rows]
@@ -535,10 +528,9 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             async with conn.execute(
-                "SELECT data FROM spans WHERE span_id = ? AND expires_at > ?",
-                (span_id, now),
+                "SELECT data FROM spans WHERE span_id = ?",
+                (span_id,),
             ) as cur:
                 row = await cur.fetchone()
 
@@ -597,16 +589,15 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             async with conn.execute(
                 """
                 SELECT s.data
                 FROM trace_spans ts
                 JOIN spans s ON s.span_id = ts.span_id
-                WHERE ts.trace_id = ? AND ts.expires_at > ?
+                WHERE ts.trace_id = ?
                 ORDER BY ts.start_time ASC
                 """,
-                (trace_id, now),
+                (trace_id,),
             ) as cur:
                 rows = await cur.fetchall()
 
@@ -762,18 +753,17 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             if trace_id:
                 sql = (
                     "SELECT l.data FROM trace_logs tl "
                     "JOIN logs l ON l.log_id = tl.log_id "
-                    "WHERE tl.trace_id = ? AND tl.expires_at > ? "
+                    "WHERE tl.trace_id = ? "
                     "ORDER BY tl.ts DESC LIMIT ?"
                 )
-                params = (trace_id, now, limit)
+                params = (trace_id, limit)
             else:
-                sql = "SELECT data FROM logs WHERE expires_at > ? ORDER BY ts DESC LIMIT ?"
-                params = (now, limit)
+                sql = "SELECT data FROM logs ORDER BY ts DESC LIMIT ?"
+                params = (limit,)
 
             async with conn.execute(sql, params) as cur:
                 rows = await cur.fetchall()
@@ -1068,13 +1058,12 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             if limit and limit > 0:
-                sql = "SELECT name FROM metrics_names WHERE expires_at > ? ORDER BY name ASC LIMIT ?"
-                params = (now, limit)
+                sql = "SELECT name FROM metrics_names ORDER BY name ASC LIMIT ?"
+                params = (limit,)
             else:
-                sql = "SELECT name FROM metrics_names WHERE expires_at > ? ORDER BY name ASC"
-                params = (now,)
+                sql = "SELECT name FROM metrics_names ORDER BY name ASC"
+                params = ()
 
             async with conn.execute(sql, params) as cur:
                 rows = await cur.fetchall()
@@ -1086,10 +1075,9 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             async with conn.execute(
-                "SELECT data FROM metrics_meta WHERE name = ? AND expires_at > ?",
-                (name, now),
+                "SELECT data FROM metrics_meta WHERE name = ?",
+                (name,),
             ) as cur:
                 row = await cur.fetchone()
 
@@ -1107,10 +1095,9 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             async with conn.execute(
-                "SELECT resource_json FROM metrics_resources WHERE name = ? AND expires_at > ?",
-                (metric_name, now),
+                "SELECT resource_json FROM metrics_resources WHERE name = ?",
+                (metric_name,),
             ) as cur:
                 rows = await cur.fetchall()
             return [orjson.loads(row[0]) for row in rows]
@@ -1124,18 +1111,17 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             if not resource_filter:
                 async with conn.execute(
-                    "SELECT attr_json FROM metrics_attributes WHERE name = ? AND expires_at > ?",
-                    (metric_name, now),
+                    "SELECT attr_json FROM metrics_attributes WHERE name = ?",
+                    (metric_name,),
                 ) as cur:
                     rows = await cur.fetchall()
                 return [orjson.loads(row[0]) for row in rows]
 
             async with conn.execute(
-                "SELECT data FROM metrics_series WHERE name = ? AND expires_at > ?",
-                (metric_name, now),
+                "SELECT data FROM metrics_series WHERE name = ?",
+                (metric_name,),
             ) as cur:
                 rows = await cur.fetchall()
 
@@ -1170,15 +1156,14 @@ class StorageSQLite:
 
         conn = await self._connect()
         try:
-            now = time.time()
             async with conn.execute(
                 """
                 SELECT resource_hash, attr_hash, ts, data
                 FROM metrics_series
-                WHERE name = ? AND ts BETWEEN ? AND ? AND expires_at > ?
+                WHERE name = ? AND ts BETWEEN ? AND ?
                 ORDER BY ts ASC
                 """,
-                (name, start_time, end_time, now),
+                (name, start_time, end_time),
             ) as cur:
                 rows = await cur.fetchall()
 
@@ -1222,10 +1207,10 @@ class StorageSQLite:
                     SELECT data
                     FROM metrics_exemplars
                     WHERE name = ? AND resource_hash = ? AND attr_hash = ?
-                      AND ts BETWEEN ? AND ? AND expires_at > ?
+                      AND ts BETWEEN ? AND ?
                     ORDER BY ts ASC
                     """,
-                    (name, resource_hash, attr_hash, start_time, end_time, now),
+                    (name, resource_hash, attr_hash, start_time, end_time),
                 ) as cur:
                     ex_rows = await cur.fetchall()
                 grouped[(resource_hash, attr_hash)]["exemplars"] = [
@@ -1243,8 +1228,7 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
-            async with conn.execute("SELECT COUNT(*) FROM metrics_names WHERE expires_at > ?", (now,)) as cur:
+            async with conn.execute("SELECT COUNT(*) FROM metrics_names") as cur:
                 row = await cur.fetchone()
                 current = int(row[0]) if row else 0
 
@@ -1586,14 +1570,13 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             cardinality = await self.get_cardinality_stats()
 
-            async with conn.execute("SELECT COUNT(*) FROM trace_index WHERE expires_at > ?", (now,)) as cur:
+            async with conn.execute("SELECT COUNT(*) FROM trace_index") as cur:
                 trace_count = int((await cur.fetchone())[0])
-            async with conn.execute("SELECT COUNT(*) FROM span_index WHERE expires_at > ?", (now,)) as cur:
+            async with conn.execute("SELECT COUNT(*) FROM span_index") as cur:
                 span_count = int((await cur.fetchone())[0])
-            async with conn.execute("SELECT COUNT(*) FROM logs WHERE expires_at > ?", (now,)) as cur:
+            async with conn.execute("SELECT COUNT(*) FROM logs") as cur:
                 log_count = int((await cur.fetchone())[0])
 
             return {
@@ -1611,14 +1594,13 @@ class StorageSQLite:
         await self._ensure_initialized()
         conn = await self._connect()
         try:
-            now = time.time()
             cardinality = await self.get_cardinality_stats()
 
-            async with conn.execute("SELECT COUNT(*) FROM trace_index WHERE expires_at > ?", (now,)) as cur:
+            async with conn.execute("SELECT COUNT(*) FROM trace_index") as cur:
                 trace_count = int((await cur.fetchone())[0])
-            async with conn.execute("SELECT COUNT(*) FROM span_index WHERE expires_at > ?", (now,)) as cur:
+            async with conn.execute("SELECT COUNT(*) FROM span_index") as cur:
                 span_count = int((await cur.fetchone())[0])
-            async with conn.execute("SELECT COUNT(*) FROM logs WHERE expires_at > ?", (now,)) as cur:
+            async with conn.execute("SELECT COUNT(*) FROM logs") as cur:
                 log_count = int((await cur.fetchone())[0])
 
             async with conn.execute("PRAGMA page_count") as cur:

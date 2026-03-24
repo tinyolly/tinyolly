@@ -1241,6 +1241,23 @@
         font-family: 'JetBrains Mono', monospace;
     }
 
+    .copyable-id {
+        cursor: pointer;
+        position: relative;
+        border-radius: 3px;
+        padding: 1px 4px;
+        margin: -1px -4px;
+        transition: background 0.15s;
+    }
+
+    .copyable-id:hover {
+        background: var(--bg-hover, rgba(255,255,255,0.08));
+    }
+
+    .copyable-id.copied {
+        background: var(--success-bg, rgba(34,197,94,0.15));
+    }
+
     .text-main {
         color: var(--text-main);
     }

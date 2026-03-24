@@ -1,7 +1,7 @@
 /**
  * Spans Module - Handles span list and detail views with service filtering
  */
-import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter } from './utils.js';
+import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter, setupCopyableIds } from './utils.js';
 
 let currentSpanDetail = null;
 let currentSpanData = null;
@@ -51,8 +51,8 @@ export function renderSpans(spans) {
                 <div class="trace-item data-table-row" data-span-id="${span.span_id}">
                     <div class="trace-time text-mono text-muted" style="flex: 0 0 100px;">${startTime}</div>
                     <div class="span-service text-truncate" style="flex: 0 0 120px;" title="${serviceName}">${serviceName}</div>
-                    <div class="trace-id text-mono text-muted" style="flex: 0 0 260px; font-size: 0.9em;">${displayTraceId}</div>
-                    <div class="span-id text-mono text-muted" style="flex: 0 0 180px; font-size: 0.9em;">${displaySpanId}</div>
+                    <div class="trace-id text-mono text-muted" style="flex: 0 0 260px; font-size: 0.9em;"><span class="copyable-id" data-copy="${span.trace_id}" title="Click to copy">${displayTraceId}</span></div>
+                    <div class="span-id text-mono text-muted" style="flex: 0 0 180px; font-size: 0.9em;"><span class="copyable-id" data-copy="${span.span_id}" title="Click to copy">${displaySpanId}</span></div>
                     <div class="trace-duration text-muted" style="flex: 0 0 80px; text-align: right;">${formatDuration(span.duration_ms)}</div>
                     <div class="trace-method text-primary font-bold text-truncate" style="flex: 0 0 70px;">${method}</div>
                     <div class="trace-name font-medium text-truncate" style="flex: 1;">${route}</div>
@@ -85,6 +85,9 @@ export function renderSpans(spans) {
             }
         });
     });
+
+    // Add copy-on-click for IDs
+    setupCopyableIds(container);
 
     // Restore span detail if one was showing and span still exists
     if (currentSpanDetail && currentSpanData) {
