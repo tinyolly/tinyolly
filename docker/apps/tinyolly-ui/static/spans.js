@@ -196,6 +196,7 @@ function showSpanDetail(spanId, spans) {
 
     detailContainer.style.display = 'block';
     const buttonsHtml = `
+        ${renderActionButton(`copy-span-link-btn-${spanId}`, 'Copy Link', 'primary')}
         ${renderActionButton(`view-trace-btn-${spanId}`, 'View Trace', 'primary')}
         ${renderActionButton(`view-logs-btn-${spanId}`, 'Logs', 'primary')}
         ${renderActionButton(`view-span-metrics-btn-${spanId}`, 'Metrics', 'primary')}
@@ -218,6 +219,13 @@ function showSpanDetail(spanId, spans) {
     smoothScrollTo(detailContainer);
 
     // Attach event handlers
+    document.getElementById(`copy-span-link-btn-${spanId}`).addEventListener('click', () => {
+        const linkUrl = new URL(window.location.origin + window.location.pathname);
+        linkUrl.searchParams.set('tab', 'traces');
+        linkUrl.searchParams.set('traceId', span.trace_id);
+        copyToClipboard(linkUrl.toString());
+    });
+
     document.getElementById(`view-trace-btn-${spanId}`).addEventListener('click', () => {
         viewTraceFromSpan(span.trace_id);
     });

@@ -13,7 +13,7 @@ import {
     filterLogs
 } from './render.js';
 
-import { clearTraceFilter, filterTraces } from './traces.js';
+import { clearTraceFilter, filterTraces, showTraceDetail } from './traces.js';
 import { clearSpanFilter, filterSpans } from './spans.js';
 import { filterMetrics } from './metrics.js';
 
@@ -82,7 +82,49 @@ document.addEventListener('DOMContentLoaded', () => {
         if (localStorage.getItem('tinyolly-auto-refresh') !== 'false') {
             startAutoRefresh();
         }
+
+        // Handle deep links (traceId, spanId, search params)
+        handleDeepLink();
     } catch (error) {
         console.error('Error during initialization:', error);
     }
 });
+
+/** Process URL deep link parameters after init */
+function handleDeepLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const traceId = urlParams.get('traceId');
+    const spanId = urlParams.get('spanId');
+    const search = urlParams.get('search');
+
+    if (traceId) {
+        // Deep link to a specific trace
+        switchTab('traces', null, true);
+        setTimeout(() => showTraceDetail(traceId), 500);
+    } else if (spanId) {
+        // Deep link to spans filtered by spanId
+        switchTab('spans', null, true);
+        setTimeout(() => {
+            const searchInput = document.getElementById('span-search');
+            if (searchInput) {
+                searchInput.value = spanId;
+                filterSpans();
+            }
+        }, 500);
+    } else if (search) {
+        // Deep link with search query for current tab
+        const tab = urlParams.get('tab') || 'logs';
+        const searchIds = { traces: 'trace-search', spans: 'span-search', logs: 'log-search', metrics: 'metric-search' };
+        const filterFns = { traces: filterTraces, spans: filterSpans, logs: filterLogs, metrics: filterMetrics };
+        const searchId = searchIds[tab];
+        if (searchId) {
+            setTimeout(() => {
+                const searchInput = document.getElementById(searchId);
+                if (searchInput) {
+                    searchInput.value = search;
+                    if (filterFns[tab]) filterFns[tab]();
+                }
+            }, 500);
+        }
+    }
+}

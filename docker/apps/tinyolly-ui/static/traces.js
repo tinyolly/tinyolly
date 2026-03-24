@@ -164,6 +164,12 @@ export function clearTraceFilter() {
 export async function showTraceDetail(traceId) {
     currentTraceId = traceId;
 
+    // Update URL with traceId for deep linking
+    const url = new URL(window.location);
+    url.searchParams.set('tab', 'traces');
+    url.searchParams.set('traceId', traceId);
+    window.history.replaceState({ tab: 'traces', traceId }, '', url);
+
     // Show detail view, hide list
     document.getElementById('traces-list-view').style.display = 'none';
     document.getElementById('trace-detail-view').style.display = 'block';
@@ -181,6 +187,12 @@ export function showTracesList() {
     currentTraceId = null;
     currentTraceData = null;
     destroyTraceMap();
+
+    // Remove traceId from URL
+    const url = new URL(window.location);
+    url.searchParams.delete('traceId');
+    window.history.replaceState({ tab: 'traces' }, '', url);
+
     loadTraces(); // Refresh list
 }
 
@@ -321,6 +333,7 @@ async function renderWaterfall(trace) {
                 </div>
                 <div style="display: flex; gap: 8px;">
                     ${renderActionButton('back-to-traces-btn', 'Back to Traces', 'primary')}
+                    ${renderActionButton('copy-trace-link-btn', 'Copy Link', 'primary')}
                     ${renderActionButton('view-trace-json-btn', 'Trace JSON', 'primary')}
                     ${renderActionButton('view-trace-logs-btn', 'Logs', 'primary')}
                     ${renderActionButton('view-related-metrics-btn', 'Metrics', 'primary')}
@@ -424,6 +437,12 @@ async function renderWaterfall(trace) {
 
     // Add click handlers for action buttons
     document.getElementById('back-to-traces-btn').addEventListener('click', showTracesList);
+    document.getElementById('copy-trace-link-btn').addEventListener('click', () => {
+        const linkUrl = new URL(window.location.origin + window.location.pathname);
+        linkUrl.searchParams.set('tab', 'traces');
+        linkUrl.searchParams.set('traceId', trace.trace_id);
+        copyToClipboard(linkUrl.toString());
+    });
     document.getElementById('view-trace-json-btn').addEventListener('click', toggleTraceJSON);
     document.getElementById('view-trace-logs-btn').addEventListener('click', showLogsForTrace);
     document.getElementById('view-related-metrics-btn').addEventListener('click', () => viewMetricsForTrace(trace));

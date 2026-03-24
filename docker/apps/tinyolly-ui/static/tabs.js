@@ -33,7 +33,13 @@ export function initTabs() {
     // Handle browser back/forward buttons
     window.addEventListener('popstate', (event) => {
         if (event.state && event.state.tab) {
-            switchTab(event.state.tab, null, true); // true = from history, don't push again
+            switchTab(event.state.tab, null, true);
+            // If navigating back to a trace detail, re-open it
+            if (event.state.traceId) {
+                import('./traces.js').then(module => {
+                    setTimeout(() => module.showTraceDetail(event.state.traceId), 300);
+                });
+            }
         }
     });
 }
