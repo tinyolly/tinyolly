@@ -815,6 +815,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#ui-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Features
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -973,6 +984,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#ui-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Features
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1003,11 +1025,12 @@
 <h2 id="data-storage">Data Storage</h2>
 <ul>
 <li><strong>Format</strong>: Full OpenTelemetry (OTEL) format for traces, logs, and metrics  </li>
-<li><strong>SQLite</strong>: All telemetry stored in an embedded SQLite database with 30-minute TTL (compressed with ZSTD + msgpack)  </li>
+<li><strong>SQLite</strong>: All telemetry stored in an embedded SQLite database (compressed with ZSTD + msgpack)  </li>
 <li><strong>WAL Mode</strong>: Write-Ahead Logging for concurrent reads during writes  </li>
+<li><strong>Space-Based Retention</strong>: Data is retained until the database reaches its size limit (default 256 MB), then oldest records are evicted automatically. No fixed TTL — data stays as long as there's room  </li>
 <li><strong>Correlation</strong>: Native trace-metric-log correlation via trace/span IDs  </li>
 <li><strong>Cardinality Protection</strong>: Prevents metric explosion  </li>
-<li><strong>No Persistence</strong>: Data vanishes after TTL (ephemeral dev tool); configurable database size limit (default 256 MB)  </li>
+<li><strong>Ephemeral by Design</strong>: Designed for local development — data persists across restarts but is evicted when storage fills up  </li>
 </ul>
 <hr />
 <h2 id="otlp-compatibility">OTLP Compatibility</h2>
@@ -1017,6 +1040,19 @@
 - <strong>Correlation</strong>: Native support for trace/span ID correlation across all telemetry types<br />
 - <strong>REST API</strong>: Exposes OTEL-formatted JSON for programmatic access
 - <strong>Control Plane</strong>: OpenTelemetry Collector OpAmp for dynamic configuration  </p>
+<hr />
+<h2 id="ui-features">UI Features</h2>
+<ul>
+<li><strong>Trace Waterfall</strong>: Distributed trace visualization with automatic filtering of noisy ASGI sub-spans (http send/receive)  </li>
+<li><strong>Trace Map</strong>: Per-trace service dependency graph rendered above the waterfall using Cytoscape.js. Detects inferred external clients from orphan parent span IDs (e.g., test clients that propagate trace context but don't export spans)  </li>
+<li><strong>Deep Linking</strong>: Shareable URLs that open directly to a specific trace detail view (<code>?tab=traces&amp;traceId=...</code>), span search (<code>?tab=spans&amp;spanId=...</code>), or filtered tab (<code>?tab=logs&amp;search=...</code>). "Copy Link" buttons in trace and span detail views generate these URLs  </li>
+<li><strong>Click-to-Copy IDs</strong>: Trace and span IDs are copyable with a single click throughout the UI  </li>
+<li><strong>Correlated Logs</strong>: Trace detail view shows correlated logs inline — click any log row to navigate to the Logs tab filtered by trace ID  </li>
+<li><strong>Cross-Tab Navigation</strong>: Click trace/span IDs in logs to jump to the corresponding trace or span view  </li>
+<li><strong>Service Catalog</strong>: RED metrics with action buttons to navigate to Traces, Spans, Logs, or Metrics filtered by service name  </li>
+<li><strong>Smart Auto-Refresh</strong>: 5-second polling pauses automatically when a search filter is active, preventing result disruption  </li>
+<li><strong>Scrollable Lists</strong>: Trace, span, and log lists support scrolling with sticky headers for large datasets  </li>
+</ul>
 
 
 
