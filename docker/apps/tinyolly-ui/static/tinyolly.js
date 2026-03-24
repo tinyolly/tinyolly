@@ -37,6 +37,7 @@ window.filterLogs = filterLogs;
 window.clearTraceFilter = clearTraceFilter;
 window.clearSpanFilter = clearSpanFilter;
 window.filterSpans = filterSpans;
+window.filterTraces = filterTraces;
 
 // Global error handler
 window.onerror = function (message, source, lineno, colno, error) {

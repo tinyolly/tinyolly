@@ -3,6 +3,7 @@
  */
 import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter, setupCopyableIds } from './utils.js';
 import { fetchTraceDetail, loadTraces } from './api.js';
+import { renderTraceMap, destroyTraceMap } from './traceMap.js';
 
 let currentTraceId = null;
 let currentTraceData = null;
@@ -15,8 +16,6 @@ export function renderTraces(traces) {
         container.innerHTML = renderEmptyState('No traces yet. Send some data to get started!');
         return;
     }
-
-    const limitNote = traces.length >= 50 ? renderLimitNote(50, traces.length, 'Showing last 50 traces (older data may still be available in storage).') : '';
 
     const headerRow = renderTableHeader([
         { label: 'Time', flex: '0 0 100px' },
@@ -68,7 +67,7 @@ export function renderTraces(traces) {
     // Preserve current search filter
     const searchFilter = preserveSearchFilter('trace-search', filterTraces);
 
-    container.innerHTML = limitNote + headerRow + tracesHtml;
+    container.innerHTML = headerRow + tracesHtml;
 
     // Restore search filter
     searchFilter.restore();
@@ -181,6 +180,7 @@ export function showTracesList() {
     document.getElementById('trace-detail-view').style.display = 'none';
     currentTraceId = null;
     currentTraceData = null;
+    destroyTraceMap();
     loadTraces(); // Refresh list
 }
 
@@ -364,6 +364,7 @@ async function renderWaterfall(trace) {
 
     container.innerHTML = `
         ${actionButtonsHtml}
+        <div id="trace-map-container"></div>
         ${logsHtml}
         <div class="waterfall">
             ${spans.map((span, idx) => {
@@ -414,6 +415,12 @@ async function renderWaterfall(trace) {
     container.querySelectorAll('.correlated-log-row').forEach(row => {
         row.addEventListener('click', () => showLogsForTrace());
     });
+
+    // Render trace map automatically
+    const mapContainer = document.getElementById('trace-map-container');
+    if (mapContainer) {
+        renderTraceMap(trace, mapContainer);
+    }
 
     // Add click handlers for action buttons
     document.getElementById('back-to-traces-btn').addEventListener('click', showTracesList);

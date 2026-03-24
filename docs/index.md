@@ -26,6 +26,9 @@ TinyOlly is a **lightweight OpenTelemetry-native observability platform** built 
 - **Pre-built Docker images** - Deploy in ~30 seconds from Docker Hub
 - **Multi-architecture** - Supports linux/amd64 and linux/arm64 (Apple Silicon)
 - **Trace correlation** - Link logs, metrics, and traces automatically
+- **Click-to-copy IDs** - Copy trace/span IDs with a single click anywhere in the UI
+- **Correlated log navigation** - Jump from trace detail to filtered logs and vice versa
+- **Space-based retention** - Data stays until storage fills up (default 256 MB); no fixed TTL
 - **Metrics Explorer** - Analyze cardinality, labels, and raw series data
 - **Service catalog** - RED metrics (Rate, Errors, Duration) for all services
 - **Interactive service map** - Visualize dependencies and call graphs

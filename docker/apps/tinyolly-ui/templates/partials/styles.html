@@ -732,8 +732,18 @@
         background: var(--bg-card);
         border: 1px solid var(--border-color);
         border-radius: 8px;
-        overflow: hidden;
+        overflow-y: auto;
+        max-height: 1900px;
         box-shadow: var(--shadow);
+    }
+
+    /* Keep header row sticky while scrolling */
+    .log-list > .data-table-header,
+    .span-list > .data-table-header,
+    .trace-list > .data-table-header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
     }
 
     .log-row {
@@ -1256,6 +1266,49 @@
 
     .copyable-id.copied {
         background: var(--success-bg, rgba(34,197,94,0.15));
+    }
+
+    /* Trace Map */
+    .trace-map-wrapper {
+        position: relative;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .trace-map-cy {
+        width: 100%;
+        height: 300px;
+        display: block;
+    }
+
+    .trace-map-legend {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: var(--bg-card);
+        opacity: 0.92;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        font-size: 11px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        z-index: 10;
+    }
+
+    .trace-map-details {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: var(--bg-card);
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        font-size: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        z-index: 10;
+        min-width: 180px;
     }
 
     .text-main {

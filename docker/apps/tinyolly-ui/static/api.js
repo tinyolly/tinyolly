@@ -19,7 +19,7 @@ export async function loadStats() {
 
 export async function loadTraces() {
     try {
-        const response = await fetch('/api/traces?limit=50');
+        const response = await fetch('/api/traces?limit=1000');
         let traces = await response.json();
 
         // Filter out TinyOlly traces if hide toggle is active
@@ -43,7 +43,7 @@ export async function loadSpans(serviceName = null) {
     container.innerHTML = renderLoadingState('Loading spans...');
 
     try {
-        let url = '/api/spans?limit=50';
+        let url = '/api/spans?limit=1000';
         if (serviceName) {
             url += `&service=${encodeURIComponent(serviceName)}`;
         }
@@ -78,7 +78,7 @@ export async function loadSpans(serviceName = null) {
 
 export async function loadLogs(filterTraceId = null) {
     try {
-        let url = '/api/logs?limit=100';
+        let url = '/api/logs?limit=1000';
         if (filterTraceId) {
             url += `&trace_id=${filterTraceId}`;
         } else {

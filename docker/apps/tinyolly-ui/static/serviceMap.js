@@ -157,6 +157,12 @@ export function renderServiceMap(graph) {
     }
 
     // Initialize Cytoscape (First Load)
+    // Read computed CSS variable values for dark/light mode support
+    const cs = getComputedStyle(document.documentElement);
+    const textColor = cs.getPropertyValue('--text-muted').trim() || '#64748b';
+    const bgCard = cs.getPropertyValue('--bg-card').trim() || '#ffffff';
+    const borderColor = cs.getPropertyValue('--border-color').trim() || '#e2e8f0';
+
     cy = cytoscape({
         container: container,
         elements: elements,
@@ -167,7 +173,7 @@ export function renderServiceMap(graph) {
                     'background-color': 'data(color)',
                     'label': 'data(label)',
                     'shape': 'data(shape)',
-                    'color': '#64748b',
+                    'color': textColor,
                     'font-size': '12px',
                     'font-family': 'Inter, sans-serif',
                     'font-weight': '600',
@@ -176,7 +182,7 @@ export function renderServiceMap(graph) {
                     'width': 40,
                     'height': 40,
                     'border-width': 2,
-                    'border-color': '#ffffff',
+                    'border-color': bgCard,
                     'overlay-opacity': 0,
                     'transition-property': 'background-color, width, height',
                     'transition-duration': '0.3s'
@@ -186,19 +192,19 @@ export function renderServiceMap(graph) {
                 selector: 'edge',
                 style: {
                     'width': 2,
-                    'line-color': '#cbd5e1',
-                    'target-arrow-color': '#cbd5e1',
+                    'line-color': borderColor,
+                    'target-arrow-color': borderColor,
                     'target-arrow-shape': 'triangle',
                     'curve-style': 'bezier',
                     'label': 'data(label)',
                     'font-size': '10px',
-                    'color': '#64748b',
+                    'color': textColor,
                     'text-background-opacity': 1,
-                    'text-background-color': '#ffffff',
+                    'text-background-color': bgCard,
                     'text-background-padding': 2,
                     'text-background-shape': 'roundrectangle',
                     'text-border-width': 1,
-                    'text-border-color': '#e2e8f0',
+                    'text-border-color': borderColor,
                     'text-border-opacity': 1
                 }
             },

@@ -27,7 +27,7 @@ router = APIRouter(prefix="/api", tags=["Traces", "Spans", "Logs", "Metrics"])
     }
 )
 async def get_traces(
-    limit: int = Query(default=100, le=1000, description="Maximum number of traces to return (max 1000)"),
+    limit: int = Query(default=1000, le=5000, description="Maximum number of traces to return (max 5000)"),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -93,7 +93,7 @@ async def get_trace(
     }
 )
 async def get_spans(
-    limit: int = Query(default=100, le=1000, description="Maximum number of spans to return (max 1000)"),
+    limit: int = Query(default=1000, le=5000, description="Maximum number of spans to return (max 5000)"),
     service: Optional[str] = Query(default=None, description="Filter by service name"),
     storage: Storage = Depends(get_storage)
 ):
@@ -132,7 +132,7 @@ async def get_spans(
 )
 async def get_logs(
     trace_id: Optional[str] = Query(default=None, description="Filter by trace ID for correlation"),
-    limit: int = Query(default=100, le=1000, description="Maximum number of logs to return (max 1000)"),
+    limit: int = Query(default=1000, le=5000, description="Maximum number of logs to return (max 5000)"),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -235,7 +235,7 @@ async def stream_logs(storage: Storage = Depends(get_storage)):
     }
 )
 async def get_metrics(
-    limit: Optional[int] = Query(default=None, le=1000, description="Maximum number of metrics to return (max 1000)"),
+    limit: Optional[int] = Query(default=None, le=5000, description="Maximum number of metrics to return (max 5000)"),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -304,7 +304,7 @@ async def get_metric_detail(
     - Default: Last 10 minutes
     - Custom: Specify `start` and `end` Unix timestamps
     """
-    start_time = start if start is not None else time.time() - 600
+    start_time = start if start is not None else time.time() - 3600
     end_time = end if end is not None else time.time()
     
     # Get metadata
@@ -352,7 +352,7 @@ async def query_metrics(
     
     Returns only time series matching ALL specified filters.
     """
-    start_time = start if start is not None else time.time() - 600
+    start_time = start if start is not None else time.time() - 3600
     end_time = end if end is not None else time.time()
     
     # Parse resource and attribute filters from query params

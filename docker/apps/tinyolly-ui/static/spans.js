@@ -20,8 +20,6 @@ export function renderSpans(spans) {
         return;
     }
 
-    const limitNote = renderLimitNote(50, spans.length, 'Showing last 50 spans');
-
     const headerRow = renderTableHeader([
         { label: 'Time', flex: '0 0 100px' },
         { label: 'ServiceName', flex: '0 0 120px' },
@@ -66,7 +64,7 @@ export function renderSpans(spans) {
     // Preserve current search filter
     const searchFilter = preserveSearchFilter('span-search', filterSpans);
 
-    container.innerHTML = limitNote + headerRow + spansHtml;
+    container.innerHTML = headerRow + spansHtml;
 
     // Restore search filter
     searchFilter.restore();

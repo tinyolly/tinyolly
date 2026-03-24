@@ -56,8 +56,6 @@ export function renderLogs(logs, containerId = 'logs-container') {
 }
 
 function renderLogList(container, logsToShow, totalLogs) {
-    const limitNote = renderLimitNote(logsToShow.length, totalLogs, `Showing ${logsToShow.length} of ${totalLogs} logs`);
-
     // Build table with headers
     const headerRow = renderTableHeader([
         { label: 'Time', flex: '0 0 100px' },
@@ -103,7 +101,7 @@ function renderLogList(container, logsToShow, totalLogs) {
         `;
     }
 
-    container.innerHTML = limitNote + headerRow + logsHtml + loadMoreHtml;
+    container.innerHTML = headerRow + logsHtml + loadMoreHtml;
 
     const loadMoreBtn = document.getElementById('load-more-logs-btn');
     if (loadMoreBtn) {

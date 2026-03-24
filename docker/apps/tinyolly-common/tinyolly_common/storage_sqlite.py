@@ -1150,7 +1150,7 @@ class StorageSQLite:
         await self._ensure_initialized()
 
         if start_time is None:
-            start_time = time.time() - 600
+            start_time = time.time() - 3600
         if end_time is None:
             end_time = time.time()
 
@@ -1390,7 +1390,7 @@ class StorageSQLite:
 
     @alru_cache(maxsize=1, ttl=5)
     async def get_service_catalog(self) -> List[Dict[str, Any]]:
-        span_ids = await self.get_recent_spans(1000)
+        span_ids = await self.get_recent_spans(10000)
         services: Dict[str, Dict[str, Any]] = {}
 
         for span_id in span_ids:
@@ -1450,7 +1450,7 @@ class StorageSQLite:
 
             resource_filter = {"service.name": service_name}
             end_time = time.time()
-            start_time = end_time - 60
+            start_time = end_time - 300
 
             duration_series = await self.get_metric_series(
                 duration_metric,

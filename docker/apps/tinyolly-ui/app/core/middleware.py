@@ -44,6 +44,10 @@ def setup_middleware(app):
                     "status": response.status_code
                 })
             
+            # Prevent browser caching of static JS/CSS so deploys pick up immediately
+            if request.url.path.startswith("/static/") and request.url.path.endswith((".js", ".css")):
+                response.headers["Cache-Control"] = "no-cache"
+            
             return response
         except Exception as e:
             # Track exceptions

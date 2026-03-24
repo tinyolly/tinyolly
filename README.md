@@ -22,6 +22,8 @@ Visualize and correlate logs, metrics, and traces without sending data to the cl
 - Full OpenTelemetry Protocol (OTLP) support with gRPC and HTTP ingestion
 - REST API with OpenAPI documentation
 - Service catalog, dependency maps, and distributed tracing
+- Click-to-copy trace/span IDs and cross-tab log correlation
+- Space-based data retention (keeps data until storage limit; no fixed TTL)
 - Works with any OTel Collector distro
 - Built with Python (FastAPI), SQLite, and JavaScript
 - Pre-built Docker images available on Docker Hub

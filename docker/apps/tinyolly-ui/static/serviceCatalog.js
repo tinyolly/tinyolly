@@ -68,6 +68,7 @@ export function renderServiceCatalog(services) {
                     <div class="text-muted text-mono" style="flex: 0 0 100px; font-size: 10px;">${firstSeen}</div>
                     <div class="text-muted text-mono" style="flex: 0 0 100px; font-size: 10px;">${lastSeen}</div>
                     <div style="flex: 1; display: flex; gap: 8px;">
+                        ${renderActionButton(`view-traces-${serviceId}`, 'Traces', 'primary')}
                         ${renderActionButton(`view-spans-${serviceId}`, 'Spans', 'primary')}
                         ${renderActionButton(`view-logs-${serviceId}`, 'Logs', 'primary')}
                         ${renderActionButton(`view-metrics-${serviceId}`, 'Metrics', 'primary')}
@@ -217,6 +218,14 @@ export function renderServiceCatalog(services) {
     // Add click handlers for action buttons
     services.forEach((service, index) => {
         const serviceId = `service-${index}`;
+
+        const tracesBtn = document.getElementById(`view-traces-${serviceId}`);
+        if (tracesBtn) {
+            tracesBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (window.viewServiceTraces) window.viewServiceTraces(service.name);
+            };
+        }
 
         const spansBtn = document.getElementById(`view-spans-${serviceId}`);
         if (spansBtn) {
@@ -621,6 +630,19 @@ async function restoreOpenCharts(services) {
 }
 
 // Global functions for button actions
+window.viewServiceTraces = function (serviceName) {
+    const searchInput = document.getElementById('trace-search');
+    if (searchInput) {
+        searchInput.value = serviceName;
+    }
+
+    if (window.switchTab) {
+        window.switchTab('traces');
+    }
+
+    setTimeout(() => { if (window.filterTraces) window.filterTraces(); }, 500);
+};
+
 window.viewServiceSpans = function (serviceName) {
     // Set search input BEFORE switching tabs so renderSpans() will apply it
     const searchInput = document.getElementById('span-search');
@@ -632,6 +654,9 @@ window.viewServiceSpans = function (serviceName) {
     if (window.switchTab) {
         window.switchTab('spans');
     }
+
+    // Trigger filter after data loads to ensure results match
+    setTimeout(() => { if (window.filterSpans) window.filterSpans(); }, 500);
 };
 
 window.viewServiceLogs = function (serviceName) {
@@ -645,6 +670,9 @@ window.viewServiceLogs = function (serviceName) {
     if (window.switchTab) {
         window.switchTab('logs');
     }
+
+    // Trigger filter after data loads to ensure results match
+    setTimeout(() => { if (window.filterLogs) window.filterLogs(); }, 500);
 };
 
 

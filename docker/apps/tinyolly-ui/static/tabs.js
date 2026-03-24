@@ -102,6 +102,21 @@ export function startAutoRefresh() {
     stopAutoRefresh();
 
     autoRefreshInterval = setInterval(() => {
+        // Don't refresh if user has an active search filter on the current tab
+        const searchIds = {
+            traces: 'trace-search',
+            spans: 'span-search',
+            logs: 'log-search',
+            metrics: 'metric-search'
+        };
+        const searchId = searchIds[currentTab];
+        if (searchId) {
+            const searchInput = document.getElementById(searchId);
+            if (searchInput && searchInput.value.trim() !== '') {
+                return; // Skip refresh while user is filtering
+            }
+        }
+
         // Don't refresh if a span detail is open
         if (currentTab === 'spans' && isSpanDetailOpen()) {
             return;

@@ -1,5 +1,6 @@
 """Main FastAPI application factory"""
 
+import time
 import uvloop
 import asyncio
 from fastapi import FastAPI
@@ -104,6 +105,7 @@ compatibility with OTLP exporters and OpenTelemetry SDKs.
 
     # Setup templates
     templates = Jinja2Templates(directory="templates")
+    templates.env.globals['cache_bust'] = str(int(time.time()))
     set_templates(templates)
 
     # Register routers
