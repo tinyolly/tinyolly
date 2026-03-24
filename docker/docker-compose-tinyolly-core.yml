@@ -1,6 +1,7 @@
 services:
   tinyolly-otlp-receiver:
     image: tinyolly/otlp-receiver:latest
+    pull_policy: always
     container_name: tinyolly-otlp-receiver
     ports:
       - "4343:4343"
@@ -19,6 +20,7 @@ services:
 
   tinyolly-opamp-server:
     image: tinyolly/opamp-server:latest
+    pull_policy: always
     container_name: tinyolly-opamp-server
     ports:
       - "4320:4320"  # OpAMP WebSocket port
@@ -39,6 +41,7 @@ services:
   # and automatically restarts the collector when config changes
   otel-collector:
     image: tinyolly/otel-supervisor:latest
+    pull_policy: always
     container_name: otel-collector
     volumes:
       # Supervisor config
@@ -57,6 +60,7 @@ services:
 
   tinyolly-ui:
     image: tinyolly/ui:latest
+    pull_policy: always
     container_name: tinyolly-ui
     ports:
       - "5005:5002"  # Changed to 5005 to avoid conflict with K8s (which uses 5002)

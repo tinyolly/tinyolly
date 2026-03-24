@@ -16,14 +16,21 @@ unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
 
 VERSION=${1:-"latest"}
 DOCKER_HUB_ORG=${DOCKER_HUB_ORG:-"tinyolly"}
-PLATFORMS="linux/amd64,linux/arm64"
+
+# Detect host architecture (--load only supports single platform)
+ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64)       PLATFORM="linux/amd64" ;;
+  arm64|aarch64) PLATFORM="linux/arm64" ;;
+  *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+esac
 
 echo "=========================================="
 echo "TinyOlly UI - Build (No Push)"
 echo "=========================================="
 echo "Organization: $DOCKER_HUB_ORG"
 echo "Version: $VERSION"
-echo "Platforms: $PLATFORMS"
+echo "Platform: $PLATFORM"
 echo "Cache: disabled (fresh build)"
 echo ""
 
@@ -36,7 +43,7 @@ echo ""
 echo "----------------------------------------"
 echo "Building ui..."
 echo "----------------------------------------"
-docker buildx build --platform $PLATFORMS \
+docker buildx build --platform $PLATFORM \
   --no-cache \
   -f dockerfiles/Dockerfile.tinyolly-ui \
   --build-arg APP_DIR=tinyolly-ui \

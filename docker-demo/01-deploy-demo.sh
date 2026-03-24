@@ -63,18 +63,6 @@ if [ ! -f "docker-compose-demo.yml" ]; then
     exit 1
 fi
 
-# Pull images from Docker Hub
-echo "Pulling demo images from Docker Hub..."
-docker-compose -f docker-compose-demo.yml pull
-PULL_EXIT_CODE=$?
-
-if [ $PULL_EXIT_CODE -ne 0 ]; then
-    echo ""
-    echo "✗ Failed to pull demo images from Docker Hub (exit code: $PULL_EXIT_CODE)"
-    echo "  Note: For local builds, use docker-compose-demo-local.yml"
-    exit 1
-fi
-
 docker-compose -f docker-compose-demo.yml up -d
 EXIT_CODE=$?
 

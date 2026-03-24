@@ -38,8 +38,7 @@ async def index(request: Request):
         raise HTTPException(status_code=500, detail="Templates not initialized")
     
     deployment_env = settings.deployment_env
-    return templates.TemplateResponse('tinyolly.html', {
-        'request': request,
+    return templates.TemplateResponse(request, 'tinyolly.html', {
         'deployment_env': deployment_env
     })
 

@@ -52,18 +52,6 @@ echo "NOTE: First run will pull the Ollama image and tinyllama model (~1.5GB tot
 echo "      This may take a few minutes..."
 echo ""
 
-# Pull images from Docker Hub
-echo "Pulling AI agent demo image from Docker Hub..."
-docker-compose pull
-PULL_EXIT_CODE=$?
-
-if [ $PULL_EXIT_CODE -ne 0 ]; then
-    echo ""
-    echo "✗ Failed to pull AI agent demo image from Docker Hub (exit code: $PULL_EXIT_CODE)"
-    echo "  Note: For local builds, use ./01-deploy-ai-demo-local.sh"
-    exit 1
-fi
-
 docker-compose up -d
 EXIT_CODE=$?
 

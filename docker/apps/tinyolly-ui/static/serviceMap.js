@@ -141,6 +141,18 @@ export function renderServiceMap(graph) {
             currentNodes.forEach(nodeId => cy.$id(nodeId).remove());
             currentEdges.forEach(edgeId => cy.$id(edgeId).remove());
         });
+        // Re-run layout to position any new nodes properly
+        cy.layout({
+            name: 'dagre',
+            rankDir: 'LR',
+            nodeSep: 60,
+            rankSep: 120,
+            edgeSep: 30,
+            animate: true,
+            animationDuration: 500,
+            fit: true,
+            padding: 30
+        }).run();
         return;
     }
 
@@ -199,15 +211,15 @@ export function renderServiceMap(graph) {
             }
         ],
         layout: {
-            name: 'cose',
+            name: 'dagre',
+            rankDir: 'LR',
+            nodeSep: 60,
+            rankSep: 120,
+            edgeSep: 30,
             animate: true,
-            componentSpacing: 100,
-            nodeRepulsion: function (node) { return 400000; },
-            idealEdgeLength: function (edge) { return 100; },
-            nestingFactor: 5,
-            gravity: 80,
-            numIter: 1000,
-            coolingFactor: 0.95
+            animationDuration: 500,
+            fit: true,
+            padding: 30
         },
         minZoom: 0.5,
         maxZoom: 3,

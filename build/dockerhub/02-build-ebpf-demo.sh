@@ -13,14 +13,21 @@ cd "$SCRIPT_DIR/../../docker-demo-ebpf"
 
 VERSION=${1:-"latest"}
 DOCKER_HUB_ORG=${DOCKER_HUB_ORG:-"tinyolly"}
-PLATFORMS="linux/amd64,linux/arm64"
+
+# Detect host architecture (--load only supports single platform)
+ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64)       PLATFORM="linux/amd64" ;;
+  arm64|aarch64) PLATFORM="linux/arm64" ;;
+  *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+esac
 
 echo "=========================================="
 echo "TinyOlly eBPF Demo - Build (No Push)"
 echo "=========================================="
 echo "Organization: $DOCKER_HUB_ORG"
 echo "Version: $VERSION"
-echo "Platforms: $PLATFORMS"
+echo "Platform: $PLATFORM"
 echo "Cache: disabled (fresh build)"
 echo ""
 
@@ -34,7 +41,7 @@ echo ""
 echo "----------------------------------------"
 echo "Building ebpf-frontend..."
 echo "----------------------------------------"
-docker buildx build --platform $PLATFORMS \
+docker buildx build --platform $PLATFORM \
   --no-cache \
   -f Dockerfile \
   -t $DOCKER_HUB_ORG/ebpf-frontend:latest \
@@ -47,7 +54,7 @@ echo ""
 echo "----------------------------------------"
 echo "Building ebpf-backend..."
 echo "----------------------------------------"
-docker buildx build --platform $PLATFORMS \
+docker buildx build --platform $PLATFORM \
   --no-cache \
   -f Dockerfile.backend \
   -t $DOCKER_HUB_ORG/ebpf-backend:latest \

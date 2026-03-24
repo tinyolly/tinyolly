@@ -18,14 +18,21 @@ unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
 
 VERSION=${1:-"latest"}
 DOCKER_HUB_ORG=${DOCKER_HUB_ORG:-"tinyolly"}
-PLATFORMS="linux/amd64,linux/arm64"
+
+# Detect host architecture (--load only supports single platform)
+ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64)       PLATFORM="linux/amd64" ;;
+  arm64|aarch64) PLATFORM="linux/arm64" ;;
+  *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+esac
 
 echo "=========================================="
 echo "TinyOlly Core - Build (No Push)"
 echo "=========================================="
 echo "Organization: $DOCKER_HUB_ORG"
 echo "Version: $VERSION"
-echo "Platforms: $PLATFORMS"
+echo "Platform: $PLATFORM"
 echo "Cache: disabled (fresh build)"
 echo ""
 
@@ -42,7 +49,7 @@ echo ""
 echo "----------------------------------------"
 echo "Building python-base..."
 echo "----------------------------------------"
-docker buildx build --platform $PLATFORMS \
+docker buildx build --platform $PLATFORM \
   --no-cache \
   -f dockerfiles/Dockerfile.tinyolly-python-base \
   -t $DOCKER_HUB_ORG/python-base:latest \
@@ -55,7 +62,7 @@ echo ""
 echo "----------------------------------------"
 echo "Building otlp-receiver..."
 echo "----------------------------------------"
-docker buildx build --platform $PLATFORMS \
+docker buildx build --platform $PLATFORM \
   --no-cache \
   -f dockerfiles/Dockerfile.tinyolly-otlp-receiver \
   --build-arg APP_DIR=tinyolly-otlp-receiver \
@@ -69,7 +76,7 @@ echo ""
 echo "----------------------------------------"
 echo "Building ui..."
 echo "----------------------------------------"
-docker buildx build --platform $PLATFORMS \
+docker buildx build --platform $PLATFORM \
   --no-cache \
   -f dockerfiles/Dockerfile.tinyolly-ui \
   --build-arg APP_DIR=tinyolly-ui \
@@ -83,7 +90,7 @@ echo ""
 echo "----------------------------------------"
 echo "Building opamp-server..."
 echo "----------------------------------------"
-docker buildx build --platform $PLATFORMS \
+docker buildx build --platform $PLATFORM \
   --no-cache \
   -f dockerfiles/Dockerfile.tinyolly-opamp-server \
   -t $DOCKER_HUB_ORG/opamp-server:latest \
@@ -96,7 +103,7 @@ echo ""
 echo "----------------------------------------"
 echo "Building otel-supervisor..."
 echo "----------------------------------------"
-docker buildx build --platform $PLATFORMS \
+docker buildx build --platform $PLATFORM \
   --no-cache \
   -f dockerfiles/Dockerfile.otel-supervisor \
   -t $DOCKER_HUB_ORG/otel-supervisor:latest \

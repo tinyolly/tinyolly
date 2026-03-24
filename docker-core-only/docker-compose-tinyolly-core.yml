@@ -1,6 +1,7 @@
 services:
   tinyolly-otlp-receiver:
     image: tinyolly/otlp-receiver:latest
+    pull_policy: always
     container_name: tinyolly-otlp-receiver
     environment:
       - STORAGE_BACKEND=sqlite
@@ -17,6 +18,7 @@ services:
 
   tinyolly-opamp-server:
     image: tinyolly/opamp-server:latest
+    pull_policy: always
     container_name: tinyolly-opamp-server
     ports:
       - "4320:4320"  # OpAMP WebSocket port
@@ -36,6 +38,7 @@ services:
 
   tinyolly-ui:
     image: tinyolly/ui:latest
+    pull_policy: always
     container_name: tinyolly-ui
     ports:
       - "5005:5002"  # Exposed on 5005 to avoid conflict if running alongside full demo

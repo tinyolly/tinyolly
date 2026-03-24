@@ -13,14 +13,21 @@ cd "$SCRIPT_DIR/../../docker-ai-agent-demo"
 
 VERSION=${1:-"latest"}
 DOCKER_HUB_ORG=${DOCKER_HUB_ORG:-"tinyolly"}
-PLATFORMS="linux/amd64,linux/arm64"
+
+# Detect host architecture (--load only supports single platform)
+ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64)       PLATFORM="linux/amd64" ;;
+  arm64|aarch64) PLATFORM="linux/arm64" ;;
+  *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+esac
 
 echo "=========================================="
 echo "TinyOlly AI Demo - Build (No Push)"
 echo "=========================================="
 echo "Organization: $DOCKER_HUB_ORG"
 echo "Version: $VERSION"
-echo "Platforms: $PLATFORMS"
+echo "Platform: $PLATFORM"
 echo "Cache: disabled (fresh build)"
 echo ""
 
@@ -34,7 +41,7 @@ echo ""
 echo "----------------------------------------"
 echo "Building ai-agent-demo..."
 echo "----------------------------------------"
-docker buildx build --platform $PLATFORMS \
+docker buildx build --platform $PLATFORM \
   --no-cache \
   -f Dockerfile \
   -t $DOCKER_HUB_ORG/ai-agent-demo:latest \

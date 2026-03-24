@@ -1,6 +1,7 @@
 services:
   demo-backend:
     image: tinyolly/demo-backend:latest
+    pull_policy: always
     container_name: demo-backend
     ports:
       - "5004:5000"
@@ -11,6 +12,7 @@ services:
 
   demo-frontend:
     image: tinyolly/demo-frontend:latest
+    pull_policy: always
     container_name: demo-frontend
     ports:
       - "5001:5000"

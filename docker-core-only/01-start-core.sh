@@ -21,17 +21,6 @@ echo ""
 echo "Starting services..."
 echo ""
 
-# Pull latest images from Docker Hub
-echo "Pulling latest TinyOlly images from Docker Hub..."
-docker compose -f docker-compose-tinyolly-core.yml pull
-if [ $? -ne 0 ]; then
-    echo "✗ Failed to pull images from Docker Hub"
-    echo "  Note: For local builds, use docker-compose-tinyolly-core-local.yml"
-    exit 1
-fi
-echo "✓ Images pulled successfully"
-echo ""
-
 # This prevents stale remote configs from persisting across restarts
 echo "Clearing cached collector config..."
 docker volume rm tinyolly-otel-supervisor-data 2>/dev/null || true

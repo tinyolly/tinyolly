@@ -3,6 +3,7 @@ services:
   # Traces captured automatically by eBPF agent
   ebpf-backend:
     image: tinyolly/ebpf-backend:latest
+    pull_policy: always
     container_name: ebpf-backend
     ports:
       - "5004:5000"
@@ -13,6 +14,7 @@ services:
   # Traces captured automatically by eBPF agent
   ebpf-frontend:
     image: tinyolly/ebpf-frontend:latest
+    pull_policy: always
     container_name: ebpf-frontend
     ports:
       - "5001:5000"
