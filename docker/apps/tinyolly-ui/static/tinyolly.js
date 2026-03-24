@@ -13,7 +13,7 @@ import {
     filterLogs
 } from './render.js';
 
-import { clearTraceFilter, filterTraces, showTraceDetail } from './traces.js';
+import { clearTraceFilter, filterTraces } from './traces.js';
 import { clearSpanFilter, filterSpans } from './spans.js';
 import { filterMetrics } from './metrics.js';
 
@@ -90,18 +90,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-/** Process URL deep link parameters after init */
+/** Process URL deep link parameters after init (non-traceId links) */
 function handleDeepLink() {
     const urlParams = new URLSearchParams(window.location.search);
     const traceId = urlParams.get('traceId');
     const spanId = urlParams.get('spanId');
     const search = urlParams.get('search');
 
-    if (traceId) {
-        // Deep link to a specific trace
-        switchTab('traces', null, true);
-        setTimeout(() => showTraceDetail(traceId), 500);
-    } else if (spanId) {
+    // traceId is handled by initTabs directly — skip here
+    if (traceId) return;
+
+    if (spanId) {
         // Deep link to spans filtered by spanId
         switchTab('spans', null, true);
         setTimeout(() => {

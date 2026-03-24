@@ -22,7 +22,11 @@ Visualize and correlate logs, metrics, and traces without sending data to the cl
 - Full OpenTelemetry Protocol (OTLP) support with gRPC and HTTP ingestion
 - REST API with OpenAPI documentation
 - Service catalog, dependency maps, and distributed tracing
-- Click-to-copy trace/span IDs and cross-tab log correlation
+- Per-trace service dependency map (trace map) with inferred external client detection
+- Deep linking — shareable URLs that open directly to a specific trace or span
+- Click-to-copy trace/span IDs and "Copy Link" buttons for shareable URLs
+- Cross-tab log correlation and navigation
+- Smart auto-refresh that pauses when search filters are active
 - Space-based data retention (keeps data until storage limit; no fixed TTL)
 - Works with any OTel Collector distro
 - Built with Python (FastAPI), SQLite, and JavaScript

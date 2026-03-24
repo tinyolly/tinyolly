@@ -22,12 +22,26 @@ export function initTabs() {
     // Check URL parameter first (for bookmarks/direct links)
     const urlParams = new URLSearchParams(window.location.search);
     const urlTab = urlParams.get('tab');
+    const traceId = urlParams.get('traceId');
 
     // Always default to 'logs' tab when opening the base URL
     // Only use URL parameter if explicitly provided
     const savedTab = urlTab || 'logs';
 
-    switchTab(savedTab, null, true); // true = initial load, don't push to history
+    if (traceId && savedTab === 'traces') {
+        // Deep link to a specific trace — activate tab UI without loading trace list
+        currentTab = 'traces';
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const btn = document.querySelector('.tab[data-tab="traces"]');
+        if (btn) btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        const contentDiv = document.getElementById('traces-content');
+        if (contentDiv) contentDiv.classList.add('active');
+        // Show detail directly
+        import('./traces.js').then(module => module.showTraceDetail(traceId));
+    } else {
+        switchTab(savedTab, null, true); // true = initial load, don't push to history
+    }
     updateAutoRefreshButton();
 
     // Handle browser back/forward buttons

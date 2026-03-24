@@ -27,7 +27,10 @@ TinyOlly is a **lightweight OpenTelemetry-native observability platform** built 
 - **Multi-architecture** - Supports linux/amd64 and linux/arm64 (Apple Silicon)
 - **Trace correlation** - Link logs, metrics, and traces automatically
 - **Click-to-copy IDs** - Copy trace/span IDs with a single click anywhere in the UI
+- **Deep linking** - Shareable URLs that open directly to a specific trace (`?tab=traces&traceId=...`)
+- **Trace map** - Per-trace service dependency visualization with inferred external client detection
 - **Correlated log navigation** - Jump from trace detail to filtered logs and vice versa
+- **Smart auto-refresh** - Auto-refresh pauses when search filters are active, no more losing results
 - **Space-based retention** - Data stays until storage fills up (default 256 MB); no fixed TTL
 - **Metrics Explorer** - Analyze cardinality, labels, and raw series data
 - **Service catalog** - RED metrics (Rate, Errors, Duration) for all services

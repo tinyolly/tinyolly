@@ -34,6 +34,11 @@ TinyOlly is **fully OpenTelemetry-native**:
 ## UI Features
 
 - **Trace Waterfall**: Distributed trace visualization with automatic filtering of noisy ASGI sub-spans (http send/receive)  
+- **Trace Map**: Per-trace service dependency graph rendered above the waterfall using Cytoscape.js. Detects inferred external clients from orphan parent span IDs (e.g., test clients that propagate trace context but don't export spans)  
+- **Deep Linking**: Shareable URLs that open directly to a specific trace detail view (`?tab=traces&traceId=...`), span search (`?tab=spans&spanId=...`), or filtered tab (`?tab=logs&search=...`). "Copy Link" buttons in trace and span detail views generate these URLs  
 - **Click-to-Copy IDs**: Trace and span IDs are copyable with a single click throughout the UI  
 - **Correlated Logs**: Trace detail view shows correlated logs inline — click any log row to navigate to the Logs tab filtered by trace ID  
 - **Cross-Tab Navigation**: Click trace/span IDs in logs to jump to the corresponding trace or span view  
+- **Service Catalog**: RED metrics with action buttons to navigate to Traces, Spans, Logs, or Metrics filtered by service name  
+- **Smart Auto-Refresh**: 5-second polling pauses automatically when a search filter is active, preventing result disruption  
+- **Scrollable Lists**: Trace, span, and log lists support scrolling with sticky headers for large datasets  
