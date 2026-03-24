@@ -1,18 +1,63 @@
+### Python ###
 __pycache__/
 *.py[cod]
 *$py.class
-.DS_Store
-.venv
+*.so
+*.egg
+*.egg-info/
+dist/
+build/eggs/
+*.whl
+.venv/
 venv/
 env/
-*.log
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+### macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+### IDE / Editor ###
 .idea/
 .vscode/
-.ai_settings.md
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
 
-# SSL Certificates (don't commit private keys)
+### Logs ###
+*.log
+*.log.*
+
+### SSL / Certs (don't commit private keys) ###
 docker/certs/
 *.pem
 *.key
 *.crt
+
+### AI / Agent ###
+.ai_settings.md
 .claude
+.claude/
+
+### MkDocs ###
+site/
+
+### Docker ###
+*.pid
+
+### Misc ###
+.env
+.env.*
+!.env.example
+*.bak
+*.tmp
+*.orig
