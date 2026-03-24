@@ -50,6 +50,16 @@ if [ $EXIT_CODE -ne 0 ]; then
     exit 1
 fi
 
+# Reconnect any demo containers that may have been orphaned by network recreation.
+# When the core stack restarts, tinyolly-network gets a new ID; running demo
+# containers still reference the old (destroyed) network and lose connectivity.
+for container in demo-frontend demo-backend; do
+  if docker ps -q --filter "name=^${container}$" | grep -q .; then
+    docker network connect tinyolly-network $container 2>/dev/null \
+      && echo "✓ Reconnected $container to tinyolly-network" || true
+  fi
+done
+
 echo ""
 echo "Services started!"
 echo ""
