@@ -18,6 +18,15 @@ export function renderServiceMap(graph) {
     const loadingEl = document.getElementById('map-loading');
     if (loadingEl) loadingEl.style.display = 'none';
 
+    if (graph.nodes.length === 0) {
+        if (cy) {
+            cy.destroy();
+            cy = null;
+        }
+        container.innerHTML = '<div style="height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--text-muted); padding: 24px;">No persisted service map is available. Click Refresh to clear the snapshot, then wait for new traces to arrive.</div>';
+        return;
+    }
+
     // Calculate node types (Root, Leaf, Intermediate)
     const incoming = new Map();
     const outgoing = new Map();
@@ -157,6 +166,8 @@ export function renderServiceMap(graph) {
     }
 
     // Initialize Cytoscape (First Load)
+    container.innerHTML = '';
+
     // Read computed CSS variable values for dark/light mode support
     const cs = getComputedStyle(document.documentElement);
     const textColor = cs.getPropertyValue('--text-muted').trim() || '#64748b';

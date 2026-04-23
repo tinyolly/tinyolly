@@ -1,5 +1,9 @@
 <div id="catalog-content" class="tab-content">
-    <div class="logs-controls" style="margin-bottom: 15px;">
+    <div class="logs-controls" style="margin-bottom: 15px; display: flex; gap: 10px;">
+        <button onclick="window.refreshServiceCatalog()"
+            style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+            Refresh
+        </button>
         <button onclick="window.closeAllServiceCharts()"
             style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
             Close All Charts

@@ -27,6 +27,8 @@ TTL_SECONDS = int(os.getenv('REDIS_TTL', 1800))  # 30 minutes default
 MAX_METRIC_CARDINALITY = int(os.getenv('MAX_METRIC_CARDINALITY', 1000))
 COMPRESSION_THRESHOLD = int(os.getenv('COMPRESSION_THRESHOLD_BYTES', 512))  # Compress if larger than this
 SERVICE_GRAPH_CACHE_TTL = int(os.getenv('SERVICE_GRAPH_CACHE_TTL', 5))  # Cache TTL in seconds
+SERVICE_SNAPSHOT_TTL_SECONDS = int(os.getenv('SERVICE_SNAPSHOT_TTL_SECONDS', 3600))
+SERVICE_RESET_TTL_SECONDS = int(os.getenv('SERVICE_RESET_TTL_SECONDS', 86400))
 
 # ZSTD Contexts (reusing context is faster)
 zstd_compressor = zstd.ZstdCompressor(level=3)
@@ -342,18 +344,51 @@ class Storage:
         except Exception as e:
             logger.error(f"Redis error in store_spans: {e}", exc_info=True)
 
-    async def get_recent_traces(self, limit=100):
+    async def get_recent_traces(self, limit=100, since_ts=None):
         """Get recent trace IDs"""
         client = await self.get_client()
-        # ZREVRANGE returns bytes when decode_responses=False, need to decode IDs
-        ids = await client.zrevrange('trace_index', 0, limit - 1)
+        if since_ts is None:
+            ids = await client.zrevrange('trace_index', 0, limit - 1)
+        else:
+            ids = await client.zrevrangebyscore('trace_index', '+inf', since_ts, start=0, num=limit)
         return [id.decode('utf-8') for id in ids]
 
-    async def get_recent_spans(self, limit=100):
+    async def get_recent_spans(self, limit=100, since_ts=None):
         """Get recent span IDs"""
         client = await self.get_client()
-        ids = await client.zrevrange('span_index', 0, limit - 1)
+        if since_ts is None:
+            ids = await client.zrevrange('span_index', 0, limit - 1)
+        else:
+            ids = await client.zrevrangebyscore('span_index', '+inf', since_ts, start=0, num=limit)
         return [id.decode('utf-8') for id in ids]
+
+    async def _get_service_reset_ts(self, view):
+        client = await self.get_client()
+        payload = await client.get(f'service_view_reset_v1:{view}')
+        if not payload:
+            return 0.0
+        data = orjson.loads(payload)
+        return float(data.get('reset_at', 0.0) or 0.0)
+
+    async def reset_service_map(self):
+        client = await self.get_client()
+        reset_at = time.time()
+        cache_keys = [key async for key in client.scan_iter(match='service_graph_cache_v3:*')]
+        pipe = client.pipeline()
+        pipe.setex('service_view_reset_v1:map', SERVICE_RESET_TTL_SECONDS, orjson.dumps({'reset_at': reset_at}).decode('utf-8'))
+        pipe.delete('service_view_snapshot_v1:map')
+        if cache_keys:
+            pipe.delete(*cache_keys)
+        await pipe.execute()
+
+    async def reset_service_catalog(self):
+        client = await self.get_client()
+        reset_at = time.time()
+        pipe = client.pipeline()
+        pipe.setex('service_view_reset_v1:catalog', SERVICE_RESET_TTL_SECONDS, orjson.dumps({'reset_at': reset_at}).decode('utf-8'))
+        pipe.delete('service_view_snapshot_v1:catalog')
+        self.get_service_catalog.cache_clear()
+        await pipe.execute()
 
     async def get_span_details(self, span_id: str) -> Optional[Dict[str, Any]]:
         """Get details for a specific span.
@@ -1218,7 +1253,15 @@ class Storage:
     async def get_service_graph(self, limit=500):
         """Build service dependency graph from recent traces with metrics"""
         client = await self.get_client()
-        cache_key = f"service_graph_cache_v2:{limit}"
+        cache_key = f"service_graph_cache_v3:{limit}"
+        snapshot_key = 'service_view_snapshot_v1:map'
+        reset_at = await self._get_service_reset_ts('map')
+        trace_ids = await self.get_recent_traces(limit, since_ts=reset_at)
+
+        if not trace_ids:
+            snapshot = await client.get(snapshot_key)
+            return orjson.loads(snapshot) if snapshot else {'nodes': [], 'edges': []}
+
         cached_graph = await client.get(cache_key)
         if cached_graph:
             return orjson.loads(cached_graph)
@@ -1233,7 +1276,6 @@ class Storage:
         for s in catalog_services:
             nodes[s['name']] = {'type': 'service', 'metrics': s}
 
-        trace_ids = await self.get_recent_traces(limit)
         edges = {}  # (source, target) -> {count, durations}
         
         # Use centralized utility for attribute extraction
@@ -1329,14 +1371,25 @@ class Storage:
             'edges': graph_edges
         }
         
+        await client.setex(snapshot_key, SERVICE_SNAPSHOT_TTL_SECONDS, orjson.dumps(result).decode('utf-8'))
         await client.setex(cache_key, SERVICE_GRAPH_CACHE_TTL, orjson.dumps(result).decode('utf-8'))
         return result
 
-    @alru_cache(maxsize=1, ttl=5)
     async def get_service_catalog(self):
         """Get list of all services with their stats and RED metrics"""
-        # Get all recent spans to extract service information
-        span_ids = await self.get_recent_spans(1000)
+        client = await self.get_client()
+        cache_key = 'service_view_cache_v1:catalog'
+        snapshot_key = 'service_view_snapshot_v1:catalog'
+        reset_at = await self._get_service_reset_ts('catalog')
+        span_ids = await self.get_recent_spans(1000, since_ts=reset_at)
+
+        if not span_ids:
+            snapshot = await client.get(snapshot_key)
+            return orjson.loads(snapshot) if snapshot else []
+
+        cached_catalog = await client.get(cache_key)
+        if cached_catalog:
+            return orjson.loads(cached_catalog)
         
         services = {}  # service_name -> {span_count, trace_count, first_seen, last_seen, trace_ids}
         
@@ -1380,6 +1433,9 @@ class Storage:
             service_info.update(red_metrics)
             
             result.append(service_info)
+
+        await client.setex(snapshot_key, SERVICE_SNAPSHOT_TTL_SECONDS, orjson.dumps(result).decode('utf-8'))
+        await client.setex(cache_key, SERVICE_GRAPH_CACHE_TTL, orjson.dumps(result).decode('utf-8'))
         
         return result
     

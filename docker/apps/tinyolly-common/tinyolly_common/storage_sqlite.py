@@ -7,6 +7,7 @@ import asyncio
 import base64
 import json
 import os
+import sqlite3
 import time
 import uuid
 import logging
@@ -28,6 +29,9 @@ TTL_SECONDS = int(os.getenv("SQLITE_TTL_SECONDS", os.getenv("REDIS_TTL", "1800")
 MAX_METRIC_CARDINALITY = int(os.getenv("MAX_METRIC_CARDINALITY", "1000"))
 COMPRESSION_THRESHOLD = int(os.getenv("COMPRESSION_THRESHOLD_BYTES", "512"))
 SERVICE_GRAPH_CACHE_TTL = int(os.getenv("SERVICE_GRAPH_CACHE_TTL", "5"))
+SERVICE_VIEW_CACHE_TTL = int(os.getenv("SERVICE_VIEW_CACHE_TTL", "20"))
+SERVICE_SNAPSHOT_TTL_SECONDS = int(os.getenv("SERVICE_SNAPSHOT_TTL_SECONDS", "3600"))
+SERVICE_RESET_TTL_SECONDS = int(os.getenv("SERVICE_RESET_TTL_SECONDS", "86400"))
 MAX_DB_SIZE_MB = int(os.getenv("MAX_DB_SIZE_MB", "256"))
 SQLITE_PAGE_SIZE = 4096
 MAX_PAGE_COUNT = max((MAX_DB_SIZE_MB * 1024 * 1024) // SQLITE_PAGE_SIZE, 1)
@@ -227,8 +231,15 @@ class StorageSQLite:
             try:
                 await self._cleanup_expired_and_trim()
             except Exception as e:
-                logger.error(f"SQLite cleanup error: {e}", exc_info=True)
+                if self._is_db_locked_error(e):
+                    logger.debug(f"SQLite cleanup skipped due to lock contention: {e}")
+                else:
+                    logger.error(f"SQLite cleanup error: {e}", exc_info=True)
             await asyncio.sleep(60)
+
+    @staticmethod
+    def _is_db_locked_error(error: Exception) -> bool:
+        return "database is locked" in str(error).lower()
 
     def _compress_for_storage(self, data: Dict[str, Any]) -> bytes:
         packed = msgpack.packb(data)
@@ -294,20 +305,41 @@ class StorageSQLite:
         await self._ensure_initialized()
         now = time.time()
 
-        async with self._write_lock:
-            conn = await self._connect()
-            try:
-                # Only expire KV cache entries (ephemeral caches, not telemetry)
-                await conn.execute("DELETE FROM kv WHERE expires_at <= ?", (now,))
-                await conn.commit()
+        for attempt in range(3):
+            async with self._write_lock:
+                conn = await self._connect()
+                try:
+                    for table in (
+                        "trace_logs",
+                        "logs",
+                        "trace_spans",
+                        "spans",
+                        "span_index",
+                        "trace_index",
+                        "traces",
+                        "metrics_exemplars",
+                        "metrics_series",
+                        "metrics_resources",
+                        "metrics_attributes",
+                        "metrics_meta",
+                        "metrics_names",
+                        "kv",
+                    ):
+                        await conn.execute(f"DELETE FROM {table} WHERE expires_at <= ?", (now,))
+                    await conn.commit()
 
-                # Trim oldest data when DB approaches size limit
-                await self._enforce_size_bounds(conn)
-                await conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-                await conn.execute("PRAGMA incremental_vacuum(100)")
-                await conn.commit()
-            finally:
-                await conn.close()
+                    # Trim oldest data when DB approaches size limit
+                    await self._enforce_size_bounds(conn)
+                    await conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                    await conn.execute("PRAGMA incremental_vacuum(100)")
+                    await conn.commit()
+                    return
+                except (aiosqlite.OperationalError, sqlite3.OperationalError) as e:
+                    if not self._is_db_locked_error(e) or attempt == 2:
+                        raise
+                    await asyncio.sleep(0.1 * (attempt + 1))
+                finally:
+                    await conn.close()
 
     async def _get_db_size(self, conn: aiosqlite.Connection) -> int:
         async with conn.execute("PRAGMA page_count") as cur:
@@ -498,39 +530,111 @@ class StorageSQLite:
             finally:
                 await conn.close()
 
-    async def get_recent_traces(self, limit: int = 100) -> List[str]:
+    async def get_recent_traces(self, limit: int = 100, since_ts: Optional[float] = None) -> List[str]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
-            async with conn.execute(
-                "SELECT trace_id FROM trace_index ORDER BY ts DESC LIMIT ?",
-                (limit,),
-            ) as cur:
+            if since_ts is None:
+                sql = "SELECT trace_id FROM trace_index WHERE expires_at > ? ORDER BY ts DESC LIMIT ?"
+                params = (now, limit)
+            else:
+                sql = "SELECT trace_id FROM trace_index WHERE expires_at > ? AND ts > ? ORDER BY ts DESC LIMIT ?"
+                params = (now, since_ts, limit)
+
+            async with conn.execute(sql, params) as cur:
                 rows = await cur.fetchall()
             return [r[0] for r in rows]
         finally:
             await conn.close()
 
-    async def get_recent_spans(self, limit: int = 100) -> List[str]:
+    async def get_recent_spans(self, limit: int = 100, since_ts: Optional[float] = None) -> List[str]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
-            async with conn.execute(
-                "SELECT span_id FROM span_index ORDER BY ts DESC LIMIT ?",
-                (limit,),
-            ) as cur:
+            if since_ts is None:
+                sql = "SELECT span_id FROM span_index WHERE expires_at > ? ORDER BY ts DESC LIMIT ?"
+                params = (now, limit)
+            else:
+                sql = "SELECT span_id FROM span_index WHERE expires_at > ? AND ts > ? ORDER BY ts DESC LIMIT ?"
+                params = (now, since_ts, limit)
+
+            async with conn.execute(sql, params) as cur:
                 rows = await cur.fetchall()
             return [r[0] for r in rows]
+        finally:
+            await conn.close()
+
+    async def _get_recent_spans_data(self, limit: int, since_ts: Optional[float] = None) -> List[Dict[str, Any]]:
+        await self._ensure_initialized()
+        now = time.time()
+        conn = await self._connect()
+        try:
+            if since_ts is None:
+                sql = (
+                    "SELECT s.data FROM span_index si "
+                    "JOIN spans s ON s.span_id = si.span_id "
+                    "WHERE si.expires_at > ? AND s.expires_at > ? "
+                    "ORDER BY si.ts DESC LIMIT ?"
+                )
+                params = (now, now, limit)
+            else:
+                sql = (
+                    "SELECT s.data FROM span_index si "
+                    "JOIN spans s ON s.span_id = si.span_id "
+                    "WHERE si.expires_at > ? AND s.expires_at > ? AND si.ts > ? "
+                    "ORDER BY si.ts DESC LIMIT ?"
+                )
+                params = (now, now, since_ts, limit)
+
+            async with conn.execute(sql, params) as cur:
+                rows = await cur.fetchall()
+            return [self._decompress_if_needed(row[0]) for row in rows]
+        finally:
+            await conn.close()
+
+    async def _get_trace_spans_batch(self, trace_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+        await self._ensure_initialized()
+        if not trace_ids:
+            return {}
+
+        now = time.time()
+        conn = await self._connect()
+        spans_by_trace: Dict[str, List[Dict[str, Any]]] = {}
+        try:
+            chunk_size = 200
+            for i in range(0, len(trace_ids), chunk_size):
+                chunk = trace_ids[i:i + chunk_size]
+                placeholders = ",".join("?" for _ in chunk)
+                sql = (
+                    "SELECT ts.trace_id, s.data "
+                    "FROM trace_spans ts "
+                    "JOIN spans s ON s.span_id = ts.span_id "
+                    f"WHERE ts.expires_at > ? AND s.expires_at > ? AND ts.trace_id IN ({placeholders}) "
+                    "ORDER BY ts.trace_id ASC, ts.start_time ASC"
+                )
+                params = [now, now, *chunk]
+                async with conn.execute(sql, params) as cur:
+                    rows = await cur.fetchall()
+
+                for row in rows:
+                    trace_id = row[0]
+                    span = self._decompress_if_needed(row[1])
+                    spans_by_trace.setdefault(trace_id, []).append(span)
+
+            return spans_by_trace
         finally:
             await conn.close()
 
     async def get_span_details(self, span_id: str) -> Optional[Dict[str, Any]]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
             async with conn.execute(
-                "SELECT data FROM spans WHERE span_id = ?",
-                (span_id,),
+                "SELECT data FROM spans WHERE span_id = ? AND expires_at > ?",
+                (span_id, now),
             ) as cur:
                 row = await cur.fetchone()
 
@@ -587,6 +691,7 @@ class StorageSQLite:
 
     async def get_trace_spans(self, trace_id: str) -> List[Dict[str, Any]]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
             async with conn.execute(
@@ -594,10 +699,10 @@ class StorageSQLite:
                 SELECT s.data
                 FROM trace_spans ts
                 JOIN spans s ON s.span_id = ts.span_id
-                WHERE ts.trace_id = ?
+                WHERE ts.trace_id = ? AND ts.expires_at > ? AND s.expires_at > ?
                 ORDER BY ts.start_time ASC
                 """,
-                (trace_id,),
+                (trace_id, now, now),
             ) as cur:
                 rows = await cur.fetchall()
 
@@ -751,19 +856,20 @@ class StorageSQLite:
 
     async def get_logs(self, trace_id: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
             if trace_id:
                 sql = (
                     "SELECT l.data FROM trace_logs tl "
                     "JOIN logs l ON l.log_id = tl.log_id "
-                    "WHERE tl.trace_id = ? "
+                    "WHERE tl.trace_id = ? AND tl.expires_at > ? AND l.expires_at > ? "
                     "ORDER BY tl.ts DESC LIMIT ?"
                 )
-                params = (trace_id, limit)
+                params = (trace_id, now, now, limit)
             else:
-                sql = "SELECT data FROM logs ORDER BY ts DESC LIMIT ?"
-                params = (limit,)
+                sql = "SELECT data FROM logs WHERE expires_at > ? ORDER BY ts DESC LIMIT ?"
+                params = (now, limit)
 
             async with conn.execute(sql, params) as cur:
                 rows = await cur.fetchall()
@@ -1056,14 +1162,15 @@ class StorageSQLite:
     @alru_cache(maxsize=1, ttl=10)
     async def get_metric_names(self, limit: Optional[int] = None) -> List[str]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
             if limit and limit > 0:
-                sql = "SELECT name FROM metrics_names ORDER BY name ASC LIMIT ?"
-                params = (limit,)
+                sql = "SELECT name FROM metrics_names WHERE expires_at > ? ORDER BY name ASC LIMIT ?"
+                params = (now, limit)
             else:
-                sql = "SELECT name FROM metrics_names ORDER BY name ASC"
-                params = ()
+                sql = "SELECT name FROM metrics_names WHERE expires_at > ? ORDER BY name ASC"
+                params = (now,)
 
             async with conn.execute(sql, params) as cur:
                 rows = await cur.fetchall()
@@ -1073,11 +1180,12 @@ class StorageSQLite:
 
     async def get_metric_metadata(self, name: str) -> Dict[str, Any]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
             async with conn.execute(
-                "SELECT data FROM metrics_meta WHERE name = ?",
-                (name,),
+                "SELECT data FROM metrics_meta WHERE name = ? AND expires_at > ?",
+                (name, now),
             ) as cur:
                 row = await cur.fetchone()
 
@@ -1093,11 +1201,12 @@ class StorageSQLite:
 
     async def get_all_resources(self, metric_name: str) -> List[Dict[str, Any]]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
             async with conn.execute(
-                "SELECT resource_json FROM metrics_resources WHERE name = ?",
-                (metric_name,),
+                "SELECT resource_json FROM metrics_resources WHERE name = ? AND expires_at > ?",
+                (metric_name, now),
             ) as cur:
                 rows = await cur.fetchall()
             return [orjson.loads(row[0]) for row in rows]
@@ -1109,19 +1218,20 @@ class StorageSQLite:
 
     async def get_all_attributes(self, metric_name: str, resource_filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
             if not resource_filter:
                 async with conn.execute(
-                    "SELECT attr_json FROM metrics_attributes WHERE name = ?",
-                    (metric_name,),
+                    "SELECT attr_json FROM metrics_attributes WHERE name = ? AND expires_at > ?",
+                    (metric_name, now),
                 ) as cur:
                     rows = await cur.fetchall()
                 return [orjson.loads(row[0]) for row in rows]
 
             async with conn.execute(
-                "SELECT data FROM metrics_series WHERE name = ?",
-                (metric_name,),
+                "SELECT data FROM metrics_series WHERE name = ? AND expires_at > ?",
+                (metric_name, now),
             ) as cur:
                 rows = await cur.fetchall()
 
@@ -1156,14 +1266,15 @@ class StorageSQLite:
 
         conn = await self._connect()
         try:
+            now = time.time()
             async with conn.execute(
                 """
                 SELECT resource_hash, attr_hash, ts, data
                 FROM metrics_series
-                WHERE name = ? AND ts BETWEEN ? AND ?
+                WHERE name = ? AND expires_at > ? AND ts BETWEEN ? AND ?
                 ORDER BY ts ASC
                 """,
-                (name, start_time, end_time),
+                (name, now, start_time, end_time),
             ) as cur:
                 rows = await cur.fetchall()
 
@@ -1207,10 +1318,11 @@ class StorageSQLite:
                     SELECT data
                     FROM metrics_exemplars
                     WHERE name = ? AND resource_hash = ? AND attr_hash = ?
+                                            AND expires_at > ?
                       AND ts BETWEEN ? AND ?
                     ORDER BY ts ASC
                     """,
-                    (name, resource_hash, attr_hash, start_time, end_time),
+                                        (name, resource_hash, attr_hash, now, start_time, end_time),
                 ) as cur:
                     ex_rows = await cur.fetchall()
                 grouped[(resource_hash, attr_hash)]["exemplars"] = [
@@ -1226,9 +1338,10 @@ class StorageSQLite:
 
     async def get_cardinality_stats(self) -> Dict[str, Any]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
-            async with conn.execute("SELECT COUNT(*) FROM metrics_names") as cur:
+            async with conn.execute("SELECT COUNT(*) FROM metrics_names WHERE expires_at > ?", (now,)) as cur:
                 row = await cur.fetchone()
                 current = int(row[0]) if row else 0
 
@@ -1282,19 +1395,92 @@ class StorageSQLite:
     async def _cache_set_json(self, key: str, value: Dict[str, Any], ttl_seconds: int) -> None:
         await self._ensure_initialized()
         async with self._write_lock:
+            for attempt in range(3):
+                conn = await self._connect()
+                try:
+                    expires_at = time.time() + ttl_seconds
+                    await conn.execute(
+                        "INSERT OR REPLACE INTO kv(key, value, expires_at) VALUES (?, ?, ?)",
+                        (key, orjson.dumps(value), expires_at),
+                    )
+                    await conn.commit()
+                    return
+                except aiosqlite.OperationalError as e:
+                    if not self._is_db_locked_error(e) or attempt == 2:
+                        logger.warning(f"SQLite cache write skipped for key={key}: {e}")
+                        return
+                    await asyncio.sleep(0.1 * (attempt + 1))
+                finally:
+                    await conn.close()
+
+    async def _cache_set_json_safe(self, key: str, value: Dict[str, Any], ttl_seconds: int) -> None:
+        try:
+            await self._cache_set_json(key, value, ttl_seconds)
+        except Exception as e:
+            logger.warning(f"SQLite cache write failed for key={key}: {e}")
+
+    async def _cache_delete(self, key: str) -> None:
+        await self._ensure_initialized()
+        async with self._write_lock:
             conn = await self._connect()
             try:
-                expires_at = time.time() + ttl_seconds
-                await conn.execute(
-                    "INSERT OR REPLACE INTO kv(key, value, expires_at) VALUES (?, ?, ?)",
-                    (key, orjson.dumps(value), expires_at),
-                )
+                await conn.execute("DELETE FROM kv WHERE key = ?", (key,))
                 await conn.commit()
             finally:
                 await conn.close()
 
+    async def _cache_delete_like(self, pattern: str) -> None:
+        await self._ensure_initialized()
+        async with self._write_lock:
+            conn = await self._connect()
+            try:
+                await conn.execute("DELETE FROM kv WHERE key LIKE ?", (pattern,))
+                await conn.commit()
+            finally:
+                await conn.close()
+
+    def _service_cache_key(self, view: str) -> str:
+        return f"service_view_cache_v1:{view}"
+
+    def _service_snapshot_key(self, view: str) -> str:
+        return f"service_view_snapshot_v1:{view}"
+
+    def _service_reset_key(self, view: str) -> str:
+        return f"service_view_reset_v1:{view}"
+
+    async def _get_service_reset_ts(self, view: str) -> float:
+        payload = await self._cache_get_json(self._service_reset_key(view))
+        if not payload:
+            return 0.0
+        return float(payload.get("reset_at", 0.0) or 0.0)
+
+    async def _set_service_reset_ts(self, view: str, reset_at: float) -> None:
+        await self._cache_set_json(
+            self._service_reset_key(view),
+            {"reset_at": reset_at},
+            SERVICE_RESET_TTL_SECONDS,
+        )
+
+    async def reset_service_map(self) -> None:
+        await self._set_service_reset_ts("map", time.time())
+        await self._cache_delete_like("service_graph_cache_v%")
+        await self._cache_delete(self._service_snapshot_key("map"))
+
+    async def reset_service_catalog(self) -> None:
+        await self._set_service_reset_ts("catalog", time.time())
+        await self._cache_delete(self._service_cache_key("catalog"))
+        await self._cache_delete(self._service_snapshot_key("catalog"))
+
     async def get_service_graph(self, limit: int = 500) -> Dict[str, Any]:
-        cache_key = f"service_graph_cache_v2:{limit}"
+        cache_key = f"service_graph_cache_v3:{limit}"
+        snapshot_key = self._service_snapshot_key("map")
+        reset_at = await self._get_service_reset_ts("map")
+        trace_ids = await self.get_recent_traces(limit, since_ts=reset_at)
+
+        if not trace_ids:
+            snapshot = await self._cache_get_json(snapshot_key)
+            return snapshot or {"nodes": [], "edges": []}
+
         cached_graph = await self._cache_get_json(cache_key)
         if cached_graph:
             return cached_graph
@@ -1306,11 +1492,11 @@ class StorageSQLite:
         for s in catalog_services:
             nodes[s["name"]] = {"type": "service", "metrics": s}
 
-        trace_ids = await self.get_recent_traces(limit)
         edges: Dict[Tuple[str, str], Dict[str, Any]] = {}
+        spans_by_trace = await self._get_trace_spans_batch(trace_ids)
 
         for trace_id in trace_ids:
-            spans = await self.get_trace_spans(trace_id)
+            spans = spans_by_trace.get(trace_id, [])
             if not spans:
                 continue
 
@@ -1385,22 +1571,36 @@ class StorageSQLite:
             )
 
         result = {"nodes": graph_nodes, "edges": graph_edges}
-        await self._cache_set_json(cache_key, result, SERVICE_GRAPH_CACHE_TTL)
+        await self._cache_set_json_safe(snapshot_key, result, SERVICE_SNAPSHOT_TTL_SECONDS)
+        await self._cache_set_json_safe(cache_key, result, SERVICE_VIEW_CACHE_TTL)
         return result
 
-    @alru_cache(maxsize=1, ttl=5)
     async def get_service_catalog(self) -> List[Dict[str, Any]]:
-        span_ids = await self.get_recent_spans(10000)
+        cache_key = self._service_cache_key("catalog")
+        snapshot_key = self._service_snapshot_key("catalog")
+        reset_at = await self._get_service_reset_ts("catalog")
+        spans = await self._get_recent_spans_data(10000, since_ts=reset_at)
+
+        if not spans:
+            snapshot = await self._cache_get_json(snapshot_key)
+            return snapshot or []
+
+        cached_catalog = await self._cache_get_json(cache_key)
+        if cached_catalog:
+            return cached_catalog
+
         services: Dict[str, Dict[str, Any]] = {}
 
-        for span_id in span_ids:
-            span_data = await self.get_span_details(span_id)
-            if not span_data:
-                continue
+        for span in spans:
+            service_name = span.get("serviceName") or span.get("service_name") or "unknown"
+            trace_id = span.get("traceId") or span.get("trace_id")
+            start_time = int(span.get("startTimeUnixNano", span.get("start_time", 0)) or 0)
+            end_time = int(span.get("endTimeUnixNano", span.get("end_time", 0)) or 0)
+            duration_ms = (end_time - start_time) / 1_000_000 if end_time > start_time else 0.0
 
-            service_name = span_data.get("service_name", "unknown")
-            trace_id = span_data.get("trace_id")
-            start_time = span_data.get("start_time", 0)
+            status_obj = span.get("status", {}) or {}
+            status_code = status_obj.get("code") if isinstance(status_obj, dict) else None
+            is_error = status_code == 2
 
             if service_name not in services:
                 services[service_name] = {
@@ -1409,26 +1609,47 @@ class StorageSQLite:
                     "trace_ids": set(),
                     "first_seen": start_time,
                     "last_seen": start_time,
+                    "durations": [],
+                    "error_count": 0,
                 }
 
             services[service_name]["span_count"] += 1
             services[service_name]["trace_ids"].add(trace_id)
             services[service_name]["first_seen"] = min(services[service_name]["first_seen"], start_time)
             services[service_name]["last_seen"] = max(services[service_name]["last_seen"], start_time)
+            services[service_name]["durations"].append(duration_ms)
+            if is_error:
+                services[service_name]["error_count"] += 1
 
         result = []
         for service_name, data in services.items():
+            durations = sorted(data["durations"])
+            p50 = None
+            p95 = None
+            p99 = None
+            if durations:
+                p50 = round(durations[int((len(durations) - 1) * 0.50)], 2)
+                p95 = round(durations[int((len(durations) - 1) * 0.95)], 2)
+                p99 = round(durations[int((len(durations) - 1) * 0.99)], 2)
+
+            span_count = data["span_count"]
+            error_count = data["error_count"]
             service_info = {
                 "name": data["name"],
-                "span_count": data["span_count"],
+                "span_count": span_count,
                 "trace_count": len(data["trace_ids"]),
                 "first_seen": data["first_seen"],
                 "last_seen": data["last_seen"],
+                "rate": max(1, round(span_count / 300)) if span_count > 0 else 0,
+                "error_rate": round((error_count / span_count) * 100, 2) if span_count > 0 else 0.0,
+                "duration_p50": p50,
+                "duration_p95": p95,
+                "duration_p99": p99,
             }
-            red_metrics = await self._get_service_red_metrics(service_name)
-            service_info.update(red_metrics)
             result.append(service_info)
 
+        await self._cache_set_json_safe(snapshot_key, result, SERVICE_SNAPSHOT_TTL_SECONDS)
+        await self._cache_set_json_safe(cache_key, result, SERVICE_VIEW_CACHE_TTL)
         return result
 
     async def _get_service_red_metrics(self, service_name: str) -> Dict[str, Any]:
@@ -1568,15 +1789,16 @@ class StorageSQLite:
 
     async def get_stats(self) -> Dict[str, Any]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
             cardinality = await self.get_cardinality_stats()
 
-            async with conn.execute("SELECT COUNT(*) FROM trace_index") as cur:
+            async with conn.execute("SELECT COUNT(*) FROM trace_index WHERE expires_at > ?", (now,)) as cur:
                 trace_count = int((await cur.fetchone())[0])
-            async with conn.execute("SELECT COUNT(*) FROM span_index") as cur:
+            async with conn.execute("SELECT COUNT(*) FROM span_index WHERE expires_at > ?", (now,)) as cur:
                 span_count = int((await cur.fetchone())[0])
-            async with conn.execute("SELECT COUNT(*) FROM logs") as cur:
+            async with conn.execute("SELECT COUNT(*) FROM logs WHERE expires_at > ?", (now,)) as cur:
                 log_count = int((await cur.fetchone())[0])
 
             return {
@@ -1592,15 +1814,16 @@ class StorageSQLite:
 
     async def get_admin_stats(self) -> Dict[str, Any]:
         await self._ensure_initialized()
+        now = time.time()
         conn = await self._connect()
         try:
             cardinality = await self.get_cardinality_stats()
 
-            async with conn.execute("SELECT COUNT(*) FROM trace_index") as cur:
+            async with conn.execute("SELECT COUNT(*) FROM trace_index WHERE expires_at > ?", (now,)) as cur:
                 trace_count = int((await cur.fetchone())[0])
-            async with conn.execute("SELECT COUNT(*) FROM span_index") as cur:
+            async with conn.execute("SELECT COUNT(*) FROM span_index WHERE expires_at > ?", (now,)) as cur:
                 span_count = int((await cur.fetchone())[0])
-            async with conn.execute("SELECT COUNT(*) FROM logs") as cur:
+            async with conn.execute("SELECT COUNT(*) FROM logs WHERE expires_at > ?", (now,)) as cur:
                 log_count = int((await cur.fetchone())[0])
 
             async with conn.execute("PRAGMA page_count") as cur:

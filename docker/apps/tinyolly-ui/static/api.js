@@ -7,6 +7,11 @@ import { renderErrorState, renderLoadingState } from './utils.js';
 import { filterTinyOllyData, filterTinyOllyTrace, filterTinyOllyMetric, filterTinyOllyMetricSeries } from './filter.js';
 import { loadOpampStatus, initCollector } from './collector.js';
 
+const requestInFlight = {
+    spans: false,
+    logs: false,
+};
+
 export async function loadStats() {
     try {
         const response = await fetch('/api/stats');
@@ -32,15 +37,24 @@ export async function loadTraces() {
     }
 }
 
-export async function loadSpans(serviceName = null) {
+export async function loadSpans(serviceName = null, options = {}) {
     const container = document.getElementById('spans-container');
     if (!container) {
         console.error('Spans container not found');
         return;
     }
 
-    // Show loading indicator immediately
-    container.innerHTML = renderLoadingState('Loading spans...');
+    const background = Boolean(options.background);
+
+    if (requestInFlight.spans) {
+        return;
+    }
+    requestInFlight.spans = true;
+
+    // Only show loading state for foreground loads. Background auto-refresh keeps current rows visible.
+    if (!background) {
+        container.innerHTML = renderLoadingState('Loading spans...');
+    }
 
     try {
         let url = '/api/spans?limit=1000';
@@ -66,17 +80,25 @@ export async function loadSpans(serviceName = null) {
         // Filter out TinyOlly spans if hide toggle is active
         spans = spans.filter(filterTinyOllyData);
 
-        // Replace loading indicator with actual data
         renderSpans(spans);
     } catch (error) {
         console.error('Error loading spans:', error);
-        if (container) {
+        if (container && !background) {
             container.innerHTML = renderErrorState('Error loading spans: ' + error.message);
         }
+    } finally {
+        requestInFlight.spans = false;
     }
 }
 
-export async function loadLogs(filterTraceId = null) {
+export async function loadLogs(filterTraceId = null, options = {}) {
+    const background = Boolean(options.background);
+
+    if (requestInFlight.logs) {
+        return;
+    }
+    requestInFlight.logs = true;
+
     try {
         let url = '/api/logs?limit=1000';
         if (filterTraceId) {
@@ -97,7 +119,11 @@ export async function loadLogs(filterTraceId = null) {
         renderLogs(logs, 'logs-container');
     } catch (error) {
         console.error('Error loading logs:', error);
-        document.getElementById('logs-container').innerHTML = renderErrorState('Error loading logs');
+        if (!background) {
+            document.getElementById('logs-container').innerHTML = renderErrorState('Error loading logs');
+        }
+    } finally {
+        requestInFlight.logs = false;
     }
 }
 
@@ -142,6 +168,14 @@ export async function loadServiceMap() {
     }
 }
 
+export async function refreshServiceMap() {
+    const response = await fetch('/api/service-map/refresh', { method: 'POST' });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    await loadServiceMap();
+}
+
 export async function fetchTraceDetail(traceId) {
     const response = await fetch(`/api/traces/${traceId}`);
     return await response.json();
@@ -160,6 +194,14 @@ export async function loadServiceCatalog() {
         console.error('Error loading service catalog:', error);
         document.getElementById('catalog-container').innerHTML = renderErrorState('Error loading service catalog');
     }
+}
+
+export async function refreshServiceCatalog() {
+    const response = await fetch('/api/service-catalog/refresh', { method: 'POST' });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    await loadServiceCatalog();
 }
 
 export async function loadCollector() {

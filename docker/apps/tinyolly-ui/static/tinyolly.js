@@ -1,5 +1,5 @@
 import { initTabs, startAutoRefresh, switchTab, toggleAutoRefresh } from './tabs.js';
-import { loadStats, loadLogs, loadSpans } from './api.js';
+import { loadStats, loadLogs, loadSpans, refreshServiceMap, refreshServiceCatalog } from './api.js';
 import { initTheme, toggleTheme } from './theme.js';
 import { initHideTinyOllyToggle, toggleHideTinyOlly } from './filter.js';
 import {
@@ -34,6 +34,8 @@ window.loadLogs = loadLogs;
 window.loadSpans = loadSpans;
 window.clearLogFilter = clearLogFilter;
 window.filterLogs = filterLogs;
+window.refreshServiceMap = refreshServiceMap;
+window.refreshServiceCatalog = refreshServiceCatalog;
 window.clearTraceFilter = clearTraceFilter;
 window.clearSpanFilter = clearSpanFilter;
 window.filterSpans = filterSpans;

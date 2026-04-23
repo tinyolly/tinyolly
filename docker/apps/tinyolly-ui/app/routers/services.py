@@ -60,6 +60,34 @@ async def get_service_catalog(storage: Storage = Depends(get_storage)):
     return services
 
 
+@router.post(
+    '/service-map/refresh',
+    response_model=Dict[str, str],
+    operation_id="refresh_service_map",
+    summary="Clear persisted service map",
+    responses={
+        200: {"description": "Persisted service map cleared; new traces are required to repopulate it"}
+    }
+)
+async def refresh_service_map(storage: Storage = Depends(get_storage)):
+    await storage.reset_service_map()
+    return {"status": "ok"}
+
+
+@router.post(
+    '/service-catalog/refresh',
+    response_model=Dict[str, str],
+    operation_id="refresh_service_catalog",
+    summary="Clear persisted service catalog",
+    responses={
+        200: {"description": "Persisted service catalog cleared; new traces are required to repopulate it"}
+    }
+)
+async def refresh_service_catalog(storage: Storage = Depends(get_storage)):
+    await storage.reset_service_catalog()
+    return {"status": "ok"}
+
+
 @router.get(
     '/stats',
     response_model=Dict[str, Any],

@@ -8,6 +8,18 @@ import { clearMetricSearch } from './metrics.js';
 let currentTab = 'traces';
 let autoRefreshInterval = null;
 let autoRefreshEnabled = true;
+const TAB_REFRESH_INTERVAL_MS = {
+    traces: 5000,
+    spans: 5000,
+    logs: 5000,
+    metrics: 8000,
+    catalog: 20000,
+    map: 20000,
+    'ai-agents': 10000,
+};
+const STATS_REFRESH_INTERVAL_MS = 10000;
+let lastTabRefreshAt = 0;
+let lastStatsRefreshAt = 0;
 try {
     autoRefreshEnabled = localStorage.getItem('tinyolly-auto-refresh') !== 'false';
 } catch (e) {
@@ -122,6 +134,8 @@ export function startAutoRefresh() {
     stopAutoRefresh();
 
     autoRefreshInterval = setInterval(() => {
+        const now = Date.now();
+
         // Don't refresh if user has an active search filter on the current tab
         const searchIds = {
             traces: 'trace-search',
@@ -137,8 +151,20 @@ export function startAutoRefresh() {
             }
         }
 
+        const tabInterval = TAB_REFRESH_INTERVAL_MS[currentTab] || 5000;
+        const tabRefreshDue = now - lastTabRefreshAt >= tabInterval;
+
         // Don't refresh if a span detail is open
         if (currentTab === 'spans' && isSpanDetailOpen()) {
+            return;
+        }
+
+        // Don't refresh if this tab is not due yet.
+        if (!tabRefreshDue) {
+            if (now - lastStatsRefreshAt >= STATS_REFRESH_INTERVAL_MS) {
+                lastStatsRefreshAt = now;
+                import('./api.js').then(module => module.loadStats());
+            }
             return;
         }
 
@@ -148,27 +174,33 @@ export function startAutoRefresh() {
                 if (module.isMetricChartOpen && module.isMetricChartOpen()) {
                     return;
                 } else {
+                    lastTabRefreshAt = now;
                     loadMetrics();
                 }
             });
         } else if (currentTab === 'traces' && !document.getElementById('trace-detail-view').style.display.includes('block')) {
+            lastTabRefreshAt = now;
             loadTraces();
         } else if (currentTab === 'spans') {
             import('./spans.js').then(spansModule => {
                 const serviceFilter = spansModule.getServiceFilter ? spansModule.getServiceFilter() : null;
-                loadSpans(serviceFilter);
+                lastTabRefreshAt = now;
+                loadSpans(serviceFilter, { background: true });
             });
         } else if (currentTab === 'logs') {
             import('./render.js').then(module => {
                 if (module.isLogJsonOpen && module.isLogJsonOpen()) {
                     return;
                 } else {
-                    loadLogs();
+                    lastTabRefreshAt = now;
+                    loadLogs(null, { background: true });
                 }
             });
         } else if (currentTab === 'catalog') {
+            lastTabRefreshAt = now;
             loadServiceCatalog();
         } else if (currentTab === 'map') {
+            lastTabRefreshAt = now;
             loadServiceMap();
         } else if (currentTab === 'ai-agents') {
             import('./aiAgents.js').then(module => {
@@ -179,15 +211,19 @@ export function startAutoRefresh() {
                 if (document.getElementById('ai-detail-view').style.display.includes('block')) {
                     return;
                 }
+                lastTabRefreshAt = now;
                 module.loadAISessions();
             });
         }
         // Don't auto-refresh collector tab - user is editing config
 
-        // Also refresh stats
-        import('./api.js').then(module => module.loadStats());
+        // Also refresh stats (independent, slower cadence)
+        if (now - lastStatsRefreshAt >= STATS_REFRESH_INTERVAL_MS) {
+            lastStatsRefreshAt = now;
+            import('./api.js').then(module => module.loadStats());
+        }
 
-    }, 5000);
+    }, 1000);
 }
 
 export function stopAutoRefresh() {
@@ -214,17 +250,25 @@ export function toggleAutoRefresh() {
 function updateAutoRefreshButton() {
     const btn = document.getElementById('auto-refresh-btn');
     const icon = document.getElementById('refresh-icon');
+    const state = document.getElementById('refresh-state');
+    const text = document.getElementById('refresh-text');
 
-    if (!btn || !icon) return;
+    if (!btn || !icon || !state || !text) return;
 
     if (autoRefreshEnabled) {
         icon.textContent = '⏸';
         btn.title = 'Pause auto-refresh';
-        btn.style.background = 'var(--primary)';
+        state.textContent = 'LIVE';
+        text.textContent = 'Pause Auto-Refresh';
+        btn.classList.remove('paused');
+        btn.setAttribute('aria-pressed', 'true');
     } else {
         icon.textContent = '▶';
         btn.title = 'Resume auto-refresh';
-        btn.style.background = '#6b7280';
+        state.textContent = 'PAUSED';
+        text.textContent = 'Resume Auto-Refresh';
+        btn.classList.add('paused');
+        btn.setAttribute('aria-pressed', 'false');
     }
 }
 

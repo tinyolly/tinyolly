@@ -9,8 +9,12 @@
     <button class="tab" onclick="switchTab('collector', this)" data-tab="collector">OpenTelemetry Collector + OpAMP
         Config</button>
     <div style="margin-left: auto; display: flex; align-items: center; padding-bottom: 0;">
-        <button onclick="toggleAutoRefresh()" title="Pause auto-refresh" id="auto-refresh-btn" class="pause-btn">
-            <span id="refresh-icon">⏸</span>
+        <button onclick="toggleAutoRefresh()" title="Pause auto-refresh" id="auto-refresh-btn" class="pause-btn" aria-pressed="true">
+            <span id="refresh-icon" class="pause-btn-icon">⏸</span>
+            <span class="pause-btn-labels">
+                <span id="refresh-state" class="pause-btn-state">LIVE</span>
+                <span id="refresh-text" class="pause-btn-text">Pause Auto-Refresh</span>
+            </span>
         </button>
     </div>
 </div>
