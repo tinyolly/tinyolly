@@ -13,7 +13,7 @@ Get TinyOlly running in under 5 minutes!
 
 ## Prerequisites
 
-- Docker Desktop installed and running
+- Colima + docker CLI installed and running (`brew install colima docker docker-compose`, then `./scripts/colima-up.sh`)
 - Git (to clone the repository)
 - 5 minutes of your time
 

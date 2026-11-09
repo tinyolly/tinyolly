@@ -81,6 +81,19 @@ All examples are launched from the repo- clone it first:
 git clone https://github.com/tinyolly/tinyolly
 ```  
 
+## Prerequisites (macOS)
+
+TinyOlly uses [Colima](https://github.com/abiosoft/colima) as the container runtime and [kind](https://kind.sigs.k8s.io/) for Kubernetes (Docker Desktop and Minikube are no longer used).
+
+```bash
+brew install colima docker docker-compose docker-buildx kubectl kind helm
+mkdir -p ~/.docker   # let the docker CLI find the compose/buildx plugins:
+echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json  # (merge into an existing file if you have one)
+./scripts/colima-up.sh      # starts the 'tinyolly' Colima VM: 4 CPU / 4 GB by default
+```
+
+Override VM sizing with `COLIMA_CPU`, `COLIMA_MEMORY` (GiB) and `COLIMA_DISK` (GiB). On an 8 GB Mac keep the default; on larger machines `COLIMA_MEMORY=8` is more comfortable when running demos. Only one of the Docker stack or the kind cluster should run at a time, since both bind host ports 4317/4318/5005.
+
 ## Docker Deployment
 
 ### 1. Deploy TinyOlly Core (Required)
@@ -373,3 +386,9 @@ All responses return OpenTelemetry-native JSON with full trace/span context.
     <a href="https://github.com/tinyolly/tinyolly/issues">Issues</a>
   </p>
 </div>
+## Development notes
+
+- Python dependencies are locked: edit `requirements.in` in a service directory, then regenerate with
+  `uv pip compile requirements.in --universal --python-version 3.13 -o requirements.txt`.
+- Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in `versions.env`; the Dockerfiles carry matching `ARG` defaults. Update both together.
+- Tests: `cd docker/apps/tinyolly-common && pip install -r requirements-test.txt . && pytest tests`.

@@ -159,7 +159,7 @@ Point your OpenTelemetry exporter to:
 - **HTTP**: `http://otel-collector:4318`  
 
 **For apps running on your host machine (outside Docker):**  
-Docker Desktop automatically exposes container ports to `localhost`. Point your OpenTelemetry exporter to:  
+Colima forwards container ports to `localhost`. Point your OpenTelemetry exporter to:  
 - **gRPC**: `http://localhost:4317`  
 - **HTTP**: `http://localhost:4318`  
 
