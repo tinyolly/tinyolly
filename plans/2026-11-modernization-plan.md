@@ -133,3 +133,13 @@ Phases 1 and 2 can run in parallel.
 - `imagePullPolicy: Always` → `IfNotPresent` in `k8s/`, `k8s-core-only/` and ebpf demo (Always would pull stale Hub images over locally loaded ones).
 - Rebuild/cleanup/deploy scripts, docs (kubernetes, ebpf, index, README, build/README) updated; zero `minikube` references remain outside release notes.
 - Verified end-to-end: `build-core-kind.sh` → `k8s/02-deploy-tinyolly.sh` → 4 pods ready, UI :5005 = 200, OTLP/HTTP :4318 accepted, stats show data. NOT yet verified: k8s-demo, k8s-demo-ebpf deploy, cleanup scripts, `04-rebuild*` scripts, k8s-core-only. Existing kind cluster predates the 5001 mapping: recreate it (`kind delete cluster --name tinyolly`) before the demo.
+
+### Phase 2 (2026-11-09) — mostly done (branch `modernize/phase-2-deps`, stacked on phase 1)
+- Pinned: collector-contrib + opampsupervisor `0.165.0` (Dockerfile `ARG OTELCOL_VERSION`), ollama `0.40.15`, OBI `v1.0.0`, Python 3.13 images, Go 1.27 / alpine 3.22 / debian trixie-slim. Versions are duplicated as Dockerfile ARG defaults; `versions.env` is the documented source (a sync check is still TODO).
+- Go: opamp-go 0.18→0.25 (one API rename `AgentConfigFile`→`AgentConfigObject`), otel-go 1.32→1.47, grpc 1.85; `go.sum` committed, `go mod tidy` removed from Dockerfile. `go vet`/build clean.
+- Python: `requirements.in` (loose floors) → uv-compiled universal `requirements.txt` locks for ui, receiver, demo, ebpf demo, ai-agent demo. Notable jumps: protobuf 7.x, fastapi 0.162, OTel SDK 1.45.
+- Verified on Colima: new images build; supervisor 0.165 connects to the new opamp server (0 collector errors), OTLP/HTTP trace ingested and visible via API; `otelcol-contrib validate` passes for docker config + templates.
+- Semconv: spanmetrics dimensions now include `http.request.method` / `http.response.status_code` (old names kept); storage/UI already read both; metrics.js grouping now accepts the new name. Added `tinyolly-common/tests` (3 real tests, old+new semconv).
+- CI: Python 3.13, UI installs common, receiver job → compile check (no tests exist), new Go job (tidy/vet/build) and collector config validation job; `.github/dependabot.yml` added.
+- Frontend: Chart.js 4.4.0→4.6.1, Cytoscape 3.28.1→3.34.4 (NOT visually tested). `cytoscape-dagre` left at 2.5.0 (latest 4.x is a major bump).
+- Known / not done: 136 UI tests are placeholder stubs (`pytest.skip`); `ruff check docker/apps/` reports 354 errors (pre-existing; CI lint job will fail); demo apps (docker-demo, ebpf, ai-agent) images not rebuilt/run on the new locks (python-snappy, ollama instrumentation on py3.13 unverified); k8s opamp-server manifest still embeds old config copy; GenAI semconv names in ai-agent demo not reviewed.

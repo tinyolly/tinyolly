@@ -715,8 +715,9 @@ function renderSumChart(metric, data, canvas, chartId) {
     seriesWithData.forEach(series => {
         // Determine aggregation key - prefer http.method, fall back to span.kind
         let groupKey = 'Total';
-        if (series.attributes && series.attributes['http.method']) {
-            groupKey = series.attributes['http.method'];
+        const method = series.attributes && (series.attributes['http.method'] || series.attributes['http.request.method']);
+        if (method) {
+            groupKey = method;
         } else if (series.attributes && series.attributes['span.kind']) {
             groupKey = series.attributes['span.kind'].replace('SPAN_KIND_', '');
         }

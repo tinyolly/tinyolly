@@ -36,6 +36,9 @@ data:
         dimensions:
           - name: http.method
           - name: http.status_code
+          # current semconv names (old ones kept for older instrumentation)
+          - name: http.request.method
+          - name: http.response.status_code
         dimensions_cache_size: 1000
         aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
         metrics_flush_interval: 15s

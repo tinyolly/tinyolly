@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directories: ["/docker/apps/tinyolly-ui", "/docker/apps/tinyolly-otlp-receiver", "/docker-demo", "/docker-demo-ebpf", "/docker-ai-agent-demo"]
+    schedule: { interval: weekly }
+    groups:
+      opentelemetry: { patterns: ["opentelemetry-*"] }
+  - package-ecosystem: gomod
+    directory: /docker/apps/tinyolly-opamp-server
+    schedule: { interval: weekly }
+    groups:
+      opentelemetry-go: { patterns: ["go.opentelemetry.io/*"] }
+  - package-ecosystem: docker
+    directories: ["/docker/dockerfiles", "/docker-demo", "/docker-demo-ebpf", "/docker-ai-agent-demo"]
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }

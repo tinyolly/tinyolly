@@ -121,7 +121,7 @@ export function loadChartJs() {
     chartJsPromise = new Promise((resolve, reject) => {
         // Load Chart.js first
         const chartScript = document.createElement('script');
-        chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+        chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js';
 
         chartScript.onload = () => {
             // Then load the date adapter for time scales
