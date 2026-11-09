@@ -1,12 +1,15 @@
 # OpenTelemetry Collector with OpAMP Supervisor
 # This image combines the OpAMP Supervisor with the Collector for remote configuration management
 
-FROM ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:latest AS collector
+# Keep in sync with /versions.env. Collector and supervisor MUST be the same release.
+ARG OTELCOL_VERSION=0.165.0
 
-FROM ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-opampsupervisor:latest AS supervisor
+FROM ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:${OTELCOL_VERSION} AS collector
+
+FROM ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-opampsupervisor:${OTELCOL_VERSION} AS supervisor
 
 # Final image combining both
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # Install ca-certificates for HTTPS connections
 RUN apt-get update && apt-get install -y --no-install-recommends \

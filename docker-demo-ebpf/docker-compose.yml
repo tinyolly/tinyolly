@@ -31,7 +31,7 @@ services:
   # OpenTelemetry eBPF Instrumentation (OBI)
   # Automatically captures traces from all HTTP services without code changes
   otel-ebpf-agent:
-    image: docker.io/otel/ebpf-instrument:main
+    image: docker.io/otel/ebpf-instrument:v1.0.0
     container_name: otel-ebpf-instrumentation
     privileged: true
     pid: host

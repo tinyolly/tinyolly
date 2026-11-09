@@ -176,7 +176,7 @@ func (s *OpAMPServer) onMessage(ctx context.Context, conn types.Connection, msg 
 		log.Printf("Sending pending config to agent %s", instanceID)
 		response.RemoteConfig = &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {Body: []byte(pendingConfig)},
 				},
 			},

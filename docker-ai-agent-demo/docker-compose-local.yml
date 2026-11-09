@@ -1,7 +1,7 @@
 services:
   # Ollama LLM server with tinyllama model (single container)
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.40.15
     ports:
       - "11434:11434"
     volumes:
