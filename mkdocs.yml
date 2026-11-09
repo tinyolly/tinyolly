@@ -69,7 +69,6 @@ nav:
   - Advanced:
       - Architecture: technical.md
       - Cardinality Protection: CARDINALITY-PROTECTION.md
-      - Redis Storage (Archive): redis-archive.md
   - Licensing: licensing.md
 
 extra:

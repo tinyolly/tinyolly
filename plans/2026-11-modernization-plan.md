@@ -1,6 +1,6 @@
 # TinyOlly Modernization Plan
 
-Date: 2026-11-09 · Last commit: 2026-04-22 (v2.3.0) · Status: draft, nothing executed
+Date: 2026-11-09 · Last commit: 2026-04-22 (v2.3.0) · Status: Phase 0 done (branch `modernize/phase-0-baseline`)
 
 ## Goals
 
@@ -110,3 +110,12 @@ Phases 1 and 2 can run in parallel.
 - Consolidating the directory layout (Phase 6) is the largest user-visible change; confirm it's wanted for v3.0.0 vs. keeping current paths.
 - Decided: demo is Python-only for now; Kubernetes is kind on Colima (k3s is the fallback).
 - Exact version pins (collector, supervisor, OTel SDKs, Go, Python) must be looked up at execution time; nothing here was verified against upstream release notes.
+
+## Execution log
+
+### Phase 0 (2026-11-09)
+- Baseline (Python 3.13 venv, local Mac): `tinyolly-ui` tests **2 passed, 136 skipped** ("SQLite storage not yet implemented") — effective coverage is near zero. `tinyolly-otlp-receiver` has **no `tests/` dir**, so its CI job fails. Both to fix in Phase 2/6.
+- Added `versions.env` (collector+supervisor 0.165.0, ollama 0.40.15, OBI v1.0.0, Python 3.13, Go 1.27); tags verified to exist on ghcr/Docker Hub. Wiring into Dockerfiles is Phase 2.
+- Removed Redis artifacts: `k8s*/redis.yaml`, `docs/redis-archive.md`, `storage.py`, `redis` dependency, `RedisStorage` export.
+- Untracked `site/` (already gitignored). CI gh-pages build still TODO (Phase 6).
+- Not done: colima/docker not on PATH in this shell (Phase 1 prerequisite).

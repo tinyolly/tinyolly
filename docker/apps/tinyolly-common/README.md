@@ -9,8 +9,6 @@ Shared Python package containing common utilities used across TinyOlly component
   - Implements TTL-based automatic cleanup
   - WAL mode for concurrent read/write performance
   - Provides async/await interface via `aiosqlite`
-- **storage.py**: Redis storage layer (archived—see [Redis Archive](../../docs/redis-archive.md))
-  - Legacy backend, no longer the default
 
 ## Installation
 
