@@ -101,14 +101,14 @@ else
     echo -e "${GREEN}✓ All demo resources have been deleted${NC}"
 fi
 
-# Offer to clean up Docker images if using Minikube
-if command -v minikube &> /dev/null && [ "$CONTEXT" = "minikube" ]; then
+# Offer to clean up Docker images if using kind
+if command -v kind &> /dev/null && [ "$CONTEXT" = "kind-tinyolly" ]; then
     echo ""
-    read -p "$(echo -e ${YELLOW}Do you want to remove demo Docker images from Minikube? [y/N]:${NC} )" -n 1 -r
+    read -p "$(echo -e ${YELLOW}Do you want to remove demo Docker images from kind node? [y/N]:${NC} )" -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo -e "${BLUE}Removing Docker images from Minikube...${NC}"
-        minikube ssh "docker images | grep demo | awk '{print \$1\":\"\$2}' | xargs -r docker rmi" 2>/dev/null || true
+        echo -e "${BLUE}Removing Docker images from kind node...${NC}"
+        docker exec tinyolly-control-plane sh -c "crictl images | grep demo | awk \'{print \$1\":\"\$2}\' | xargs -r crictl rmi" 2>/dev/null || true
         echo -e "${GREEN}✓ Docker images removed${NC}"
     fi
 fi

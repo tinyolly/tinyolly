@@ -19,6 +19,7 @@ spec:
       containers:
       - name: ebpf-backend
         image: tinyolly/ebpf-backend:latest
+        imagePullPolicy: IfNotPresent
         imagePullPolicy: Always
         ports:
         - containerPort: 5000

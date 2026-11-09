@@ -7,7 +7,7 @@ echo "========================================================"
 echo ""
 
 echo "Stopping and removing AI Agent demo containers..."
-docker-compose down 2>&1
+docker compose down 2>&1
 
 echo ""
 echo "Removing Ollama volume (model data)..."

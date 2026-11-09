@@ -45,7 +45,7 @@ echo -e "${GREEN}✓ TinyOlly core services found${NC}"
 echo ""
 
 # Note: Images are pulled from Docker Hub (tinyolly/ebpf-frontend, tinyolly/ebpf-backend)
-# For local development, use ./build/local/build-ebpf-demo-minikube.sh to build locally
+# For local development, use ./build/local/build-ebpf-demo-kind.sh to build locally
 
 # Deploy eBPF agent first
 echo -e "${CYAN}Deploying eBPF agent (DaemonSet)...${NC}"
@@ -94,8 +94,8 @@ echo -e "${GREEN}eBPF Demo Deployment Complete!${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 echo -e "${CYAN}Access the demo:${NC}"
-echo -e "1. Make sure ${YELLOW}minikube tunnel${NC} is running"
-echo -e "2. TinyOlly UI: ${GREEN}http://localhost:5002${NC}"
+echo -e "1. Ports are mapped by ${YELLOW}scripts/kind-config.yaml${NC}"
+echo -e "2. TinyOlly UI: ${GREEN}http://localhost:5005${NC}"
 echo -e "3. eBPF Demo Frontend: ${GREEN}http://localhost:5001${NC}"
 echo ""
 echo -e "${CYAN}What's different:${NC}"

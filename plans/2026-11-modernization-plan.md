@@ -119,3 +119,17 @@ Phases 1 and 2 can run in parallel.
 - Removed Redis artifacts: `k8s*/redis.yaml`, `docs/redis-archive.md`, `storage.py`, `redis` dependency, `RedisStorage` export.
 - Untracked `site/` (already gitignored). CI gh-pages build still TODO (Phase 6).
 - Not done: colima/docker not on PATH in this shell (Phase 1 prerequisite).
+
+### Phase 1 (2026-11-09) — in progress
+- Host is a **8 GB / 8 core Mac**: plan's `--memory 8` would starve the host, so `scripts/colima-up.sh` defaults to 4 CPU / 4 GB (override `COLIMA_MEMORY`). Brew installed docker, docker-compose (plugin enabled via `~/.docker/config.json`), kubectl, kind, helm.
+- Done: `scripts/colima-up.sh`, `scripts/lib/preflight.sh` (not yet sourced by `01-*.sh`), `scripts/kind-config.yaml`, `scripts/kind-up.sh`; `docker-compose` → `docker compose` across scripts/docs.
+- Verified: `docker/01-start-core-local.sh` on Colima (vz) builds (~1.5 min) and serves UI :5005 (200), collector connected to OpAMP.
+- Verified: `kind-up.sh` creates a 1-node cluster (1.37.0).
+- ~~TODO (done below)~~: k8s manifests use `LoadBalancer` (UI) — need NodePorts 30005/30317/30318 to match kind-config; replace `minikube image load` in `build/local/*` with `kind load docker-image`; source preflight in `01-*.sh`; verify OBI/eBPF demo under vz; docs (`kubernetes.md`, `docker.md`, README platform line).
+
+#### Phase 1 — minikube → kind replacement (done)
+- `build/local/build-*-minikube.sh` → `build-*-kind.sh` (build on Colima docker, `kind load docker-image`); ebpf demo images now tagged `tinyolly/ebpf-*` to match manifests.
+- Services: UI → NodePort 30005 (host 5005), demo frontends → NodePort 30001 (host 5001), collector → NodePort 30317/30318; mapped in `scripts/kind-config.yaml`. No more `minikube tunnel`.
+- `imagePullPolicy: Always` → `IfNotPresent` in `k8s/`, `k8s-core-only/` and ebpf demo (Always would pull stale Hub images over locally loaded ones).
+- Rebuild/cleanup/deploy scripts, docs (kubernetes, ebpf, index, README, build/README) updated; zero `minikube` references remain outside release notes.
+- Verified end-to-end: `build-core-kind.sh` → `k8s/02-deploy-tinyolly.sh` → 4 pods ready, UI :5005 = 200, OTLP/HTTP :4318 accepted, stats show data. NOT yet verified: k8s-demo, k8s-demo-ebpf deploy, cleanup scripts, `04-rebuild*` scripts, k8s-core-only. Existing kind cluster predates the 5001 mapping: recreate it (`kind delete cluster --name tinyolly`) before the demo.

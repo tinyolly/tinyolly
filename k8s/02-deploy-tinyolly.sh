@@ -22,8 +22,8 @@ if ! kubectl cluster-info &> /dev/null; then
     echo "Error: Not connected to a Kubernetes cluster"
     echo "Please ensure your cluster is running and kubectl is configured properly"
     echo ""
-    echo "For minikube:"
-    echo "  1. Start minikube: minikube start"
+    echo "For kind on Colima:"
+    echo "  1. Start cluster: ./scripts/colima-up.sh && ./scripts/kind-up.sh"
     echo "  2. Deploy: ./02-deploy-tinyolly.sh"
     echo ""
     return 2>/dev/null || exit 1
@@ -102,7 +102,7 @@ if [ "$FAILED" = true ]; then
     echo ""
     echo "Some deployments failed. Check the errors above."
     echo "You may need to:"
-    echo "  1. Ensure minikube is running: minikube status"
+    echo "  1. Ensure the cluster is running: kind get clusters"
     echo "  2. Check kubectl context: kubectl config current-context"
     return 2>/dev/null || exit 1
 fi
@@ -111,5 +111,4 @@ echo ""
 echo "Deployment applied successfully!"
 echo "Run 'kubectl get pods' to check status."
 echo ""
-echo "TinyOlly UI will be available at: http://localhost:5002"
-echo "If using minikube: Make sure 'minikube tunnel' is running"
+echo "TinyOlly UI will be available at: http://localhost:5005 (kind port mapping, see scripts/kind-config.yaml)"

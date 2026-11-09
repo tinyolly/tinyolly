@@ -3,13 +3,10 @@ set +e
 
 # This script rebuilds the demo-frontend image and restarts the K8s pod.
 
-# Point to Minikube's Docker daemon
-eval $(minikube docker-env)
-
 # Ensure we are in the script directory so relative paths work
 cd "$(dirname "$0")"
 
-echo "Rebuilding Demo Frontend (Minikube)..."
+echo "Rebuilding Demo Frontend (kind)..."
 echo "=================================================="
 
 # Build image
@@ -22,6 +19,10 @@ if [ $? -ne 0 ]; then
     echo "✗ Failed to build demo-frontend image"
     exit 1
 fi
+
+echo ""
+echo "Loading image into kind..."
+kind load docker-image demo-frontend:latest --name "${KIND_CLUSTER:-tinyolly}"
 
 echo ""
 echo "Restarting Demo Frontend Pod..."

@@ -17,7 +17,7 @@ spec:
       containers:
       - name: tinyolly-otlp-receiver
         image: tinyolly/otlp-receiver:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 4343
         env:

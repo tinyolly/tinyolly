@@ -33,11 +33,12 @@ kind: Service
 metadata:
   name: demo-frontend
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: demo-frontend
   ports:
     - protocol: TCP
       port: 5001
       targetPort: 5000
+      nodePort: 30001
 

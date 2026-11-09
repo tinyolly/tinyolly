@@ -21,10 +21,10 @@ build/
 │   ├── 03-push-demo.sh            # Step 3: Push demo images
 │   ├── 03-push-ebpf-demo.sh       # Step 3: Push eBPF demo images
 │   └── 03-push-ai-demo.sh         # Step 3: Push AI demo image
-└── local/                         # Local builds (Minikube)
-    ├── build-core-minikube.sh
-    ├── build-demo-minikube.sh
-    └── build-ebpf-demo-minikube.sh
+└── local/                         # Local builds (kind)
+    ├── build-core-kind.sh
+    ├── build-demo-kind.sh
+    └── build-ebpf-demo-kind.sh
 ```
 
 ## Quick Start - Docker Hub
@@ -50,14 +50,14 @@ cd build/dockerhub
 ./03-push-ui.sh v2.1.0         # UI only
 ```
 
-## Quick Start - Local (Minikube)
+## Quick Start - Local (kind)
 
 ```bash
 cd build/local
 
-./build-core-minikube.sh       # Core images
-./build-demo-minikube.sh       # Demo images
-./build-ebpf-demo-minikube.sh  # eBPF demo images
+./build-core-kind.sh       # Core images
+./build-demo-kind.sh       # Demo images
+./build-ebpf-demo-kind.sh  # eBPF demo images
 ```
 
 ## Scripts Reference

@@ -7,7 +7,7 @@ echo "========================================================"
 echo ""
 
 echo "Stopping and removing demo containers..."
-docker-compose -f docker-compose-demo.yml down 2>&1
+docker compose -f docker-compose-demo.yml down 2>&1
 
 echo ""
 echo "✓ Demo apps removed"

@@ -32,7 +32,7 @@ Visualize and correlate logs, metrics, and traces without sending data to the cl
 - Built with Python (FastAPI), SQLite, and JavaScript
 - Pre-built Docker images available on Docker Hub
 
-**Platform Support:** Tested on Docker Desktop and Minikube Kubernetes (Apple Silicon Mac)
+**Platform Support:** Docker via Colima, Kubernetes via kind on Colima (Apple Silicon Mac)
 **Architectures:** linux/amd64, linux/arm64 (Apple Silicon)
 
 ## Screenshots
@@ -212,15 +212,12 @@ The default configuration template (located at `docker/otelcol-configs/config.ya
 ### 1. Deploy TinyOlly Core
 
 ```bash
-minikube start
+./scripts/colima-up.sh && ./scripts/kind-up.sh
 ./k8s/02-deploy-tinyolly.sh
 ```
 
 **Access UI:**
-```bash
-minikube tunnel  # Keep running in separate terminal
-```
-UI available at: `http://localhost:5002`
+UI available at: `http://localhost:5005` (kind port mapping, no tunnel needed)
 
 **Cleanup:** `./k8s/03-cleanup.sh`
 
@@ -233,7 +230,7 @@ cd k8s-demo
 ./02-deploy.sh  # Automatically builds images if needed
 ```
 
-**Manual image build (optional):** `./build/local/build-demo-minikube.sh`
+**Manual image build (optional):** `./build/local/build-demo-kind.sh`
 **Cleanup:** `./03-cleanup.sh`
 
 ### 3. eBPF Zero-Code Tracing Demo (Optional)

@@ -25,8 +25,8 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null; then
-    echo "✗ docker-compose is not installed or not in PATH"
+if ! command -v docker compose &> /dev/null; then
+    echo "✗ docker compose is not installed or not in PATH"
     exit 1
 fi
 
@@ -66,7 +66,7 @@ if [ ! -f "docker-compose-demo-local.yml" ]; then
     exit 1
 fi
 
-docker-compose -f docker-compose-demo-local.yml build $NO_CACHE
+docker compose -f docker-compose-demo-local.yml build $NO_CACHE
 BUILD_EXIT_CODE=$?
 
 if [ $BUILD_EXIT_CODE -ne 0 ]; then
@@ -76,7 +76,7 @@ if [ $BUILD_EXIT_CODE -ne 0 ]; then
     exit 1
 fi
 
-docker-compose -f docker-compose-demo-local.yml up -d
+docker compose -f docker-compose-demo-local.yml up -d
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then

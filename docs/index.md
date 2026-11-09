@@ -47,7 +47,7 @@ TinyOlly is a **lightweight OpenTelemetry-native observability platform** built 
 Tested on:
 
 - Docker Desktop (macOS Apple Silicon)
-- Minikube Kubernetes (macOS Apple Silicon)
+- kind on Colima (macOS Apple Silicon)
 - May work on other platforms
 
 ### Quick Start

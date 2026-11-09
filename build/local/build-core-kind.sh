@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Build TinyOlly core images locally in Minikube's Docker environment
-# Usage: ./build-core-minikube.sh
+# Build TinyOlly core images locally via Colima docker + kind load
+# Usage: ./build-core-kind.sh
 #
 # NOTE: Uses --no-cache for fresh builds
 
@@ -10,13 +10,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOCKER_DIR="$SCRIPT_DIR/../../docker"
 
 echo "=========================================="
-echo "TinyOlly Core - Local Minikube Build"
+echo "TinyOlly Core - Local kind Build"
 echo "=========================================="
 echo ""
 
-# Point to Minikube's Docker daemon
-echo "Connecting to Minikube Docker environment..."
-eval $(minikube docker-env)
+# Build on the Colima docker daemon, then load into the kind cluster
+KIND_CLUSTER="${KIND_CLUSTER:-tinyolly}"
+command -v kind >/dev/null || { echo "kind not found (brew install kind)"; exit 1; }
+kind get clusters | grep -qx "$KIND_CLUSTER" || { echo "kind cluster '$KIND_CLUSTER' not found: run scripts/kind-up.sh"; exit 1; }
 
 # Build shared Python base image first
 echo ""
@@ -52,8 +53,16 @@ docker build --no-cache -t tinyolly/otel-supervisor:latest \
   "$DOCKER_DIR/"
 
 echo ""
+echo "Loading images into kind cluster $KIND_CLUSTER..."
+kind load docker-image tinyolly/python-base:latest --name "$KIND_CLUSTER"
+kind load docker-image tinyolly/ui:latest --name "$KIND_CLUSTER"
+kind load docker-image tinyolly/otlp-receiver:latest --name "$KIND_CLUSTER"
+kind load docker-image tinyolly/opamp-server:latest --name "$KIND_CLUSTER"
+kind load docker-image tinyolly/otel-supervisor:latest --name "$KIND_CLUSTER"
+
+echo ""
 echo "=========================================="
-echo "✓ Core images built in Minikube"
+echo "✓ Core images built in kind"
 echo "=========================================="
 echo ""
 echo "Images:"

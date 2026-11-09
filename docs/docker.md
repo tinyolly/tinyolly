@@ -90,7 +90,7 @@ This starts:
 
 **Watch agent logs:**
 ```bash
-docker-compose logs -f ai-agent
+docker compose logs -f ai-agent
 ```
 
 **Stop AI demo:**
