@@ -19,3 +19,10 @@ The reviewer read the diff but **ran nothing**; the "Verdict" column is my follo
 * Real defects: **#1** (confirmed bug), **#3** (regex too broad), **#2** (filter too broad). Maintenance gaps: **#5**, **#6**. Accepted: **#7**. False alarms: **#4**, **#8**.
 * Suggested fix batch (small): #1 in both cleanup scripts, #2, #3 + docs note. Then re-run `./scripts/test-collector-configs.sh` and exercise the cleanup prompt on kind.
 * `high` passes still open: see `plans/code-review-highs.md` (H1–H6); H6 (destructive shell scripts) is the most likely to find more bugs like #1.
+
+## Fix batch (2026-11-09, branch `fix/review-medium-findings`)
+
+* **#1 fixed** in both cleanup scripts (single-quoted outer string, double-quoted awk). Tested the exact two-layer quoting with `crictl` stubbed: it now emits `docker.io/tinyolly/ui:latest` and leaves other images alone. Also removed the `2>/dev/null` that had hidden the failure. Not run against a real kind node.
+* **#2 fixed**: the filter now only allows the two expected unreachable-backend errors (`tinyolly-otlp-receiver`, `tinyolly-opamp-server`). Filter logic tested on synthetic log lines: the old filter let 2 real errors through (flagged 0), the new one flags both while still allowing the backend lines. A runtime-error negative test through a real collector was not possible (no startup error was easy to provoke), so the filter is verified at the grep level.
+* **#3 fixed**: card regexes replaced by grouped-digit and Visa/MC/Amex/Discover patterns; `redaction` added to the metrics pipeline; docs updated. Tested on a standalone collector: grouped, contiguous and Amex numbers masked; epoch-ns and an 18-digit ID untouched; metric attributes (card, email) masked.
+* #5/#6/#7 remain open (maintenance / accepted).
