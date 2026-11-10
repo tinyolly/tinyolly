@@ -48,9 +48,10 @@ processors:
     blocked_values:
       - "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"      # email addresses
       - "\\b(?:\\d{4}[ -]){3}\\d{3,4}\\b"                          # card numbers written in groups: 4111 1111 1111 1111
-      - "\\b(?:4\\d{12}(?:\\d{3}){0,2}|5[1-5]\\d{14}|3[47]\\d{13}|6(?:011|5\\d{2})\\d{12})\\b"  # contiguous Visa/MC/Amex/Discover (not epoch-ns or random IDs)
-      - "(?i)bearer\\s+[a-z0-9._~+/=-]+"                         # bearer tokens
-      - "(?i)(token|access_token|apikey)=[^&\\s]+"                # secrets in URL query strings
+      - "\\b(?:4\\d{12}(?:\\d{3}){0,2}|5[1-5]\\d{14}|3[47]\\d{13}|6(?:011|5\\d{2})\\d{12}|2(?:22[1-9]|2[3-9]\\d|[3-6]\\d{2}|7[01]\\d|720)\\d{12})\\b"  # contiguous Visa/MC (51-55, 2221-2720)/Amex/Discover (not epoch-ns or random IDs)
+      - "(?i)\\bbearer\\s+[a-z0-9._~+/=-]{16,}"                   # bearer tokens (16+ chars, so prose like "bearer of news" is left alone)
+      - "(?i)\\b(token|access_token|id_token|refresh_token|api[_-]?key|apikey|key|password|passwd|pwd|secret|client_secret|sig|signature|x-amz-signature|auth)=[^&\\s]+"  # secrets in URL query strings
+      - "\\b3[47]\\d{2}[ -]\\d{6}[ -]\\d{5}\\b"                      # American Express written 4-6-5
     summary: info   # adds redaction.masked.count etc. so the UI can show what was masked
 
 connectors:

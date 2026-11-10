@@ -59,7 +59,13 @@ connectors:
   count:
     spans:
       tinyolly.span.count:
-        description: Spans seen by the collector, by status
+        description: Spans seen by the collector, by service
+        attributes:
+          - key: service.name
+      tinyolly.span.error.count:
+        description: Spans with error status seen by the collector, by service
+        conditions:
+          - status.code == STATUS_CODE_ERROR
         attributes:
           - key: service.name
     logs:
@@ -68,8 +74,10 @@ connectors:
   signaltometrics:
     spans:
       - name: tinyolly.span.duration
-        description: Span duration as an exponential histogram
+        description: Span duration as an exponential histogram, per service
         unit: ms
+        include_resource_attributes:
+          - key: service.name
         exponential_histogram:
           value: Milliseconds(end_time - start_time)
 

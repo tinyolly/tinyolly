@@ -201,3 +201,8 @@ Each fix has a test written first and shown to fail on the old code (except wher
 - **kubectl context guard** (`scripts/lib/kubectx.sh`, sourced by all 14 cluster-mutating k8s scripts): refuses unless the context is `kind-${KIND_CLUSTER:-tinyolly}` (override `TINYOLLY_ALLOW_ANY_CONTEXT=1`). `scripts/test-kubectx-guard.sh` runs every script against a fake kubectl: the old `03-cleanup.sh` made 18 `delete` calls against a fake `prod-eks`, the new one 0.
 - New local check scripts (no CI): `scripts/test-go.sh`, `scripts/test-kubectx-guard.sh`.
 - Still open from the review (P1/P2): see `plans/code-review-high-2026-11-09.md` once PR #10 merges (presets that do not do what their blurbs say, release scripts calling missing files, OpAMP reconnect/ack tracking, storage N+1 and cardinality enforcement, ingest validation, auth for the OpAMP/UI write endpoints, `versions.env` not consumed by builds).
+
+### P1 review fixes — IN PROGRESS (branch `fix/p1-review-findings`, pushed, no PR yet)
+See `plans/HANDOFF.md` ("RESUME HERE") for the exact state. Preset fixes for sampling and logs-dedup are verified by the new `scripts/test-preset-behavior.py`; transform-ottl, pii-redaction, connectors-metrics, connectors-routing (real failover to a file exporter) and prometheus-remote-write are edited and start cleanly but their behaviour tests have not been run. The release/cleanup shell-script fixes have not been started.
+- Real bug found by the behaviour test: the logs `probabilistic_sampler` hashes the trace id and **drops every log that has none** (INFO logs were 0 of 400 instead of ~25 %); fixed with a per-record sampling key.
+- Also found: `trace_id.string == ""` never matches an empty trace id in OTTL; use `trace_id == TraceID(0x00000000000000000000000000000000)`.

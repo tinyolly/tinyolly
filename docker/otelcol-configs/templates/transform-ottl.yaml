@@ -49,15 +49,25 @@ processors:
     log_statements:
       - context: log
         statements:
+          # 1. JSON bodies become attributes
           - merge_maps(attributes, ParseJSON(body), "upsert") where IsString(body) and IsMatch(body, "^\\s*\\{")
-          - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsMatch(body, "(?i)\\b(error|exception|failed)\\b")
+          # 2. a JSON "level" field sets the severity when the record has none (so the debug filter below can see it)
+          - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(attributes["level"]) and IsMatch(attributes["level"], "(?i)^(debug|trace)$")
+          - set(severity_number, SEVERITY_NUMBER_INFO) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(attributes["level"]) and IsMatch(attributes["level"], "(?i)^info$")
+          - set(severity_number, SEVERITY_NUMBER_WARN) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(attributes["level"]) and IsMatch(attributes["level"], "(?i)^warn(ing)?$")
+          - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(attributes["level"]) and IsMatch(attributes["level"], "(?i)^error$")
+          - set(severity_number, SEVERITY_NUMBER_FATAL) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(attributes["level"]) and IsMatch(attributes["level"], "(?i)^(fatal|critical)$")
+          # 3. otherwise an UPPERCASE level token in a plain-text body means ERROR ("no exception" / "error rate=0" do not match)
+          - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(body) and IsMatch(body, "\\b(ERROR|FATAL|CRITICAL|Traceback)\\b")
           - set(severity_text, "ERROR") where severity_number == SEVERITY_NUMBER_ERROR and severity_text == ""
   filter/noise:
     error_mode: ignore
     traces:
       span:
-        - 'IsMatch(attributes["url.path"], "^/(health|healthz|ready|livez)")'
-        - 'IsMatch(attributes["http.target"], "^/(health|healthz|ready|livez)")'
+        # probe paths only: "/healthz", "/health/db", "/ready?x=1" match; "/healthcare" and "/ready-made" do not
+        - 'IsString(attributes["url.path"]) and IsMatch(attributes["url.path"], "^/(health|healthz|healthcheck|ready|readyz|live|livez|liveness|readiness)(/|\\?|$)")'
+        - 'IsString(attributes["http.target"]) and IsMatch(attributes["http.target"], "^/(health|healthz|healthcheck|ready|readyz|live|livez|liveness|readiness)(/|\\?|$)")'
+        - 'IsString(attributes["http.route"]) and IsMatch(attributes["http.route"], "^/(health|healthz|healthcheck|ready|readyz|live|livez|liveness|readiness)(/|$)")'
     logs:
       log_record:
         - 'severity_number != SEVERITY_NUMBER_UNSPECIFIED and severity_number < SEVERITY_NUMBER_INFO'
@@ -98,5 +108,5 @@ service:
       exporters: [debug, otlp]
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, resource/env, filter/noise, transform/logs, batch]
+      processors: [memory_limiter, resourcedetection, resource/env, transform/logs, filter/noise, batch]
       exporters: [debug, otlp]

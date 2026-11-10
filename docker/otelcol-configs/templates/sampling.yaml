@@ -1,4 +1,4 @@
-# Sampling: tail_sampling keeps errors + slow traces + 10% of the rest; probabilistic_sampler thins logs
+# Sampling: tail_sampling keeps errors + slow traces + 10% of the rest; probabilistic_sampler thins INFO/DEBUG logs (WARN and above are always kept)
 # DEMO: trace count drops while every error/slow trace is retained. RED metrics (spanmetrics) are computed
 # BEFORE sampling via the forward connector, so rates stay accurate. See docs/collector-presets.md.
 # Components: memory_limiter, resourcedetection, tail_sampling, probabilistic_sampler, forward, spanmetrics
@@ -46,8 +46,33 @@ processors:
       - name: sample-10-percent
         type: probabilistic
         probabilistic: { sampling_percentage: 10 }
+  # Logs: keep every WARN/ERROR/FATAL record; sample the rest at 25 %. The sampler honours a per-record priority
+  # attribute (100 = always keep). NOTE: log sampling is independent of the tail_sampling trace decision, so a kept
+  # trace can have its INFO logs sampled away (errors and warnings always survive).
+  # The sampler needs something to hash. By default it hashes the trace id and DROPS records that have none (most
+  # application logs!), so give every record a key: the trace id when present (all logs of a trace are kept or
+  # dropped together), otherwise a random UUID (a plain 25 % sample).
+  transform/log_priority:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["sampling.priority"], 100) where severity_number >= SEVERITY_NUMBER_WARN
+          - set(attributes["sampling.key"], UUID())
+          - set(attributes["sampling.key"], trace_id.string) where trace_id != TraceID(0x00000000000000000000000000000000)
   probabilistic_sampler/logs:
     sampling_percentage: 25
+    sampling_priority: sampling.priority
+    attribute_source: record
+    from_attribute: sampling.key
+  # the priority attribute is only a hint for the sampler above: do not leak it into stored logs
+  transform/log_cleanup:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - delete_key(attributes, "sampling.priority")
+          - delete_key(attributes, "sampling.key")
 
 connectors:
   forward/traces: {}
@@ -90,5 +115,5 @@ service:
       exporters: [debug, otlp]
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, probabilistic_sampler/logs, batch]
+      processors: [memory_limiter, resourcedetection, transform/log_priority, probabilistic_sampler/logs, transform/log_cleanup, batch]
       exporters: [debug, otlp]

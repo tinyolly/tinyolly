@@ -65,7 +65,13 @@ data:
       count:
         spans:
           tinyolly.span.count:
-            description: Spans seen by the collector, by status
+            description: Spans seen by the collector, by service
+            attributes:
+              - key: service.name
+          tinyolly.span.error.count:
+            description: Spans with error status seen by the collector, by service
+            conditions:
+              - status.code == STATUS_CODE_ERROR
             attributes:
               - key: service.name
         logs:
@@ -74,8 +80,10 @@ data:
       signaltometrics:
         spans:
           - name: tinyolly.span.duration
-            description: Span duration as an exponential histogram
+            description: Span duration as an exponential histogram, per service
             unit: ms
+            include_resource_attributes:
+              - key: service.name
             exponential_histogram:
               value: Milliseconds(end_time - start_time)
 
@@ -103,9 +111,10 @@ data:
           processors: [memory_limiter, resourcedetection, batch]
           exporters: [debug, otlp, count]
   connectors-routing.yaml: |
-    # Connectors (routing): routing sends error spans to a dedicated pipeline; failover falls back to a backup exporter
-    # DEMO: error traces take a separate 'traces/errors' pipeline (extra attribute, never sampled); if the primary
-    # exporter fails, failover switches to the backup. Components: routing, failover, attributes
+    # Connectors (routing): routing sends error spans down their own pipeline; failover falls back to a local file if TinyOlly is unreachable
+    # DEMO: spans with error status get collector.route=errors in a dedicated 'traces/errors' pipeline (both pipelines still
+    # export to TinyOlly, so traces stay complete there). If the primary exporter fails, failover switches to a file exporter
+    # (/var/lib/otelcol/failover-traces.jsonl), so nothing is lost during an outage. Components: routing, failover, attributes, file
     # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
     # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
 
@@ -177,6 +186,24 @@ data:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
           insecure: true
+      # Failover only switches when the primary exporter returns an error to the pipeline. The default exporter queue
+      # and retries accept data and retry in the background, so the failover exporter must not queue or retry.
+      otlp/primary:
+        endpoint: "tinyolly-otlp-receiver:4343"
+        tls:
+          insecure: true
+        timeout: 2s
+        sending_queue:
+          enabled: false
+        retry_on_failure:
+          enabled: false
+      # Backup: keep the spans on disk instead of discarding them while the primary is down.
+      file/backup:
+        path: /var/lib/otelcol/failover-traces.jsonl
+        format: json
+        rotation:
+          max_megabytes: 20
+          max_backups: 2
 
     service:
       extensions: [opamp]
@@ -195,10 +222,10 @@ data:
           exporters: [failover]
         traces/primary:
           receivers: [failover]
-          exporters: [otlp]
+          exporters: [otlp/primary]
         traces/backup:
           receivers: [failover]
-          exporters: [debug]
+          exporters: [file/backup]
         metrics:
           receivers: [otlp, spanmetrics]
           processors: [memory_limiter, resourcedetection, batch]
@@ -297,7 +324,9 @@ data:
           exporters: [debug, otlp]
   logs-dedup.yaml: |
     # Logs: logdedup collapses repeated identical logs into one record with a count; transform normalizes severity
-    # DEMO: a log spam burst becomes one record with log_count; WARN/Warning/CRITICAL etc. map to canonical severities.
+    # DEMO: a log spam burst becomes one record with dedup_count; WARN/Warning/CRITICAL etc. map to canonical severities.
+    # Only INFO/DEBUG logs WITHOUT a trace id are deduplicated: ERROR/FATAL logs and logs correlated to a trace pass through
+    # untouched, because folding them would lose per-occurrence data and break log-to-trace links.
     # Components: memory_limiter, resourcedetection, transform, logdedup (filelog receiver can be added for file sources)
     # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
     # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
@@ -342,6 +371,9 @@ data:
         interval: 10s
         log_count_attribute: dedup_count
         timezone: UTC
+        # Records that match NONE of these conditions are passed through unchanged.
+        conditions:
+          - 'severity_number < SEVERITY_NUMBER_ERROR and trace_id == TraceID(0x00000000000000000000000000000000)'
 
     connectors:
       spanmetrics:
@@ -526,9 +558,10 @@ data:
         blocked_values:
           - "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"      # email addresses
           - "\\b(?:\\d{4}[ -]){3}\\d{3,4}\\b"                          # card numbers written in groups: 4111 1111 1111 1111
-          - "\\b(?:4\\d{12}(?:\\d{3}){0,2}|5[1-5]\\d{14}|3[47]\\d{13}|6(?:011|5\\d{2})\\d{12})\\b"  # contiguous Visa/MC/Amex/Discover (not epoch-ns or random IDs)
-          - "(?i)bearer\\s+[a-z0-9._~+/=-]+"                         # bearer tokens
-          - "(?i)(token|access_token|apikey)=[^&\\s]+"                # secrets in URL query strings
+          - "\\b(?:4\\d{12}(?:\\d{3}){0,2}|5[1-5]\\d{14}|3[47]\\d{13}|6(?:011|5\\d{2})\\d{12}|2(?:22[1-9]|2[3-9]\\d|[3-6]\\d{2}|7[01]\\d|720)\\d{12})\\b"  # contiguous Visa/MC (51-55, 2221-2720)/Amex/Discover (not epoch-ns or random IDs)
+          - "(?i)\\bbearer\\s+[a-z0-9._~+/=-]{16,}"                   # bearer tokens (16+ chars, so prose like "bearer of news" is left alone)
+          - "(?i)\\b(token|access_token|id_token|refresh_token|api[_-]?key|apikey|key|password|passwd|pwd|secret|client_secret|sig|signature|x-amz-signature|auth)=[^&\\s]+"  # secrets in URL query strings
+          - "\\b3[47]\\d{2}[ -]\\d{6}[ -]\\d{5}\\b"                      # American Express written 4-6-5
         summary: info   # adds redaction.masked.count etc. so the UI can show what was masked
 
     connectors:
@@ -610,6 +643,15 @@ data:
             endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
 
     processors:
+      # baseline: memory protection matters most here, this preset opens a receiver on :19291
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
       batch:
         timeout: 1s
         send_batch_size: 1024
@@ -632,7 +674,7 @@ data:
 
     exporters:
       debug:
-        verbosity: detailed
+        verbosity: basic
 
       otlp:
         endpoint: "tinyolly-otlp-receiver:4343"
@@ -644,21 +686,21 @@ data:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [batch]
+          processors: [memory_limiter, resourcedetection, batch]
           exporters: [debug, otlp, spanmetrics]
 
         metrics:
           # Include both OTLP metrics and Prometheus remote write metrics
           receivers: [otlp, prometheusremotewrite, spanmetrics]
-          processors: [batch]
+          processors: [memory_limiter, resourcedetection, batch]
           exporters: [debug, otlp]
 
         logs:
           receivers: [otlp]
-          processors: [batch]
+          processors: [memory_limiter, resourcedetection, batch]
           exporters: [debug, otlp]
   sampling.yaml: |
-    # Sampling: tail_sampling keeps errors + slow traces + 10% of the rest; probabilistic_sampler thins logs
+    # Sampling: tail_sampling keeps errors + slow traces + 10% of the rest; probabilistic_sampler thins INFO/DEBUG logs (WARN and above are always kept)
     # DEMO: trace count drops while every error/slow trace is retained. RED metrics (spanmetrics) are computed
     # BEFORE sampling via the forward connector, so rates stay accurate. See docs/collector-presets.md.
     # Components: memory_limiter, resourcedetection, tail_sampling, probabilistic_sampler, forward, spanmetrics
@@ -706,8 +748,33 @@ data:
           - name: sample-10-percent
             type: probabilistic
             probabilistic: { sampling_percentage: 10 }
+      # Logs: keep every WARN/ERROR/FATAL record; sample the rest at 25 %. The sampler honours a per-record priority
+      # attribute (100 = always keep). NOTE: log sampling is independent of the tail_sampling trace decision, so a kept
+      # trace can have its INFO logs sampled away (errors and warnings always survive).
+      # The sampler needs something to hash. By default it hashes the trace id and DROPS records that have none (most
+      # application logs!), so give every record a key: the trace id when present (all logs of a trace are kept or
+      # dropped together), otherwise a random UUID (a plain 25 % sample).
+      transform/log_priority:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              - set(attributes["sampling.priority"], 100) where severity_number >= SEVERITY_NUMBER_WARN
+              - set(attributes["sampling.key"], UUID())
+              - set(attributes["sampling.key"], trace_id.string) where trace_id != TraceID(0x00000000000000000000000000000000)
       probabilistic_sampler/logs:
         sampling_percentage: 25
+        sampling_priority: sampling.priority
+        attribute_source: record
+        from_attribute: sampling.key
+      # the priority attribute is only a hint for the sampler above: do not leak it into stored logs
+      transform/log_cleanup:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              - delete_key(attributes, "sampling.priority")
+              - delete_key(attributes, "sampling.key")
 
     connectors:
       forward/traces: {}
@@ -750,7 +817,7 @@ data:
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, probabilistic_sampler/logs, batch]
+          processors: [memory_limiter, resourcedetection, transform/log_priority, probabilistic_sampler/logs, transform/log_cleanup, batch]
           exporters: [debug, otlp]
   transform-ottl.yaml: |
     # Transform / OTTL: normalize routes, derive log severity, flatten JSON bodies, drop health checks and debug logs
@@ -804,15 +871,25 @@ data:
         log_statements:
           - context: log
             statements:
+              # 1. JSON bodies become attributes
               - merge_maps(attributes, ParseJSON(body), "upsert") where IsString(body) and IsMatch(body, "^\\s*\\{")
-              - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsMatch(body, "(?i)\\b(error|exception|failed)\\b")
+              # 2. a JSON "level" field sets the severity when the record has none (so the debug filter below can see it)
+              - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(attributes["level"]) and IsMatch(attributes["level"], "(?i)^(debug|trace)$")
+              - set(severity_number, SEVERITY_NUMBER_INFO) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(attributes["level"]) and IsMatch(attributes["level"], "(?i)^info$")
+              - set(severity_number, SEVERITY_NUMBER_WARN) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(attributes["level"]) and IsMatch(attributes["level"], "(?i)^warn(ing)?$")
+              - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(attributes["level"]) and IsMatch(attributes["level"], "(?i)^error$")
+              - set(severity_number, SEVERITY_NUMBER_FATAL) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(attributes["level"]) and IsMatch(attributes["level"], "(?i)^(fatal|critical)$")
+              # 3. otherwise an UPPERCASE level token in a plain-text body means ERROR ("no exception" / "error rate=0" do not match)
+              - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsString(body) and IsMatch(body, "\\b(ERROR|FATAL|CRITICAL|Traceback)\\b")
               - set(severity_text, "ERROR") where severity_number == SEVERITY_NUMBER_ERROR and severity_text == ""
       filter/noise:
         error_mode: ignore
         traces:
           span:
-            - 'IsMatch(attributes["url.path"], "^/(health|healthz|ready|livez)")'
-            - 'IsMatch(attributes["http.target"], "^/(health|healthz|ready|livez)")'
+            # probe paths only: "/healthz", "/health/db", "/ready?x=1" match; "/healthcare" and "/ready-made" do not
+            - 'IsString(attributes["url.path"]) and IsMatch(attributes["url.path"], "^/(health|healthz|healthcheck|ready|readyz|live|livez|liveness|readiness)(/|\\?|$)")'
+            - 'IsString(attributes["http.target"]) and IsMatch(attributes["http.target"], "^/(health|healthz|healthcheck|ready|readyz|live|livez|liveness|readiness)(/|\\?|$)")'
+            - 'IsString(attributes["http.route"]) and IsMatch(attributes["http.route"], "^/(health|healthz|healthcheck|ready|readyz|live|livez|liveness|readiness)(/|$)")'
         logs:
           log_record:
             - 'severity_number != SEVERITY_NUMBER_UNSPECIFIED and severity_number < SEVERITY_NUMBER_INFO'
@@ -853,5 +930,5 @@ data:
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, resource/env, filter/noise, transform/logs, batch]
+          processors: [memory_limiter, resourcedetection, resource/env, transform/logs, filter/noise, batch]
           exporters: [debug, otlp]

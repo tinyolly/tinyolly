@@ -38,6 +38,15 @@ extensions:
         endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
 
 processors:
+  # baseline: memory protection matters most here, this preset opens a receiver on :19291
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+  resourcedetection:
+    detectors: [env, system]
+    timeout: 2s
+    override: false
   batch:
     timeout: 1s
     send_batch_size: 1024
@@ -60,7 +69,7 @@ connectors:
 
 exporters:
   debug:
-    verbosity: detailed
+    verbosity: basic
   
   otlp:
     endpoint: "tinyolly-otlp-receiver:4343"
@@ -72,16 +81,16 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, resourcedetection, batch]
       exporters: [debug, otlp, spanmetrics]
     
     metrics:
       # Include both OTLP metrics and Prometheus remote write metrics
       receivers: [otlp, prometheusremotewrite, spanmetrics]
-      processors: [batch]
+      processors: [memory_limiter, resourcedetection, batch]
       exporters: [debug, otlp]
     
     logs:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, resourcedetection, batch]
       exporters: [debug, otlp]

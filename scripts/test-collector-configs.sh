@@ -9,13 +9,20 @@ VER=$(grep '^OTELCOL_VERSION=' versions.env | cut -d= -f2 | awk '{print $1}')
 IMG="ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:$VER"
 if [ $# -gt 0 ]; then FILES=("$@"); else FILES=(docker/otelcol-configs/config.yaml docker/otelcol-configs/templates/*.yaml); fi
 
+# The real image (Dockerfile.otel-supervisor) has a writable /var/lib/otelcol; the plain contrib image does not.
+# Mirror that so configs that write there (file exporter, storage extensions) can start. Inside the repo because
+# Colima only shares $HOME with containers.
+DATA_DIR=$(mktemp -d -p "$PWD" .cfgtest-data.XXXXXX)
+chmod 777 "$DATA_DIR"
+trap 'rm -rf "$DATA_DIR"' EXIT
+
 fail=0
 for f in "${FILES[@]}"; do
   if ! out=$(docker run --rm -v "$PWD/$f":/c.yaml "$IMG" validate --config /c.yaml 2>&1); then
     echo "FAIL validate  $f"; echo "$out" | tail -5 | sed 's/^/    /'; fail=1; continue
   fi
   name="cfgtest-$$"
-  docker run -d --name "$name" -v "$PWD/$f":/c.yaml "$IMG" --config /c.yaml >/dev/null
+  docker run -d --name "$name" -v "$PWD/$f":/c.yaml -v "$DATA_DIR":/var/lib/otelcol "$IMG" --config /c.yaml >/dev/null
   sleep 6
   logs=$(docker logs "$name" 2>&1)
   docker rm -f "$name" >/dev/null 2>&1

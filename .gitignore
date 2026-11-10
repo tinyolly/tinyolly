@@ -65,3 +65,6 @@ site/
 # OpenTelemetry Demo clone (docker-otel-demo/01-start-otel-demo.sh)
 docker-otel-demo/.demo/
 
+.preset-test-*/
+.cfgtest-data.*/
+.kubectx-test.*/
