@@ -170,7 +170,8 @@ def test_transform():
                       ("p-healthcare", "/healthcare/records"), ("p-readymade", "/ready-made"), ("p-api", "/api/orders")]:
         gen("traces", name, "--traces 2", f"--service {svc}", f"--telemetry-attributes 'url.path=\"{path}\"'",
             "--telemetry-attributes 'http.route=\"/users/123/orders/456\"'")
-    gen("logs", name, "--logs 1", "--service t-logs", "--body '{\"level\":\"debug\",\"msg\":\"noisy\"}'")
+    # telemetrygen defaults to INFO; severity 0 = unspecified, which is what raw JSON logs look like
+    gen("logs", name, "--logs 1", "--service t-logs", "--severity-number 0", "--severity-text ''", "--body '{\"level\":\"debug\",\"msg\":\"noisy\"}'")
     gen("logs", name, "--logs 1", "--service t-logs", "--body '{\"level\":\"error\",\"msg\":\"boom\"}'")
     gen("logs", name, "--logs 1", "--service t-logs", "--body '{\"user\":\"bob\",\"action\":\"login\"}'")
     settle()
@@ -209,7 +210,7 @@ def test_pii():
     settle()
     text = logs_of(name)
     for label, value in secrets.items():
-        probe = value.split("=")[-1].split("&")[0] if "=" in value else value
+        probe = value.split("=", 1)[1].split("&")[0] if "=" in value else value
         check(f"masked: {label}", probe not in text, f"'{probe}' still visible")
     for label, value in keep.items():
         check(f"not masked: {label}", value in text, "was masked")
@@ -233,7 +234,8 @@ def test_connectors_metrics():
     err_text = " ".join(err)
     check("count: error-count metric exists", "tinyolly.span.error.count" in text)
     m = re.findall(r"tinyolly\.span\.error\.count.*?(?:service\.name: Str\((cm-a|cm-b)\).*?)?Value: (\d+)", err_text, re.S)
-    check("count: error counter reports the 3 error spans of cm-a", any(v == "3" for _, v in m) or "Value: 3" in err_text, m[:4])
+    # telemetrygen emits a parent + a child span per trace, so 3 error traces = 6 error spans
+    check("count: error counter reports the 6 error spans of cm-a (3 traces x 2 spans)", any(sv == "cm-a" and v == "6" for sv, v in m), m[:4])
     check("servicegraph/spanmetrics still emit RED metrics", "traces.span.metrics.calls" in text or "calls_total" in text)
 
 

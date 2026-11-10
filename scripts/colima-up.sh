@@ -21,6 +21,13 @@ if colima status -p "$PROFILE" >/dev/null 2>&1; then
   echo "Colima profile '$PROFILE' already running."
 else
   ARGS=(start -p "$PROFILE" --cpu "$CPU" --memory "$MEMORY" --disk "$DISK")
+  # Colima only shares $HOME by default; bind mounts from a checkout elsewhere
+  # (e.g. an external volume) would silently become empty directories.
+  ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+  case "$ROOT" in
+    "$HOME"/*) ;;
+    *) ARGS+=(--mount "$HOME:r" --mount "$ROOT:w") ;;
+  esac
   if [[ "$(uname -m)" == "arm64" ]]; then
     ARGS+=(--vm-type vz --vz-rosetta)
   fi
