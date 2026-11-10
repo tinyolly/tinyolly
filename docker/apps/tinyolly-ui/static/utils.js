@@ -150,6 +150,17 @@ export function formatTimestamp(seconds) {
     });
 }
 
+/**
+ * Status label for a span/trace: 'OK', 'ERR' or ''. OTLP status code may be a number (1/2) or an enum name
+ * (STATUS_CODE_OK / STATUS_CODE_ERROR) depending on the ingest path; hasError marks a trace with any failed span.
+ */
+export function spanStatusLabel(status, hasError) {
+    const code = status && status.code;
+    if (hasError || code === 2 || code === '2' || code === 'STATUS_CODE_ERROR' || code === 'ERROR') return 'ERR';
+    if (code === 1 || code === '1' || code === 'STATUS_CODE_OK' || code === 'OK') return 'OK';
+    return '';
+}
+
 /** Returns color for HTTP status code (green=2xx/3xx, orange=4xx, red=5xx) */
 export function getStatusCodeColor(status) {
     if (!status) return 'var(--text-muted)';

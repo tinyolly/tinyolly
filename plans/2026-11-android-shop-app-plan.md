@@ -33,7 +33,11 @@ Clean-room means we reproduce *observable behavior and structure*, not code, ass
 | Scripts: setup, start emulator, build+install+launch, stop | Our own `mobile/android/scripts/`, **no Android Studio/IDE** (see Tooling) |
 | Local, gitignored config file with host/port | `local.properties`-style `.local.properties` (own keys) |
 
-## Backend choice: mini shop first, full OTel Demo optional
+## Backend choice: OpenTelemetry Demo (decided 2026-11-09; supersedes the mini-shop recommendation below)
+
+The backend is the upstream OTel Demo run via `docker-otel-demo/` (16-service subset, frontend proxy on `localhost:8080`, reachable from the emulator at `10.0.2.2:8080`; flagd flags provide the failure injection). The Python mini shop was dropped from the modernization plan (Phase 4), so M1's "chaos flags" become the demo's flagd flags and the contract must be verified against the demo's `/api/*` routes. The original text below is kept for history.
+
+### (superseded) Mini shop first, full OTel Demo optional
 
 Recommendation: **the Python shop from modernization Phase 4 is the mini version**, and it exposes a REST surface shaped like the OTel Demo frontend (`/api/products`, `/api/products/{id}`, `/api/cart`, `/api/checkout`, `/api/recommendations`, `/api/currency`, `/api/shipping`, `/api/data`) so the app works against either. Verify the exact OTel Demo routes/payloads at implementation time.
 

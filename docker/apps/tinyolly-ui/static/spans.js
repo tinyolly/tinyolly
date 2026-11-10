@@ -1,7 +1,7 @@
 /**
  * Spans Module - Handles span list and detail views with service filtering
  */
-import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter, setupCopyableIds } from './utils.js';
+import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter, setupCopyableIds, spanStatusLabel } from './utils.js';
 
 let currentSpanDetail = null;
 let currentSpanData = null;
@@ -38,7 +38,7 @@ export function renderSpans(spans) {
 
         const method = span.method || '';
         const route = formatRoute(span);
-        const status = span.status_code || (span.status ? (span.status.code === 1 ? 'OK' : (span.status.code === 2 ? 'ERR' : '')) : '');
+        const status = span.status_code || spanStatusLabel(span.status);
         const statusColor = getStatusCodeColor(status);
 
         // Extract service name

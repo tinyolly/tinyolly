@@ -1,7 +1,7 @@
 /**
  * Traces Module - Handles trace list and waterfall visualization
  */
-import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter, setupCopyableIds } from './utils.js';
+import { formatTime, formatTraceId, formatDuration, copyToClipboard, downloadJson, getStatusCodeColor, formatRoute, renderJsonDetailView, renderActionButton, renderEmptyState, filterTableRows, getAttributeValue, navigateToTabWithFilter, copyJsonWithFeedback, downloadTelemetryJson, smoothScrollTo, extractServiceName, closeAllExpandedItems, renderTableHeader, renderLimitNote, preserveSearchFilter, setupCopyableIds, spanStatusLabel } from './utils.js';
 import { fetchTraceDetail, loadTraces } from './api.js';
 import { renderTraceMap, destroyTraceMap } from './traceMap.js';
 
@@ -44,7 +44,7 @@ export function renderTraces(traces) {
             name: trace.root_span_name
         });
 
-        const status = trace.root_span_status_code || (trace.root_span_status ? (trace.root_span_status.code === 1 ? 'OK' : (trace.root_span_status.code === 2 ? 'ERR' : '')) : '');
+        const status = trace.root_span_status_code || spanStatusLabel(trace.root_span_status, trace.has_error);
         const statusColor = getStatusCodeColor(status);
 
         // Extract service name

@@ -175,9 +175,16 @@ View AI traces in the **AI Agents** tab - see prompts, responses, token usage (i
 
 ---
 
-### 6. OpenTelemetry Demo (~20 Services - Optional)
+### 6. OpenTelemetry Demo / Astronomy Shop (Optional)
 
-Clone and configure the [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) to route telemetry to TinyOlly. Edit `src/otel-collector/otelcol-config-extras.yml` to add TinyOlly as an exporter, then deploy with built-in observability tools disabled.
+A 16-service subset of the upstream [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) wired to TinyOlly (~1.6 GB VM memory), with failure-injection flags:
+
+```bash
+cd docker-otel-demo
+./01-start-otel-demo.sh                  # shop: http://localhost:8080  (start TinyOlly core first)
+./03-set-flag.sh paymentFailure 50%      # inject failures; see docs/otel-demo.md
+./02-stop-otel-demo.sh
+```
 
 ---
 

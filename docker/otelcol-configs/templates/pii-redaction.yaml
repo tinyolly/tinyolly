@@ -42,7 +42,7 @@ processors:
         action: delete
   redaction:
     allow_all_keys: true
-    blocked_key_patterns: [".*password.*", ".*secret.*", ".*api[_-]?key.*"]
+    blocked_key_patterns: [".*password.*", ".*secret.*", ".*api[_-]?key.*", ".*cvv.*", ".*cvc.*", ".*card[_.]?number.*"]
     blocked_values:
       - "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"      # email addresses
       - "\\b(?:\\d[ -]*?){13,16}\\b"                              # payment card numbers

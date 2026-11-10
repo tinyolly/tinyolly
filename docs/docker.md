@@ -105,47 +105,17 @@ docker compose logs -f ai-agent
 
 ---
 
-## 4. OpenTelemetry Demo (~20 Services - Optional)
+## 4. OpenTelemetry Demo (Astronomy Shop - Optional)
 
-**Prerequisites:** Clone the OpenTelemetry Demo first:
+A 16-service subset of the upstream demo, pointed at TinyOlly's collector, with failure-injection feature flags.
+Runs in ~1.6 GB of VM memory. See [OpenTelemetry Demo](otel-demo.md).
+
 ```bash
-git clone https://github.com/open-telemetry/opentelemetry-demo
-cd opentelemetry-demo
+cd docker-otel-demo
+./01-start-otel-demo.sh        # shop at http://localhost:8080
+./03-set-flag.sh paymentFailure 50%
+./02-stop-otel-demo.sh
 ```
-
-**Configure:** Edit `src/otel-collector/otelcol-config-extras.yml`:
-```yaml
-exporters:
-  otlphttp/tinyolly:
-    endpoint: http://otel-collector:4318
-
-service:
-  pipelines:
-    traces:
-      exporters: [spanmetrics, otlphttp/tinyolly]
-```
-
-**Deploy:**
-```bash
-export OTEL_COLLECTOR_HOST=host.docker.internal
-docker compose up \
-  --scale otel-collector=0 \
-  --scale prometheus=0 \
-  --scale grafana=0 \
-  --scale jaeger=0 \
-  --scale opensearch=0 \
-  --force-recreate \
-  --remove-orphans \
-  --detach
-```
-
-**Stop:**
-```bash
-docker compose down
-```
-
-!!! note
-    This disables the demo's built-in collector, Jaeger, OpenSearch, Grafana, and Prometheus. All telemetry routes to Otel Collector -> TinyOlly.
 
 ---
 
