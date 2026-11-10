@@ -7,6 +7,7 @@ from models import ErrorResponse, IngestResponse
 
 from tinyolly_common import Storage
 
+from ..core.request_limits import read_json_body
 from ..core.telemetry import get_metrics
 from ..dependencies import get_alert_manager, get_storage
 from ..managers.alerts import AlertManager
@@ -65,13 +66,8 @@ async def ingest_traces(
     """
     metrics = get_ingestion_metrics()
     
-    # Check content length
-    content_length = request.headers.get('content-length')
-    if content_length and int(content_length) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail='Payload too large')
-
     try:
-        data = await request.json()
+        data = await read_json_body(request)
         if not data:
             raise HTTPException(status_code=400, detail='Invalid JSON')
     except json.JSONDecodeError as e:
@@ -141,12 +137,8 @@ async def ingest_logs(
     """
     metrics = get_ingestion_metrics()
     
-    content_length = request.headers.get('content-length')
-    if content_length and int(content_length) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail='Payload too large')
-
     try:
-        data = await request.json()
+        data = await read_json_body(request)
         if not data:
             raise HTTPException(status_code=400, detail='Invalid JSON')
     except json.JSONDecodeError as e:
@@ -209,13 +201,8 @@ async def ingest_metrics(
     """
     metrics = get_ingestion_metrics()
     
-    # Validate payload size (limit to 5MB)
-    content_length = request.headers.get('content-length')
-    if content_length and int(content_length) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail='Payload too large')
-
     try:
-        data = await request.json()
+        data = await read_json_body(request)
         if not data:
             raise HTTPException(status_code=400, detail='Invalid JSON')
     except json.JSONDecodeError as e:

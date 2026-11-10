@@ -69,14 +69,34 @@ class StorageSQLite:
     async def _connect(self) -> aiosqlite.Connection:
         conn = await aiosqlite.connect(self.db_path, isolation_level=None)
         conn.row_factory = aiosqlite.Row
+        # auto_vacuum only takes effect on a database that has no tables yet, and journal_mode=WAL creates the
+        # file header, so it must be set BEFORE journal_mode. Existing databases are converted in
+        # _ensure_initialized (one-time VACUUM).
+        await conn.execute("PRAGMA auto_vacuum=INCREMENTAL")
         await conn.execute("PRAGMA journal_mode=WAL")
         await conn.execute("PRAGMA synchronous=NORMAL")
         await conn.execute("PRAGMA temp_store=MEMORY")
         await conn.execute("PRAGMA cache_size=-64000")
         await conn.execute("PRAGMA busy_timeout=5000")
-        await conn.execute("PRAGMA auto_vacuum=INCREMENTAL")
         await conn.execute(f"PRAGMA max_page_count={MAX_PAGE_COUNT}")
         return conn
+
+    async def _migrate_auto_vacuum(self, conn: aiosqlite.Connection) -> None:
+        """Convert a database created without auto_vacuum (older TinyOlly versions) to INCREMENTAL.
+
+        Without this, deleting rows never returns pages to the file. Runs once; VACUUM rewrites the file
+        (bounded by MAX_DB_SIZE_MB) and keeps all data.
+        """
+        async with conn.execute("PRAGMA auto_vacuum") as cur:
+            row = await cur.fetchone()
+        if row and int(row[0]) == 2:
+            return
+        async with conn.execute("SELECT COUNT(*) FROM sqlite_master") as cur:
+            has_schema = bool((await cur.fetchone())[0])
+        await conn.execute("PRAGMA auto_vacuum=INCREMENTAL")
+        if has_schema:
+            logger.info("Converting existing SQLite database to auto_vacuum=INCREMENTAL (one-time VACUUM)")
+            await conn.execute("VACUUM")
 
     async def _ensure_initialized(self) -> None:
         if self._initialized:
@@ -88,6 +108,7 @@ class StorageSQLite:
 
             conn = await self._connect()
             try:
+                await self._migrate_auto_vacuum(conn)
                 await conn.executescript(
                     """
                     CREATE TABLE IF NOT EXISTS traces (
@@ -342,9 +363,19 @@ class StorageSQLite:
                     await conn.close()
 
     async def _get_db_size(self, conn: aiosqlite.Connection) -> int:
+        """Bytes of live data: pages in use, excluding free pages left behind by deletes.
+
+        Counting free pages (plain page_count) made the size look unchanged after every trim, so the
+        cleanup kept deleting retained data on each cycle.
+        """
         async with conn.execute("PRAGMA page_count") as cur:
             row = await cur.fetchone()
             page_count = int(row[0]) if row else 0
+
+        async with conn.execute("PRAGMA freelist_count") as cur:
+            row = await cur.fetchone()
+            freelist_count = int(row[0]) if row else 0
+        page_count = max(page_count - freelist_count, 0)
 
         async with conn.execute("PRAGMA page_size") as cur:
             row = await cur.fetchone()
@@ -353,8 +384,18 @@ class StorageSQLite:
         return page_count * page_size
 
     async def _trim_table_oldest(self, conn: aiosqlite.Connection, table: str, ts_col: str, batch_size: int = 1000) -> int:
+        """Delete the oldest rows of one table: at most batch_size, and at most ~5% of the table per call.
+
+        A fixed batch of 1000 emptied any table holding 1000 rows or fewer in a single step, wiping all
+        retained data of that kind even when only a little space needed to be freed.
+        """
+        async with conn.execute(f"SELECT COUNT(*) FROM {table}") as cur:
+            row_count = int((await cur.fetchone())[0])
+        if row_count == 0:
+            return 0
+        limit = max(1, min(batch_size, row_count // 20))
         sql = f"DELETE FROM {table} WHERE rowid IN (SELECT rowid FROM {table} ORDER BY {ts_col} ASC LIMIT ?)"
-        cur = await conn.execute(sql, (batch_size,))
+        cur = await conn.execute(sql, (limit,))
         return cur.rowcount if cur.rowcount and cur.rowcount > 0 else 0
 
     async def _enforce_size_bounds(self, conn: aiosqlite.Connection) -> None:

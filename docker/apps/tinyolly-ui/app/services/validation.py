@@ -199,6 +199,9 @@ def format_otelcol_errors(error_msg: str) -> dict:
 
 def basic_validation(parsed: dict):
     """Fallback basic validation when otelcol validate is not available"""
+    if not isinstance(parsed, dict):
+        return {"valid": False, "error": "Configuration must be a YAML mapping"}
+
     # Check for required top-level sections
     required_sections = ['receivers', 'exporters', 'service']
     missing = [section for section in required_sections if section not in parsed]
@@ -212,14 +215,14 @@ def basic_validation(parsed: dict):
     # Check service.pipelines structure
     if 'service' in parsed:
         service = parsed['service']
-        if 'pipelines' not in service:
+        if not isinstance(service, dict) or 'pipelines' not in service:
             return {
                 "valid": False,
                 "error": "Service section is missing 'pipelines'"
             }
         
         pipelines = service.get('pipelines', {})
-        if not pipelines:
+        if not pipelines or not isinstance(pipelines, dict):
             return {
                 "valid": False,
                 "error": "No pipelines defined in service section"

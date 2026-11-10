@@ -405,4 +405,5 @@ All responses return OpenTelemetry-native JSON with full trace/span context.
 - Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in `versions.env`; the Dockerfiles carry matching `ARG` defaults. Update both together.
 - Lint: `pip install ruff==0.17.4 && ruff check docker/apps/` (rules are in `ruff.toml`; keep the ruff version pinned, its defaults change between releases). There is no CI; run the checks locally.
 - Tests: `cd docker/apps/tinyolly-common && pip install -r requirements-test.txt . && pytest tests`.
+- Go (OpAMP server): `./scripts/test-go.sh` (gofmt, vet, `go test -race` in the pinned golang image). UI tests: `cd docker/apps/tinyolly-ui && pytest tests`. k8s safety guard: `./scripts/test-kubectx-guard.sh`.
 - Collector configs: `./scripts/test-collector-configs.sh` (validate + start every preset); after editing them run `./scripts/sync-k8s-configs.sh`.
