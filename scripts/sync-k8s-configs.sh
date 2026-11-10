@@ -2,7 +2,7 @@
 # Regenerate the Kubernetes ConfigMaps from the single source of truth in docker/otelcol-configs/.
 #   docker/otelcol-configs/config.yaml        -> k8s/otelcol-configs/config.yaml          (ConfigMap otel-collector-config)
 #   docker/otelcol-configs/templates/*.yaml   -> k8s*/otelcol-configs/templates/templates.yaml (ConfigMap otelcol-templates)
-# Run after editing any collector config/preset. CI fails if the generated files are stale.
+# Run after editing any collector config/preset. Check for drift with `git diff --exit-code k8s k8s-core-only` after running it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 python3 - <<'PY'

@@ -5,13 +5,8 @@ on:
     types: [published]
 
 jobs:
-  test:
-    name: Run Tests
-    uses: ./.github/workflows/test.yml
-
   build-and-push:
     name: Build and Push Images
-    needs: test
     runs-on: ubuntu-latest
 
     steps:

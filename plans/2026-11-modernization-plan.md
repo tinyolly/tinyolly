@@ -9,11 +9,11 @@ Handoff / how to resume: `plans/HANDOFF.md`
 |---|---|---|---|
 | 0 Baseline | done | `modernize/phase-0-baseline` | `versions.env`, Redis removed, `site/` untracked |
 | 1 Colima + kind | done, partly verified | `modernize/phase-1-colima-kind` | core stack + kind core deploy verified; k8s-demo/ebpf/cleanup scripts, eBPF under vz **not** run |
-| 2 Deps/images | done | `modernize/phase-2-deps` | pins, locks, Go 1.27, CI jobs, Dependabot |
+| 2 Deps/images | done | `modernize/phase-2-deps` | pins, locks, Go 1.27, Dependabot (its CI jobs were later removed) |
 | 3 Collector presets | done | `modernize/phase-3-processors` | 8 presets; 5 verified live, 3 only applied cleanly |
 | 4 Demo | **changed**: upstream OTel Demo (16-service subset) instead of a custom shop | `modernize/phase-4-otel-demo` | fits 8 GB; Helm path untested |
 | 5 UI gaps | not started | – | see `plans/2026-11-trace-accuracy-plan.md` (waterfall work) first |
-| 6 CI & release | not started | – | consolidation of deploy dirs, buildx multi-arch, v3.0.0 |
+| 6 Release (CI dropped) | not started | – | consolidation of deploy dirs, buildx multi-arch, v3.0.0; the CI items in this phase are out of scope |
 
 Open items carried forward: 136 placeholder UI tests, `versions.env` vs Dockerfile `ARG` sync check, `k8s-core-only` embeds its own collector config.
 
@@ -185,3 +185,9 @@ Decision: the custom 6-service Python shop is dropped. `docker-otel-demo/` runs 
 - Real findings fixed (64 under the chosen set): 19 unused imports, 20 unsorted import blocks (auto-fix), 13 `raise HTTPException` inside `except` now `from e` (B904), 3 dead variables, 1 unused loop variable, 3 test style issues. The 24 B008 hits were all FastAPI `Depends()` (config, not code).
 - Deliberately NOT enabled: pyupgrade (`UP`, 150+ `List`→`list` rewrites), `BLE001` blind-except (12 sites), `SIM`, `RUF`, `PERF`; worth a separate pass if wanted.
 - Verified after the refactor: common tests 11 pass, UI tests 2 pass (136 skipped), images rebuilt, stack up with no tracebacks, ingest/validate/template endpoints (including the error paths) behave as before.
+
+### CI removed (2026-11-09)
+- Decision: this project does not use CI. `.github/workflows/test.yml` was deleted (its four jobs had failed on every `main` push since at least March 2026; GitHub Actions itself is enabled on the repo). `release.yml` (publishes images to Docker Hub when a release is published; no repo-level secrets are configured, so it may be unused) had a `test` job calling `test.yml`; that job and the `needs: test` were removed so releases are not broken by the deletion.
+- The checks it ran are local commands (see README "Development notes"): `ruff check docker/apps/`, `pytest` in `tinyolly-common`, `./scripts/test-collector-configs.sh`, `./scripts/sync-k8s-configs.sh` + `git diff --exit-code k8s k8s-core-only`, and `go vet`/`go build` in the opamp server (no script yet).
+- Earlier log entries that mention CI jobs (Phases 2, 3, lint fix) describe what was built at the time; the CI portions no longer exist. Phase 6's CI bullets (kind smoke test, buildx matrix, image builds) are dropped; the buildx multi-arch release build remains relevant for `build/dockerhub/`.
+- `.github/dependabot.yml` was kept (not CI); remove it if automatic dependency PRs are unwanted.

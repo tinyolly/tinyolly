@@ -34,11 +34,11 @@ does not. "It looks right" is not evidence: a waterfall can be drawn confidently
 | 4 | **BigInt timestamps** | Parse `startTimeUnixNano`/`endTimeUnixNano` as BigInt, convert *offsets* to Number only after subtracting | 123 µs span offsets exact to the ns in a unit test |
 | 5 | **Incomplete-trace indicator** | Backend adds `missing_parent_count` / `is_complete` to the trace summary; UI badge "partial — N spans pending" and auto-refresh while partial | The 4 rootless traces seen in testing show the badge and clear it when the root arrives |
 | 6 | **Min visible bar width / selected-span detail** | Very short spans get a 1–2 px minimum so they are not invisible; hover tooltip with start offset + duration | Sub-ms spans in a 100 ms trace are visible |
-| F | **Undefined CSS variable audit** | Define or replace `--bg-secondary` (8 remaining uses); add a CI check that every `var(--x)` used in `templates/`+`static/` is defined | Check fails on an undefined variable |
+| F | **Undefined CSS variable audit** | Define or replace `--bg-secondary` (8 remaining uses); add a local check script that every `var(--x)` used in `templates/`+`static/` is defined | Check fails on an undefined variable |
 | A | **Jaeger reference diff** | Add `jaeger` service (compose profile `verify`, not on by default) + second exporter in a verify-only collector preset; `scripts/diff-with-jaeger.py` compares N traces; reports missing/extra spans and any start/duration/parent/status differences beyond tolerance | 200 demo traces: zero differences except documented tolerances |
 | B | **Render test** | Playwright (or similar) test that loads a trace, reads each bar's computed style and compares to `check-trace-integrity`-style expected positions (±0.5 px); runs against a canned trace fixture, not live data | CI-able; fails if offset/width math regresses |
 | C | **Fixture traces** | Hand-built OTLP traces covering: deep nesting, siblings overlapping, µs spans, clock-skewed child, orphan span, 200+ spans, duplicate span id | Used by items 2–5 and B |
-| D | **Integrity script in CI** | Run `check-trace-integrity.py` against the compose smoke test (Phase 6) | CI job green on demo traffic |
+| D | **Integrity check as a smoke test** | Run `check-trace-integrity.py` after starting the demo (no CI in this repo; run it locally or from a release checklist) | Exit code 0 on demo traffic |
 
 ## Notes / constraints
 

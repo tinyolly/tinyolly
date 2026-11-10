@@ -43,7 +43,7 @@ python3 scripts/check-trace-integrity.py     # against a running stack with data
 
 ## What is done
 
-See the status table in the modernization plan. Short version: Colima + kind runtime (Phase 1), pinned/locked deps and a CI refresh (2), eight collector presets with a test harness (3), the upstream OpenTelemetry Demo as the demo (4), plus fixes found by running it (error-status detection, PII preset leaking CVV, sticky header).
+See the status table in the modernization plan. Short version: Colima + kind runtime (Phase 1), pinned/locked deps (2), eight collector presets with a test harness (3), the upstream OpenTelemetry Demo as the demo (4), plus fixes found by running it (error-status detection, PII preset leaking CVV, sticky header).
 
 ## Things that are NOT done or NOT verified (be skeptical here)
 
@@ -52,8 +52,8 @@ See the status table in the modernization plan. Short version: Colima + kind run
 * Phase 3: presets `enrichment`, `metrics-shaping`, `connectors-metrics` applied with zero collector errors but their output was not inspected; the transform preset's "derive severity from body" rule was never exercised; k8s ConfigMaps (generated) not deployed to kind; `k8s-core-only` embeds its own collector config in `tinyolly-opamp-server.yaml` (not synced).
 * Phase 4: only `paymentFailure` and `emitRawPii` (+ `pii-redaction`) were verified; the other flags in `docs/otel-demo.md` are expectations. Helm path (`k8s-otel-demo/`, chart 0.42.6) untested and needs ≥ 6 GB because the chart deploys Kafka.
 * UI visual checks: the user tested the UI visually (service map, charts after the Chart.js/Cytoscape bumps) and reported it fine; the sticky-header fix was deployed but not re-checked by eye.
-* Tests: 136 of the UI tests are placeholder `pytest.skip` stubs. Lint was fixed (see below): `ruff.toml` pins an explicit rule set and CI pins `ruff==0.17.4`. The receiver has no tests (CI only byte-compiles it). The `ui`/`receiver` CI jobs have not run on GitHub at all.
-* Nothing was ever run in GitHub CI; workflows were only YAML-parsed locally.
+* Tests: 136 of the UI tests are placeholder `pytest.skip` stubs. Lint was fixed: `ruff.toml` has an explicit rule set; use `ruff==0.17.4` (defaults change between releases). The receiver has no tests (CI only byte-compiles it). The `ui`/`receiver` CI jobs have not run on GitHub at all.
+* **CI was removed** (2026-11-09): `.github/workflows/test.yml` was deleted (it had been failing on `main` since at least March 2026) and `release.yml` no longer gates on it. All checks are local scripts. `.github/dependabot.yml` (added in Phase 2) is still there: delete it if you do not want automatic dependency PRs.
 
 ## Gotchas learned (save yourself the time)
 
@@ -74,7 +74,7 @@ See the status table in the modernization plan. Short version: Colima + kind run
 
 ## Suggested next steps (in order)
 
-1. Push/PR: open one PR per phase (recreate the phase branches from the SHAs above) or one stacked PR. The lint job should now pass (`ruff check docker/apps/` is clean locally); nothing has run on GitHub yet.
+1. Push/PR: open one PR per phase (recreate the phase branches from the SHAs above) or one stacked PR. There is no CI to wait for; run the local checks above.
 2. Close the verification gaps above that are cheap: run `k8s-demo` / `k8s-core-only` on kind, inspect the three un-inspected presets, run the remaining demo flags.
 3. **Trace accuracy / waterfall work** (`plans/2026-11-trace-accuracy-plan.md`): fixtures → BigInt timestamps → nest spans by parent → fix the 100-span cap → incomplete-trace indicator → Jaeger diff → render test.
 4. Phase 5 UI gaps (exemplar→trace links, span events/exceptions pane, span links, processor-effect panel on the Collector tab) and Phase 6 (consolidate deploy dirs, buildx multi-arch with a `docker-container` builder, v3.0.0).

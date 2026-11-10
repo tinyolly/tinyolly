@@ -1,6 +1,6 @@
-# Lint config for the Python code under docker/apps/ (checked in CI with a pinned ruff version).
-# The rule set is explicit on purpose: ruff's *default* rules change between releases, which made the
-# unpinned CI lint job a moving target (0.17 defaults flagged 354 mostly stylistic issues).
+# Lint config for the Python code under docker/apps/ (run locally: `pip install ruff==0.17.4 && ruff check docker/apps/`).
+# The rule set is explicit on purpose: ruff's *default* rules change between releases (0.17 defaults flagged
+# 354 mostly stylistic issues), so keep the ruff version pinned too.
 target-version = "py313"
 line-length = 120
 extend-exclude = ["docker/apps/tinyolly-common/build"]

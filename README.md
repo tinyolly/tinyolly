@@ -403,5 +403,6 @@ All responses return OpenTelemetry-native JSON with full trace/span context.
 - Python dependencies are locked: edit `requirements.in` in a service directory, then regenerate with
   `uv pip compile requirements.in --universal --python-version 3.13 -o requirements.txt`.
 - Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in `versions.env`; the Dockerfiles carry matching `ARG` defaults. Update both together.
-- Lint: `pip install ruff==0.17.4 && ruff check docker/apps/` (rules and version are pinned in `ruff.toml` / CI).
+- Lint: `pip install ruff==0.17.4 && ruff check docker/apps/` (rules are in `ruff.toml`; keep the ruff version pinned, its defaults change between releases). There is no CI; run the checks locally.
 - Tests: `cd docker/apps/tinyolly-common && pip install -r requirements-test.txt . && pytest tests`.
+- Collector configs: `./scripts/test-collector-configs.sh` (validate + start every preset); after editing them run `./scripts/sync-k8s-configs.sh`.
