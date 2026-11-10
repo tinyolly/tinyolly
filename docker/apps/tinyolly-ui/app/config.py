@@ -19,6 +19,7 @@ class Settings:
     
     # OpAMP
     opamp_server_url: str = os.getenv("OPAMP_SERVER_URL", "http://localhost:4321")
+    opamp_api_token: str = os.getenv("OPAMP_API_TOKEN", "")   # sent as a bearer token on config writes when set
     otelcol_default_config: str = os.getenv("OTELCOL_DEFAULT_CONFIG", "/app/otelcol-config.yaml")
     otelcol_templates_dir: str = os.getenv("OTELCOL_TEMPLATES_DIR", "/app/otelcol-templates")
     otel_collector_container: str = os.getenv("OTEL_COLLECTOR_CONTAINER", "otel-collector")
