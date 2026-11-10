@@ -16,6 +16,11 @@ echo "  3. Name it 'tinyolly-builds' with Read & Write permissions"
 echo "  4. Use the token instead of your password below"
 echo ""
 
+# Without Docker Desktop, credentials go to the macOS keychain via docker-credential-osxkeychain:
+#   brew install docker-credential-helper
+#   ~/.docker/config.json must contain  "credsStore": "osxkeychain"  (not "desktop")
+command -v docker-credential-osxkeychain >/dev/null || { echo "Missing helper: brew install docker-credential-helper"; exit 1; }
+
 docker login
 
 if [ $? -eq 0 ]; then

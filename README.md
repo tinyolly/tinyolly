@@ -88,7 +88,7 @@ git clone https://github.com/tinyolly/tinyolly
 TinyOlly uses [Colima](https://github.com/abiosoft/colima) as the container runtime and [kind](https://kind.sigs.k8s.io/) for Kubernetes.
 
 ```bash
-brew install colima docker docker-compose docker-buildx kubectl kind helm
+brew install colima docker docker-compose docker-buildx docker-credential-helper kubectl kind helm
 mkdir -p ~/.docker   # let the docker CLI find the compose/buildx plugins:
 echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json  # (merge into an existing file if you have one)
 ./scripts/colima-up.sh      # starts the 'tinyolly' Colima VM: 4 CPU / 4 GB by default
@@ -183,7 +183,7 @@ A 16-service subset of the upstream [OpenTelemetry Demo](https://github.com/open
 
 ```bash
 # 1. One-time prerequisites (macOS)
-brew install colima docker docker-compose docker-buildx git
+brew install colima docker docker-compose docker-buildx docker-credential-helper git
 mkdir -p ~/.docker && echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json   # merge into an existing file if you have one
 
 # 2. Get TinyOlly and start its Colima VM

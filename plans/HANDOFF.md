@@ -28,7 +28,7 @@ Bugs the e2e run found and fixed: `/admin/stats` 500 once any metric existed (`p
 ## Set up a new machine (macOS)
 
 ```bash
-brew install colima docker docker-compose docker-buildx kubectl kind helm uv
+brew install colima docker docker-compose docker-buildx docker-credential-helper kubectl kind helm uv
 mkdir -p ~/.docker && echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json   # merge if the file exists
 git clone https://github.com/tinyolly/tinyolly && cd tinyolly
 ./scripts/colima-up.sh                       # 4 CPU / 4 GB default; COLIMA_MEMORY=8 on bigger machines

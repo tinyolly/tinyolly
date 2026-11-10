@@ -10,7 +10,7 @@ own collector, Jaeger, Grafana, Prometheus, OpenSearch, Kafka and its consumers 
 
 ```bash
 # 1. One-time prerequisites (macOS)
-brew install colima docker docker-compose docker-buildx git
+brew install colima docker docker-compose docker-buildx docker-credential-helper git
 mkdir -p ~/.docker && echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json   # merge into an existing file if you have one
 
 # 2. Get TinyOlly and start its Colima VM
