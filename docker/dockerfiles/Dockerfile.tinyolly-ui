@@ -3,7 +3,8 @@ FROM tinyolly/python-base:latest
 
 ARG APP_DIR=tinyolly-ui
 # OTel Collector version for config validation
-ARG OTELCOL_VERSION=0.141.0
+# Validator binary only (not the running collector). Keep in sync with OTELCOL_VERSION in /versions.env.
+ARG OTELCOL_VERSION=0.165.0
 
 WORKDIR /app
 

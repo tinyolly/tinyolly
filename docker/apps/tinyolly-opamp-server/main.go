@@ -8,11 +8,15 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,6 +54,21 @@ type OpAMPServer struct {
 	pendingConfigs map[string]string // instanceID -> pending config
 	configMu       sync.RWMutex
 	currentConfig  string
+}
+
+// maxConfigBodyBytes caps the size of a POST /config body.
+const maxConfigBodyBytes = 1 << 20 // 1 MiB
+
+func (s *OpAMPServer) getCurrentConfig() string {
+	s.configMu.RLock()
+	defer s.configMu.RUnlock()
+	return s.currentConfig
+}
+
+func (s *OpAMPServer) setCurrentConfig(cfg string) {
+	s.configMu.Lock()
+	defer s.configMu.Unlock()
+	s.currentConfig = cfg
 }
 
 // NewOpAMPServer creates a new OpAMP server instance
@@ -286,7 +305,7 @@ func (s *OpAMPServer) handleGetConfig(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"config": s.currentConfig,
+		"config": s.getCurrentConfig(),
 		"status": "no_agents_connected",
 	})
 }
@@ -297,18 +316,31 @@ func (s *OpAMPServer) handleUpdateConfig(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Require a JSON content type. Browsers can send text/plain cross-origin without a CORS preflight, so
+	// rejecting anything else stops a web page the user visits from posting a config to this API.
+	if mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || mediaType != "application/json" {
+		http.Error(w, "Content-Type must be application/json", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxConfigBodyBytes)
 	var req ConfigUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			http.Error(w, "Config too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if req.Config == "" {
+	if strings.TrimSpace(req.Config) == "" {
 		http.Error(w, "Config is required", http.StatusBadRequest)
 		return
 	}
 
-	s.currentConfig = req.Config
+	s.setCurrentConfig(req.Config)
 
 	s.agentsMu.RLock()
 	affectedIDs := []string{} // Initialize as empty slice, not nil, so JSON marshals to [] not null
@@ -346,21 +378,6 @@ func (s *OpAMPServer) handleUpdateConfig(w http.ResponseWriter, r *http.Request)
 func (s *OpAMPServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
-}
-
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
 }
 
 const defaultConfig = `receivers:
@@ -410,6 +427,48 @@ service:
       exporters: [debug, otlp]
 `
 
+// parseOTLPEndpoint turns OTEL_EXPORTER_OTLP_ENDPOINT into the host:port the exporter wants and whether the
+// connection is plaintext. Accepts "http://host:4318", "https://host:4318" and a bare "host:4318" (plaintext).
+func parseOTLPEndpoint(raw string) (host string, insecure bool, err error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", false, errors.New("empty OTLP endpoint")
+	}
+	if !strings.Contains(raw, "://") {
+		raw = "http://" + raw
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return "", false, fmt.Errorf("invalid OTLP endpoint %q", raw)
+	}
+	switch u.Scheme {
+	case "http":
+		return u.Host, true, nil
+	case "https":
+		return u.Host, false, nil
+	default:
+		return "", false, fmt.Errorf("unsupported OTLP endpoint scheme %q", u.Scheme)
+	}
+}
+
+// routes builds the REST API mux.
+func (s *OpAMPServer) routes() *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", s.handleHealth)
+	mux.HandleFunc("/status", s.handleStatus)
+	mux.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			s.handleGetConfig(w, r)
+		case http.MethodPost, http.MethodPut:
+			s.handleUpdateConfig(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	return mux
+}
+
 // initTelemetry sets up OpenTelemetry tracing
 func initTelemetry(ctx context.Context) (func(context.Context) error, error) {
 	// Get OTLP endpoint from environment
@@ -419,10 +478,15 @@ func initTelemetry(ctx context.Context) (func(context.Context) error, error) {
 	}
 
 	// Create OTLP trace exporter
-	exporter, err := otlptracehttp.New(ctx,
-		otlptracehttp.WithEndpoint(endpoint[7:]), // Remove "http://" prefix
-		otlptracehttp.WithInsecure(),
-	)
+	host, insecure, err := parseOTLPEndpoint(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	opts := []otlptracehttp.Option{otlptracehttp.WithEndpoint(host)}
+	if insecure {
+		opts = append(opts, otlptracehttp.WithInsecure())
+	}
+	exporter, err := otlptracehttp.New(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create trace exporter: %w", err)
 	}
@@ -504,29 +568,17 @@ func main() {
 		}
 	}()
 
-	// Setup HTTP REST API with OpenTelemetry instrumentation
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", s.handleHealth)
-	mux.HandleFunc("/status", s.handleStatus)
-	mux.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			s.handleGetConfig(w, r)
-		case http.MethodPost, http.MethodPut:
-			s.handleUpdateConfig(w, r)
-		case http.MethodOptions:
-			w.WriteHeader(http.StatusOK)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
-
-	// Wrap with CORS and OpenTelemetry instrumentation
-	handler := corsMiddleware(otelhttp.NewHandler(mux, "tinyolly-opamp-server"))
+	// Setup HTTP REST API with OpenTelemetry instrumentation. No CORS headers are sent: the only legitimate
+	// client is the TinyOlly UI server, which calls this API server-side, never from a browser.
+	handler := otelhttp.NewHandler(s.routes(), "tinyolly-opamp-server")
 
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf(":%s", httpPort),
-		Handler: handler,
+		Addr:              fmt.Sprintf(":%s", httpPort),
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	log.Printf("Starting HTTP REST API on port %s", httpPort)

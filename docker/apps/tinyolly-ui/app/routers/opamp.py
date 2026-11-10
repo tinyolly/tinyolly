@@ -1,7 +1,9 @@
 """OpAMP endpoints for managing OpenTelemetry Collector configuration"""
 
+import asyncio
 import logging
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -20,15 +22,23 @@ router = APIRouter(prefix="/api/opamp", tags=["OpAMP"])
 logger = logging.getLogger(__name__)
 
 
+MAX_CONFIG_CHARS = 1_000_000          # matches the OpAMP server's 1 MiB body limit
+INSTANCE_ID_PATTERN = r"^[A-Za-z0-9._-]{1,128}$"
+# Collector config providers that read local files or fetch URLs when the config is loaded. The validator runs
+# the collector binary inside the UI container, so these would read the UI container's files / make requests
+# from it and echo the result in error output.
+_FORBIDDEN_PROVIDER = re.compile(r"\$\{\s*(file|http|https)\s*:", re.IGNORECASE)
+
+
 class ConfigValidateRequest(BaseModel):
     """Request body for validating OTel Collector configuration"""
-    config: str = Field(..., description="YAML configuration to validate")
+    config: str = Field(..., max_length=MAX_CONFIG_CHARS, description="YAML configuration to validate")
 
 
 class ConfigUpdateRequest(BaseModel):
     """Request body for updating OTel Collector configuration"""
-    config: str = Field(..., description="YAML configuration for the OTel Collector")
-    instance_id: Optional[str] = Field(default=None, description="Target specific agent instance")
+    config: str = Field(..., max_length=MAX_CONFIG_CHARS, description="YAML configuration for the OTel Collector")
+    instance_id: Optional[str] = Field(default=None, pattern=INSTANCE_ID_PATTERN, description="Target specific agent instance")
 
 
 @router.get(
@@ -62,11 +72,9 @@ async def opamp_status():
                         status_code=response.status,
                         detail=f"OpAMP server returned {response.status}"
                     )
-    except aiohttp.ClientError as e:
-        raise HTTPException(
-            status_code=503,
-            detail=f"OpAMP server unavailable: {str(e)}"
-        ) from e
+    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+        logger.warning("OpAMP server request failed: %s", e)
+        raise HTTPException(status_code=503, detail="OpAMP server unavailable") from e
 
 
 @router.get(
@@ -79,7 +87,7 @@ async def opamp_status():
     }
 )
 async def opamp_get_config(
-    instance_id: Optional[str] = Query(default=None, description="Specific agent instance ID")
+    instance_id: Optional[str] = Query(default=None, pattern=INSTANCE_ID_PATTERN, description="Specific agent instance ID")
 ):
     """
     Get the current effective configuration of the OTel Collector.
@@ -88,13 +96,12 @@ async def opamp_get_config(
     Optionally specify instance_id to get config from a specific collector.
     """
     try:
-        url = f"{settings.opamp_server_url}/config"
-        if instance_id:
-            url += f"?instance_id={instance_id}"
+        params = {"instance_id": instance_id} if instance_id else None
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                url,
+                f"{settings.opamp_server_url}/config",
+                params=params,
                 timeout=aiohttp.ClientTimeout(total=5)
             ) as response:
                 if response.status == 200:
@@ -104,11 +111,9 @@ async def opamp_get_config(
                         status_code=response.status,
                         detail=f"OpAMP server returned {response.status}"
                     )
-    except aiohttp.ClientError as e:
-        raise HTTPException(
-            status_code=503,
-            detail=f"OpAMP server unavailable: {str(e)}"
-        ) from e
+    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+        logger.warning("OpAMP server request failed: %s", e)
+        raise HTTPException(status_code=503, detail="OpAMP server unavailable") from e
 
 
 @router.post(
@@ -123,85 +128,75 @@ async def opamp_get_config(
 async def opamp_validate_config(request: ConfigValidateRequest):
     """
     Validate an OTel Collector configuration using the official otelcol validate command.
-    
+
     Uses the OpenTelemetry Collector's built-in validation which checks:
     - Valid YAML syntax
     - Component configurations
     - Pipeline references
     - Component-specific validation rules
     """
-    # First do basic YAML syntax check
-    try:
-        parsed = yaml.safe_load(request.config)
-        if parsed is None:
-            return {
-                "valid": False,
-                "error": "Configuration is empty or invalid"
-            }
-    except yaml.YAMLError as e:
-        return {
-            "valid": False,
-            "error": f"YAML syntax error: {str(e)}"
-        }
-    
-    # Use local otelcol-contrib binary for validation
-    # The binary is installed in the container at /usr/local/bin/otelcol-contrib
-    otelcol_binary = "/usr/local/bin/otelcol-contrib"
+    return await _validate_config_text(request.config)
 
-    # Write config to temporary file (delete=False so subprocess can read it, cleanup in finally)
+
+def _run_otelcol_validate(config_text: str) -> subprocess.CompletedProcess:
+    """Run `otelcol-contrib validate` on config_text (blocking; call via a worker thread)."""
+    otelcol_binary = "/usr/local/bin/otelcol-contrib"
     tmp_file_path = None
     try:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as tmp_file:
-            tmp_file.write(request.config)
+            tmp_file.write(config_text)
             tmp_file_path = tmp_file.name
-
-        # Run otelcol-contrib validate command
-        validate_cmd = [otelcol_binary, "validate", f"--config={tmp_file_path}"]
-
-        validate_result = subprocess.run(
-            validate_cmd,
+        return subprocess.run(
+            [otelcol_binary, "validate", f"--config={tmp_file_path}"],
             capture_output=True,
             text=True,
-            timeout=10
+            timeout=10,
+            # Minimal environment: the collector expands ${env:VAR} in configs and may echo values in errors,
+            # so do not hand it this process's environment (which can hold secrets).
+            env={"PATH": "/usr/local/bin:/usr/bin:/bin"},
         )
-
-        if validate_result.returncode == 0:
-            return {
-                "valid": True,
-                "error": None
-            }
-        else:
-            # Extract error message from stderr
-            error_msg = validate_result.stderr.strip() or validate_result.stdout.strip()
-            if not error_msg:
-                error_msg = "Configuration validation failed"
-
-            # Parse and format the error message for better readability
-            formatted_errors = format_otelcol_errors(error_msg)
-
-            return {
-                "valid": False,
-                "error": formatted_errors["summary"],
-                "errors": formatted_errors["errors"]
-            }
-
-    except subprocess.TimeoutExpired:
-        logger.warning("Validation command timed out")
-        return basic_validation(parsed)
-    except FileNotFoundError:
-        # otelcol-contrib binary not found, fall back to basic validation
-        logger.warning("otelcol-contrib binary not available, using basic validation")
-        return basic_validation(parsed)
-    except Exception as e:
-        logger.warning(f"Error running otelcol-contrib validate: {e}, falling back to basic validation")
-        return basic_validation(parsed)
     finally:
-        # Clean up temp file
         if tmp_file_path:
             try:
                 os.unlink(tmp_file_path)
-            except (OSError, FileNotFoundError):
+            except OSError:
                 pass
+
+
+async def _validate_config_text(config_text: str) -> dict:
+    """Validate collector config text; returns {"valid": bool, "error": str|None, ...}.
+
+    Fails closed: anything other than a successful validation (including a timeout) is reported as invalid,
+    except when the otelcol binary is not installed, where a structural check is used instead.
+    """
+    try:
+        parsed = yaml.safe_load(config_text)
+    except yaml.YAMLError as e:
+        return {"valid": False, "error": f"YAML syntax error: {e}"}
+    if not isinstance(parsed, dict) or not parsed:
+        return {"valid": False, "error": "Configuration must be a non-empty YAML mapping"}
+    if _FORBIDDEN_PROVIDER.search(config_text):
+        return {"valid": False, "error": "Config providers that read files or URLs (${file:...}, ${http:...}, ${https:...}) are not allowed"}
+
+    try:
+        # Blocking subprocess: run it in a worker thread so the event loop (ingest, queries) is not frozen.
+        result = await asyncio.to_thread(_run_otelcol_validate, config_text)
+    except subprocess.TimeoutExpired:
+        logger.warning("Validation command timed out")
+        return {"valid": False, "error": "Validation timed out"}
+    except FileNotFoundError:
+        logger.warning("otelcol-contrib binary not available, using basic validation")
+        return basic_validation(parsed)
+    except Exception:
+        logger.exception("Unexpected error running otelcol-contrib validate")
+        return {"valid": False, "error": "Validation could not be completed"}
+
+    if result.returncode == 0:
+        return {"valid": True, "error": None}
+
+    error_msg = result.stderr.strip() or result.stdout.strip() or "Configuration validation failed"
+    formatted_errors = format_otelcol_errors(error_msg)
+    return {"valid": False, "error": formatted_errors["summary"], "errors": formatted_errors["errors"]}
 
 
 @router.post(
@@ -231,14 +226,14 @@ async def opamp_update_config(request: ConfigUpdateRequest):
     # ... rest of config
     ```
     """
-    # Validate YAML syntax
-    try:
-        yaml.safe_load(request.config)
-    except yaml.YAMLError as e:
+    # Validate before pushing: this config goes to every connected collector, so a config that is not a mapping or
+    # fails the collector's own validation must never be queued.
+    validation = await _validate_config_text(request.config)
+    if not validation.get("valid"):
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid YAML configuration: {str(e)}"
-        ) from e
+            detail=f"Invalid collector configuration: {validation.get('error') or 'validation failed'}"
+        )
 
     try:
         async with aiohttp.ClientSession() as session:
@@ -259,11 +254,9 @@ async def opamp_update_config(request: ConfigUpdateRequest):
                         status_code=response.status,
                         detail=f"OpAMP server error: {error_text}"
                     )
-    except aiohttp.ClientError as e:
-        raise HTTPException(
-            status_code=503,
-            detail=f"OpAMP server unavailable: {str(e)}"
-        ) from e
+    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+        logger.warning("OpAMP server request failed: %s", e)
+        raise HTTPException(status_code=503, detail="OpAMP server unavailable") from e
 
 
 @router.get(
@@ -294,11 +287,9 @@ async def opamp_health():
                         status_code=503,
                         detail="OpAMP server unhealthy"
                     )
-    except aiohttp.ClientError as e:
-        raise HTTPException(
-            status_code=503,
-            detail=f"OpAMP server unavailable: {str(e)}"
-        ) from e
+    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+        logger.warning("OpAMP server request failed: %s", e)
+        raise HTTPException(status_code=503, detail="OpAMP server unavailable") from e
 
 
 @router.get(

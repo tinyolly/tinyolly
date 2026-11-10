@@ -24,7 +24,7 @@ services:
     container_name: tinyolly-opamp-server
     ports:
       - "4320:4320"  # OpAMP WebSocket port
-      - "4321:4321"  # HTTP REST API port
+      - "127.0.0.1:4321:4321"  # HTTP REST API: unauthenticated config push, so localhost only (the UI reaches it over the docker network)
     volumes:
       - ./otelcol-configs/config.yaml:/etc/otel-collector-config.yaml:ro
     environment:
