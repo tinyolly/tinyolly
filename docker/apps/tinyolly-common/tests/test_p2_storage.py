@@ -123,3 +123,48 @@ async def test_close_stops_cleanup_task(storage):
     assert task is not None
     await storage.close()
     assert task.done() and storage._cleanup_task is None
+
+
+@pytest.mark.asyncio
+async def test_concurrent_writers_from_two_processes_do_not_hit_database_is_locked(tmp_path):
+    """The UI and the OTLP receiver are separate processes writing one SQLite file (separate in-process locks).
+    A deferred BEGIN that reads then writes fails instantly with 'database is locked' when the other writer
+    commits in between, ignoring busy_timeout; write transactions must be BEGIN IMMEDIATE."""
+    import asyncio
+    from tinyolly_common.storage_sqlite import StorageSQLite
+    a = StorageSQLite(db_path=str(tmp_path / "t.db"), ttl=60)
+    b = StorageSQLite(db_path=str(tmp_path / "t.db"), ttl=60)
+    now = time.time()
+
+    async def writer(s, i):
+        for j in range(15):
+            await s.store_metrics([{"name": f"w{i}", "type": "gauge", "value": j, "timestamp": now + j}])
+            await s.store_traces(_otlp("%032x" % (i * 100 + j + 1), "%016x" % (i * 100 + j + 1)))
+
+    await asyncio.gather(*[writer(a if i % 2 else b, i) for i in range(6)])     # raises OperationalError on the old code
+    assert len(await a.get_metric_names()) == 6
+    for s in (a, b):
+        await s.close()
+
+
+def test_exponential_histogram_is_converted_not_dropped(storage):
+    from tinyolly_common.otlp_utils import exponential_to_explicit
+    dp = {"count": "10", "sum": 55.0, "scale": 0, "zeroCount": "1",
+          "positive": {"offset": 1, "bucketCounts": ["0", "3", "0", "4", "2", "0"]}}      # trailing/leading empties trimmed
+    h = exponential_to_explicit(dp)
+    assert h["bucketCounts"][0] == 1 and sum(h["bucketCounts"]) == 10 and len(h["bucketCounts"]) == len(h["explicitBounds"]) + 1
+    assert h["explicitBounds"] == sorted(h["explicitBounds"]) and h["explicitBounds"][0] == 4.0      # base 2, offset 1+1 -> 2^2
+    otlp = {"resourceMetrics": [{"resource": {"attributes": []}, "scopeMetrics": [{"metrics": [
+        {"name": "exp.h", "unit": "ms", "exponentialHistogram": {"aggregationTemporality": 2, "dataPoints": [dict(dp, timeUnixNano="1700000000000000000")]}}]}]}]}
+    pts = storage.parse_otlp_metrics(otlp)
+    assert len(pts) == 1 and pts[0]["type"] == "histogram" and pts[0]["histogram"]["count"] == 10
+
+
+@pytest.mark.asyncio
+async def test_exponential_histogram_is_stored_and_readable(storage):
+    otlp = {"resourceMetrics": [{"resource": {"attributes": []}, "scopeMetrics": [{"metrics": [
+        {"name": "exp.h2", "exponentialHistogram": {"aggregationTemporality": 2, "dataPoints": [
+            {"timeUnixNano": "1700000000000000000", "count": "3", "sum": 9.0, "scale": 2, "positive": {"offset": 0, "bucketCounts": ["1", "2"]}}]}}]}]}]}
+    await storage.store_metrics(otlp)
+    data = await storage.get_metric_data("exp.h2", 0, 2e9)
+    assert data and data[0]["histogram"]["count"] == 3

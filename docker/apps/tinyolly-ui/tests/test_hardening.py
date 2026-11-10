@@ -179,3 +179,22 @@ async def test_numeric_error_status_still_alerts(monkeypatch):
     await m.check_span_error({"status": {"code": 2}})
     await asyncio.sleep(0)
     assert len(sent) == 1
+
+
+# ---- admin hooks ----------------------------------------------------------------------------------------
+@pytest.mark.asyncio
+async def test_admin_stats_serialises_fractional_percent_and_reset_clears(tmp_path):
+    """Regression: /admin/stats 500'd as soon as any metric existed (percent_used is a float, model said int)."""
+    import time
+    from app.routers import admin
+    from tinyolly_common.storage_sqlite import StorageSQLite
+    st = StorageSQLite(db_path=str(tmp_path / "t.db"), ttl=60)
+    st.max_cardinality = 7
+    await st.store_metrics([{"name": "m", "type": "gauge", "value": 1, "timestamp": time.time()}])
+    stats = await admin.admin_stats(storage=st)
+    assert stats["cardinality"]["percent_used"] == pytest.approx(14.29)
+    from models import AdminStatsResponse
+    AdminStatsResponse(**stats)                       # the response model must accept it
+    out = await admin.admin_reset(storage=st)
+    assert out["removed"]["metrics_series"] == 1
+    assert (await st.get_metric_names()) == []

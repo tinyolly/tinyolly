@@ -138,3 +138,43 @@ def get_attr_value(obj: Dict[str, Any], keys: List[str]) -> Optional[Union[str, 
                 return attributes[key]
 
     return None
+
+
+def exponential_to_explicit(dp: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert an OTLP exponential-histogram datapoint to the explicit-bucket form TinyOlly stores/charts.
+
+    Bucket i of the positive range covers (base^(offset+i), base^(offset+i+1)] with base = 2^(2^-scale).
+    Result: explicitBounds = the bucket edges; bucketCounts[0] = zero + negative values (below the first
+    edge), then one count per positive bucket, then a final empty overflow bucket. Counts arrive as strings
+    from protobuf JSON, so everything is coerced to int/float.
+    """
+    scale = int(dp.get("scale", 0) or 0)
+    base = 2.0 ** (2.0 ** -scale)
+    pos = dp.get("positive") or {}
+    offset = int(pos.get("offset", 0) or 0)
+    pos_counts = [int(c) for c in (pos.get("bucketCounts") or [])]
+    neg_total = sum(int(c) for c in ((dp.get("negative") or {}).get("bucketCounts") or []))
+    below = int(dp.get("zeroCount", 0) or 0) + neg_total
+
+    # trim empty edge buckets, keep interior zeros so the shape is preserved
+    while pos_counts and pos_counts[-1] == 0:
+        pos_counts.pop()
+    lead = 0
+    while lead < len(pos_counts) and pos_counts[lead] == 0:
+        lead += 1
+    pos_counts = pos_counts[lead:]
+    offset += lead
+
+    try:
+        bounds = [base ** (offset + i) for i in range(len(pos_counts) + 1)]
+    except OverflowError:
+        bounds, pos_counts = [], []
+    return {
+        "count": int(dp.get("count", 0) or 0),
+        "sum": float(dp.get("sum", 0) or 0),
+        "bucketCounts": [below, *pos_counts, 0] if bounds else [below],
+        "explicitBounds": bounds,
+        "exponential": {"scale": scale, "zeroCount": int(dp.get("zeroCount", 0) or 0)},
+        "min": dp.get("min"),
+        "max": dp.get("max"),
+    }

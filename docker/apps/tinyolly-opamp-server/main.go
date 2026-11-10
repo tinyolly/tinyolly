@@ -307,6 +307,7 @@ type ConfigUpdateResponse struct {
 	Status      string   `json:"status"`
 	Message     string   `json:"message"`
 	AffectedIDs []string `json:"affected_instance_ids"`
+	ConfigHash  string   `json:"config_hash"` // sha256 of the config; agents echo it back when applied (see /status)
 }
 
 // REST Handlers
@@ -454,6 +455,7 @@ func (s *OpAMPServer) handleUpdateConfig(w http.ResponseWriter, r *http.Request)
 		Status:      "pending",
 		Message:     fmt.Sprintf("Config update queued for %d connected agent(s); other agents get it when they connect", len(affectedIDs)),
 		AffectedIDs: affectedIDs,
+		ConfigHash:  cfg.hash,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

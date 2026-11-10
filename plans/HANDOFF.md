@@ -39,6 +39,14 @@ Next steps for P1, in order:
 
 **State of the original machine (not in git):** Colima VM `tinyolly` running with the core stack, the OTel Demo (16 services) and a rebuilt UI/receiver/opamp image; the demo flag `emitRawPii` may still be `on` and the `sampling`/`default` collector config may be applied. None of this matters on another machine; `./scripts/colima-up.sh && (cd docker && ./01-start-core-local.sh)` recreates it.
 
+## Automated end-to-end test (added 2026-11-10)
+
+`python3 scripts/e2e.py` drives a RUNNING stack only through its APIs (stdlib only, ~8 min, 88 checks): baseline pipeline (traces/logs/metrics/exemplars/service map/catalog), the OpAMP apply flow, and every collector preset with behaviour assertions. `--up` starts Colima + the stack first, `--only a,b` / `--list` select scenarios. **After changing `tinyolly-common` rebuild the base image first** (`docker build -t tinyolly/python-base:latest -f docker/dockerfiles/Dockerfile.tinyolly-python-base docker/`): `docker compose --build` does not rebuild it, so the UI/receiver silently keep the old library (this hid fixes for a while).
+
+Test hooks added for it: `POST /admin/reset` (delete all telemetry), `POST /api/opamp/config?wait=N` (returns per-agent applied/failed + `config_hash`), `config_status`/`applied_config_hash` in `/api/opamp/status`.
+
+Bugs the e2e run found and fixed: `/admin/stats` 500 once any metric existed (`percent_used` float vs int model); `database is locked` drops of whole receiver batches (writes now `BEGIN IMMEDIATE` + `busy_timeout` set before WAL + retry with backoff); **exponential histograms were silently dropped** (now converted to explicit buckets at ingest).
+
 ## Set up a new machine (macOS)
 
 ```bash

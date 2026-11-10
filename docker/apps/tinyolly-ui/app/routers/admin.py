@@ -56,6 +56,18 @@ async def get_alerts(alert_manager: AlertManager = Depends(get_alert_manager)):
 
 
 @router.post(
+    '/reset',
+    operation_id="admin_reset",
+    summary="Delete all stored telemetry",
+    description="Testing/demo hook: removes every stored trace, span, log and metric (and cached service views) "
+                "so a run or demo starts from a clean slate. Alert rules and collector config are untouched.",
+)
+async def admin_reset(storage: Storage = Depends(get_storage)):
+    removed = await storage.clear_all()
+    return {"status": "ok", "removed": removed}
+
+
+@router.post(
     '/alerts',
     response_model=AlertRule,
     operation_id="create_alert",

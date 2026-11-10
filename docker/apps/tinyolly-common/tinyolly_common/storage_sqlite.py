@@ -20,7 +20,14 @@ import orjson
 import zstandard as zstd
 from async_lru import alru_cache
 
-from .otlp_utils import extract_resource_attributes, get_attr_value, is_error_status, normalize_id, parse_attributes
+from .otlp_utils import (
+    exponential_to_explicit,
+    extract_resource_attributes,
+    get_attr_value,
+    is_error_status,
+    normalize_id,
+    parse_attributes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -72,12 +79,14 @@ class StorageSQLite:
         # auto_vacuum only takes effect on a database that has no tables yet, and journal_mode=WAL creates the
         # file header, so it must be set BEFORE journal_mode. Existing databases are converted in
         # _ensure_initialized (one-time VACUUM).
+        # busy_timeout FIRST: the UI and the OTLP receiver are separate processes opening the same file, and
+        # switching to WAL needs a lock; without a timeout the second opener failed instantly with "database is locked".
+        await conn.execute("PRAGMA busy_timeout=5000")
         await conn.execute("PRAGMA auto_vacuum=INCREMENTAL")
         await conn.execute("PRAGMA journal_mode=WAL")
         await conn.execute("PRAGMA synchronous=NORMAL")
         await conn.execute("PRAGMA temp_store=MEMORY")
         await conn.execute("PRAGMA cache_size=-64000")
-        await conn.execute("PRAGMA busy_timeout=5000")
         await conn.execute(f"PRAGMA max_page_count={MAX_PAGE_COUNT}")
         return conn
 
@@ -372,6 +381,49 @@ class StorageSQLite:
         for table in ("metrics_meta", "metrics_resources", "metrics_attributes", "metrics_names"):
             await conn.execute(f"DELETE FROM {table} WHERE name NOT IN (SELECT DISTINCT name FROM metrics_series)")
 
+    async def _retry_locked(self, op, attempts: int = 6):
+        """Run a write transaction, retrying with backoff on "database is locked".
+
+        The UI and the OTLP receiver are separate processes writing the same SQLite file, so a writer can be
+        refused the lock (busy timeout exhausted, or an instant SQLITE_BUSY when WAL is being set up or a read
+        transaction cannot upgrade). Dropping the batch on that error lost telemetry (e.g. a whole metrics
+        export); retrying is safe because each attempt is one complete transaction.
+        """
+        for attempt in range(attempts):
+            try:
+                return await op()
+            except (aiosqlite.OperationalError, sqlite3.OperationalError) as e:
+                if not self._is_db_locked_error(e) or attempt == attempts - 1:
+                    raise
+                await asyncio.sleep(0.05 * 2 ** attempt)
+
+    async def clear_all(self) -> Dict[str, int]:
+        return await self._retry_locked(self._clear_all_once)
+
+    async def _clear_all_once(self) -> Dict[str, int]:
+        """Delete ALL stored telemetry (traces, spans, logs, metrics, caches). Testing/demo hook: gives
+        automated runs and demos a clean slate without restarting the stack. Returns rows removed per table."""
+        await self._ensure_initialized()
+        removed: Dict[str, int] = {}
+        async with self._write_lock:
+            conn = await self._connect()
+            try:
+                await conn.execute("BEGIN IMMEDIATE")
+                for table in ("trace_logs", "logs", "trace_spans", "spans", "span_index", "trace_index", "traces",
+                              "metrics_exemplars", "metrics_series", "metrics_resources", "metrics_attributes",
+                              "metrics_meta", "metrics_names", "kv", "cardinality_meta"):
+                    cur = await conn.execute(f"DELETE FROM {table}")
+                    removed[table] = max(cur.rowcount or 0, 0)
+                await conn.commit()
+                await conn.execute("PRAGMA incremental_vacuum")
+            except Exception:
+                await conn.rollback()
+                raise
+            finally:
+                await conn.close()
+        self.get_metric_names.cache_clear()
+        return removed
+
     async def close(self) -> None:
         """Stop the background cleanup task (call on application shutdown)."""
         task = self._cleanup_task
@@ -526,6 +578,9 @@ class StorageSQLite:
         await self.store_spans([span])
 
     async def store_spans(self, spans: List[Dict[str, Any]]) -> None:
+        await self._retry_locked(lambda: self._store_spans_once(spans))
+
+    async def _store_spans_once(self, spans: List[Dict[str, Any]]) -> None:
         if not spans:
             return
 
@@ -536,7 +591,7 @@ class StorageSQLite:
         async with self._write_lock:
             conn = await self._connect()
             try:
-                await conn.execute("BEGIN")
+                await conn.execute("BEGIN IMMEDIATE")
                 for span in spans:
                     trace_id = span.get("traceId") or span.get("trace_id")
                     span_id = span.get("spanId") or span.get("span_id")
@@ -893,6 +948,9 @@ class StorageSQLite:
         await self.store_logs([log])
 
     async def store_logs(self, logs: List[Dict[str, Any]]) -> None:
+        await self._retry_locked(lambda: self._store_logs_once(logs))
+
+    async def _store_logs_once(self, logs: List[Dict[str, Any]]) -> None:
         if not logs:
             return
 
@@ -900,7 +958,7 @@ class StorageSQLite:
         async with self._write_lock:
             conn = await self._connect()
             try:
-                await conn.execute("BEGIN")
+                await conn.execute("BEGIN IMMEDIATE")
                 now = time.time()
                 expires_at = now + self.ttl
 
@@ -1011,6 +1069,13 @@ class StorageSQLite:
                     elif "summary" in metric:
                         metric_type = "summary"
                         metric_datapoints = metric["summary"].get("dataPoints", [])
+                    elif "exponentialHistogram" in metric:
+                        # Stored as an explicit-bucket histogram (see exponential_to_explicit) so every existing
+                        # reader/chart works; these used to be silently dropped (nothing stored, nothing shown).
+                        metric_type = "histogram"
+                        exp = metric["exponentialHistogram"]
+                        metric_datapoints = exp.get("dataPoints", [])
+                        temporality = exp.get("aggregationTemporality", "CUMULATIVE")
 
                     for dp in metric_datapoints:
                         dp_attrs = parse_attributes(dp.get("attributes", []))
@@ -1029,6 +1094,9 @@ class StorageSQLite:
                                 value = dp["asInt"]
                             elif "asDouble" in dp:
                                 value = dp["asDouble"]
+                        elif metric_type == "histogram" and ("scale" in dp or "positive" in dp or "zeroCount" in dp) and "explicitBounds" not in dp:
+                            value = dp.get("sum", 0)
+                            histogram_data = exponential_to_explicit(dp)
                         elif metric_type == "histogram":
                             value = dp.get("sum", 0)
                             histogram_data = {
@@ -1113,6 +1181,9 @@ class StorageSQLite:
         }])
 
     async def _write_datapoints(self, datapoints: List[Dict[str, Any]]) -> None:
+        await self._retry_locked(lambda: self._write_datapoints_once(datapoints))
+
+    async def _write_datapoints_once(self, datapoints: List[Dict[str, Any]]) -> None:
         """Write many datapoints on ONE connection in ONE transaction (was a connection + transaction per point).
 
         Cardinality protection: a metric name that is not yet stored is dropped once `max_cardinality`
@@ -1127,7 +1198,7 @@ class StorageSQLite:
         async with self._write_lock:
             conn = await self._connect()
             try:
-                await conn.execute("BEGIN")
+                await conn.execute("BEGIN IMMEDIATE")
                 async with conn.execute("SELECT name FROM metrics_names WHERE expires_at > ?", (now,)) as cur:
                     known = {row[0] for row in await cur.fetchall()}
                 dropped = 0
