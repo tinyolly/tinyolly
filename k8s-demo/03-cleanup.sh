@@ -108,7 +108,7 @@ if command -v kind &> /dev/null && [ "$CONTEXT" = "kind-tinyolly" ]; then
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${BLUE}Removing Docker images from kind node...${NC}"
-        docker exec tinyolly-control-plane sh -c "crictl images | grep demo | awk \'{print \$1\":\"\$2}\' | xargs -r crictl rmi" 2>/dev/null || true
+        docker exec tinyolly-control-plane sh -c 'crictl images | grep demo | awk "{print \$1\":\"\$2}" | xargs -r crictl rmi' || true
         echo -e "${GREEN}✓ Docker images removed${NC}"
     fi
 fi

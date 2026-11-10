@@ -478,6 +478,8 @@ data:
   pii-redaction.yaml: |
     # PII / security: redaction masks emails, card numbers and tokens; attributes hashes/deletes sensitive keys
     # DEMO: send spans/logs with user.email, http.url?token=..., card numbers -> they appear masked in TinyOlly.
+    # Covers traces, logs and metrics (attribute values). Card patterns match real card formats only (grouped digits, or
+    # contiguous Visa/MC/Amex/Discover), so epoch timestamps and numeric IDs are not masked.
     # Components: memory_limiter, resourcedetection, redaction, attributes (hash/delete)
     # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
     # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
@@ -523,7 +525,8 @@ data:
         blocked_key_patterns: [".*password.*", ".*secret.*", ".*api[_-]?key.*", ".*cvv.*", ".*cvc.*", ".*card[_.]?number.*"]
         blocked_values:
           - "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"      # email addresses
-          - "\\b(?:\\d[ -]*?){13,16}\\b"                              # payment card numbers
+          - "\\b(?:\\d{4}[ -]){3}\\d{3,4}\\b"                          # card numbers written in groups: 4111 1111 1111 1111
+          - "\\b(?:4\\d{12}(?:\\d{3}){0,2}|5[1-5]\\d{14}|3[47]\\d{13}|6(?:011|5\\d{2})\\d{12})\\b"  # contiguous Visa/MC/Amex/Discover (not epoch-ns or random IDs)
           - "(?i)bearer\\s+[a-z0-9._~+/=-]+"                         # bearer tokens
           - "(?i)(token|access_token|apikey)=[^&\\s]+"                # secrets in URL query strings
         summary: info   # adds redaction.masked.count etc. so the UI can show what was masked
@@ -560,7 +563,7 @@ data:
           exporters: [debug, otlp, spanmetrics]
         metrics:
           receivers: [otlp, spanmetrics]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection, redaction, batch]
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
