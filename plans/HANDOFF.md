@@ -4,14 +4,14 @@ Everything needed to continue on another computer. Read this first, then `plans/
 
 ## Where things are
 
-* **Branch flow:** all work so far (phases 0–4, PR #8) is **merged into `v3-integration`**, a long-lived integration branch created from `main` at `12c6a46`. `main` is untouched until all planned work is finished; then one `v3-integration` → `main` PR and the v3.0.0 release. New work: branch from `v3-integration`, open PRs into `v3-integration` (never directly into `main`).
+* **Branch flow:** `v3-integration` was merged into `main` on 2026-11-10 (PRs #8–#13) and deleted. All work is on `main`; there are no open PRs or side branches (besides `gh-pages`). For new work, branch from `main` and open PRs into `main`.
 * The phase branches were stacked and are no longer needed (they were local-only except `modernize/phase-4-otel-demo`, which is merged). For reference, the phase boundaries were: phase 0 `bef08a0`, phase 1 `4ba7eab`, phase 2 `d90f300`, phase 3 `3327ed2`, phase 4 `cc524eb`+.
 * Commit author used throughout: `Steve Lerner <stevelerner@gmail.com>` (no git identity was configured on the original machine; set your own with `git config user.name/email` before committing).
 * Plans: `plans/2026-11-modernization-plan.md` (main), `plans/2026-11-trace-accuracy-plan.md` (next work), `plans/2026-11-android-shop-app-plan.md` (not started).
 
 ## RESUME HERE (session stopped mid-work, 2026-11-10)
 
-**Open PRs, all into `v3-integration` (none merged yet):** #9 handoff docs, #10 medium-review fixes + review records, #11 P0 review fixes (storage trim, ingest cap, OpAMP API, apply validation, kubectl guard; fully tested, ready to merge). Suggested merge order: #9, #10, #11.
+**Open PRs:** none.
 
 **Work in progress: branch `fix/p1-review-findings`** (pushed, **no PR opened yet**; it already contains #9/#10/#11 content, stacked on `fix/p0-review-findings` plus a merge of `fix/review-medium-findings`, so its diff shrinks as those merge). It holds the P1 preset fixes from `plans/code-review-high-2026-11-09.md` (H1) and is a **work in progress**:
 
@@ -52,7 +52,7 @@ Bugs the e2e run found and fixed: `/admin/stats` 500 once any metric existed (`p
 ```bash
 brew install colima docker docker-compose docker-buildx kubectl kind helm uv
 mkdir -p ~/.docker && echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json   # merge if the file exists
-git clone https://github.com/tinyolly/tinyolly && cd tinyolly && git checkout v3-integration
+git clone https://github.com/tinyolly/tinyolly && cd tinyolly
 ./scripts/colima-up.sh                       # 4 CPU / 4 GB default; COLIMA_MEMORY=8 on bigger machines
 cd docker && ./01-start-core-local.sh        # build from this checkout (Docker Hub images predate these changes)
 open http://localhost:5005
@@ -103,7 +103,7 @@ See the status table in the modernization plan. Short version: Colima + kind run
 
 ## Suggested next steps (in order)
 
-1. For each chunk of work: branch from `v3-integration`, run the local checks above, open a PR into `v3-integration`, then review it with Claude (`/code-review <PR number> --comment` posts inline findings; there is no CI and no Copilot review in this repo).
+1. For each chunk of work: branch from `main`, run the local checks above, open a PR into `main`, then review it with Claude (`/code-review <PR number> --comment` posts inline findings; there is no CI and no Copilot review in this repo).
 2. Close the verification gaps above that are cheap: run `k8s-demo` / `k8s-core-only` on kind, inspect the three un-inspected presets, run the remaining demo flags.
 3. **Trace accuracy / waterfall work** (`plans/2026-11-trace-accuracy-plan.md`): fixtures → BigInt timestamps → nest spans by parent → fix the 100-span cap → incomplete-trace indicator → Jaeger diff → render test.
 4. Phase 5 UI gaps (exemplar→trace links, span events/exceptions pane, span links, processor-effect panel on the Collector tab) and Phase 6 (consolidate deploy dirs, buildx multi-arch with a `docker-container` builder, v3.0.0).
@@ -113,4 +113,4 @@ See the status table in the modernization plan. Short version: Colima + kind run
 
 * Directory consolidation for v3.0.0 (Phase 6) — still unconfirmed.
 * Whether to keep the Flask `docker-demo` apps now that the OTel Demo exists (they remain useful for ad-hoc preset tests: PII, duplicate-log spam, cardinality).
-* `origin` is `https://github.com/tinyolly/tinyolly` (the upstream org repo). `main` has not been changed by this work; do not merge `v3-integration` into it until the planned phases are done and a release build of the Docker Hub images has been made (the published `:latest` images predate these changes).
+* `origin` is `https://github.com/tinyolly/tinyolly` (the upstream org repo). The modernization work is merged into `main`; core images were pushed to Docker Hub on 2026-11-10 (demo images not rebuilt). No release tag yet.
