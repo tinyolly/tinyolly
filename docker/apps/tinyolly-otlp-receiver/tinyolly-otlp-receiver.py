@@ -4,8 +4,10 @@ Receives OTLP data from OpenTelemetry Collector via gRPC and stores in TinyOlly 
 Optimized with Batch Operations and uvloop
 """
 import asyncio
+import concurrent.futures
 import logging
 import os
+import signal
 import sys
 import threading
 import time
@@ -71,11 +73,45 @@ def get_event_loop():
     
     return _loop
 
-def run_async(coro):
-    """Run a coroutine in the shared event loop"""
+RPC_TIMEOUT_SECONDS = float(os.environ.get("RPC_TIMEOUT_SECONDS", "30"))
+MAX_WORKERS = int(os.environ.get("GRPC_MAX_WORKERS", "10"))
+MAX_CONCURRENT_RPCS = int(os.environ.get("GRPC_MAX_CONCURRENT_RPCS", str(MAX_WORKERS * 4)))
+MAX_MESSAGE_BYTES = int(os.environ.get("GRPC_MAX_MESSAGE_BYTES", str(16 * 1024 * 1024)))
+
+
+def run_async(coro, timeout=None):
+    """Run a coroutine in the shared event loop; give up (and cancel it) after `timeout` seconds."""
     loop = get_event_loop()
     future = asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
+    try:
+        return future.result(timeout=timeout)
+    except concurrent.futures.TimeoutError:
+        future.cancel()
+        raise
+
+
+def to_otlp_dict(request):
+    """Protobuf -> OTLP JSON dict. Runs in the gRPC worker thread, NOT on the shared event loop,
+    so converting a large batch no longer stalls every other request's storage work."""
+    from google.protobuf.json_format import MessageToDict
+
+    return MessageToDict(
+        request,
+        preserving_proto_field_name=False,  # camelCase, consistent with the JSON ingest path
+        always_print_fields_with_no_presence=False,
+        use_integers_for_enums=False,
+    )
+
+
+def _fail(context, what, error):
+    """Log the real error server-side; return a generic status (raw exception text can leak internals)."""
+    logger.error(f"Error processing {what}: {error!r}", exc_info=True)
+    if isinstance(error, concurrent.futures.TimeoutError):
+        context.set_code(grpc.StatusCode.DEADLINE_EXCEEDED)
+        context.set_details(f"timed out storing {what}")
+    else:
+        context.set_code(grpc.StatusCode.INTERNAL)
+        context.set_details(f"failed to process {what}")
 
 class TraceService(trace_service_pb2_grpc.TraceServiceServicer):
     """gRPC service for receiving traces"""
@@ -84,28 +120,13 @@ class TraceService(trace_service_pb2_grpc.TraceServiceServicer):
         """Handle trace export requests"""
         try:
             # Run async storage operations in shared event loop
-            run_async(self._process_traces(request))
+            run_async(storage.store_traces(to_otlp_dict(request)), timeout=RPC_TIMEOUT_SECONDS)
             return trace_service_pb2.ExportTraceServiceResponse()
             
         except Exception as e:
-            logger.error(f"Error processing traces: {e}", exc_info=True)
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
+            _fail(context, "traces", e)
             return trace_service_pb2.ExportTraceServiceResponse()
     
-    async def _process_traces(self, request):
-        """Process traces asynchronously - convert protobuf to OTLP JSON"""
-        from google.protobuf.json_format import MessageToDict
-        
-        otlp_data = MessageToDict(
-            request,
-            preserving_proto_field_name=False,  # Use camelCase for consistency
-            always_print_fields_with_no_presence=False,
-            use_integers_for_enums=False
-        )
-        
-        # Store in OTLP format
-        await storage.store_traces(otlp_data)
 
 
 class LogsService(logs_service_pb2_grpc.LogsServiceServicer):
@@ -114,28 +135,13 @@ class LogsService(logs_service_pb2_grpc.LogsServiceServicer):
     def Export(self, request, context):
         """Handle log export requests"""
         try:
-            run_async(self._process_logs(request))
+            run_async(storage.store_logs_otlp(to_otlp_dict(request)), timeout=RPC_TIMEOUT_SECONDS)
             return logs_service_pb2.ExportLogsServiceResponse()
             
         except Exception as e:
-            logger.error(f"Error processing logs: {e}", exc_info=True)
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
+            _fail(context, "logs", e)
             return logs_service_pb2.ExportLogsServiceResponse()
     
-    async def _process_logs(self, request):
-        """Process logs asynchronously - convert protobuf to OTLP JSON"""
-        from google.protobuf.json_format import MessageToDict
-        
-        otlp_data = MessageToDict(
-            request,
-            preserving_proto_field_name=False,  # Use camelCase for consistency
-            always_print_fields_with_no_presence=False,
-            use_integers_for_enums=False
-        )
-        
-        # Store in OTLP format
-        await storage.store_logs_otlp(otlp_data)
 
 
 class MetricsService(metrics_service_pb2_grpc.MetricsServiceServicer):
@@ -144,29 +150,13 @@ class MetricsService(metrics_service_pb2_grpc.MetricsServiceServicer):
     def Export(self, request, context):
         """Handle metric export requests"""
         try:
-            run_async(self._process_metrics(request))
+            run_async(storage.store_metrics(to_otlp_dict(request)), timeout=RPC_TIMEOUT_SECONDS)
             return metrics_service_pb2.ExportMetricsServiceResponse()
             
         except Exception as e:
-            logger.error(f"Error processing metrics: {e}", exc_info=True)
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
+            _fail(context, "metrics", e)
             return metrics_service_pb2.ExportMetricsServiceResponse()
     
-    async def _process_metrics(self, request):
-        """Process metrics asynchronously - convert protobuf to OTLP JSON"""
-        # Convert protobuf to OTLP JSON format for storage
-        from google.protobuf.json_format import MessageToDict
-        
-        otlp_data = MessageToDict(
-            request,
-            preserving_proto_field_name=False,  # Use camelCase for consistency with existing code
-            always_print_fields_with_no_presence=False,
-            use_integers_for_enums=False
-        )
-        
-        # Store in OTLP format
-        await storage.store_metrics(otlp_data)
 
 
 def serve(port=4343):
@@ -174,7 +164,13 @@ def serve(port=4343):
     # Initialize the event loop before starting the server
     get_event_loop()
     
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    # Bounded: excess concurrent RPCs are rejected with RESOURCE_EXHAUSTED instead of queueing without limit,
+    # and message size is capped.
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=MAX_WORKERS),
+        maximum_concurrent_rpcs=MAX_CONCURRENT_RPCS,
+        options=[("grpc.max_receive_message_length", MAX_MESSAGE_BYTES)],
+    )
     
     # Register services
     trace_service_pb2_grpc.add_TraceServiceServicer_to_server(TraceService(), server)
@@ -183,7 +179,8 @@ def serve(port=4343):
     
     # Listen on configured port
     # Use 0.0.0.0 to accept both IPv4 and IPv6 connections
-    server.add_insecure_port(f'0.0.0.0:{port}')
+    if server.add_insecure_port(f'0.0.0.0:{port}') == 0:
+        raise RuntimeError(f"could not bind gRPC port {port}")
     
     logger.info(f"TinyOlly OTLP Receiver (gRPC) starting on port {port}...")
     
@@ -194,13 +191,15 @@ def serve(port=4343):
     server.start()
     logger.info("✓ Server started successfully")
     
+    # `docker stop` / k8s send SIGTERM: treat it like Ctrl-C so shutdown is graceful.
+    signal.signal(signal.SIGTERM, signal.default_int_handler)
     try:
         while True:
             time.sleep(86400)  # Keep server running
     except KeyboardInterrupt:
         logger.info("\nShutting down...")
-        server.stop(0)
-        run_async(storage.close())
+        server.stop(grace=5).wait()
+        run_async(storage.close(), timeout=5)
 
 
 if __name__ == '__main__':

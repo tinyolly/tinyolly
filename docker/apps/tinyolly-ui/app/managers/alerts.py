@@ -1,15 +1,45 @@
 """Alert manager for handling alert rules and notifications"""
 
+import asyncio
+import ipaddress
 import json
 import logging
 import os
 import time
-from typing import List
+from typing import Dict, List, Set
+from urllib.parse import urlsplit
 
 import aiohttp
 from models import AlertRule
 
+from tinyolly_common.otlp_utils import is_error_status
+
 logger = logging.getLogger(__name__)
+
+
+WEBHOOK_COOLDOWN_SECONDS = float(os.getenv("ALERT_COOLDOWN_SECONDS", "60"))
+WEBHOOK_MAX_CONCURRENCY = int(os.getenv("ALERT_MAX_CONCURRENCY", "5"))
+
+
+def validate_webhook_url(url: str) -> str:
+    """Return the URL if it is an http(s) URL that does not target a link-local / metadata address, else raise ValueError.
+
+    Alert rules can be created through the unauthenticated API, so a webhook URL is attacker-influenced input.
+    Loopback and private ranges stay allowed (local webhook sinks and docker/k8s service names are the normal use
+    in a local dev tool); link-local (169.254.0.0/16 incl. cloud metadata, fe80::/10) and non-http schemes are not.
+    """
+    parts = urlsplit(url or "")
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise ValueError("webhook_url must be an http(s) URL")
+    try:
+        ip = ipaddress.ip_address(parts.hostname)
+    except ValueError:
+        if parts.hostname.lower() in ("metadata.google.internal", "metadata"):
+            raise ValueError("webhook_url must not target a metadata service") from None
+        return url
+    if ip.is_link_local or ip.is_multicast or ip.is_unspecified:
+        raise ValueError("webhook_url must not target a link-local, multicast or unspecified address")
+    return url
 
 
 class AlertManager:
@@ -21,6 +51,10 @@ class AlertManager:
     def __init__(self):
         """Initialize alert manager with empty rules."""
         self.rules: List[AlertRule] = []
+        self._last_sent: Dict[str, float] = {}      # rule name -> monotonic time of the last webhook
+        self._suppressed: Dict[str, int] = {}       # rule name -> alerts skipped during the cooldown
+        self._tasks: Set[asyncio.Task] = set()
+        self._sem = None                            # created lazily inside the running loop
         self._load_rules_from_env()
 
     def _load_rules_from_env(self):
@@ -32,7 +66,9 @@ class AlertManager:
         try:
             rules_data = json.loads(rules_json)
             for rule_data in rules_data:
-                self.rules.append(AlertRule(**rule_data))
+                rule = AlertRule(**rule_data)
+                validate_webhook_url(rule.webhook_url)
+                self.rules.append(rule)
             if self.rules:
                 logger.info(f"Loaded {len(self.rules)} alert rules from environment")
         except Exception as e:
@@ -44,6 +80,7 @@ class AlertManager:
         Args:
             rule (AlertRule): Alert rule to add
         """
+        validate_webhook_url(rule.webhook_url)   # raises ValueError; the API turns that into a 422/400
         self.rules.append(rule)
         logger.info(f"Added alert rule: {rule.name}")
 
@@ -63,8 +100,8 @@ class AlertManager:
             span (dict): Span data to check
         """
         # Check if span has error status
-        status = span.get('status', {})
-        if status.get('code') == 2:  # ERROR status code in OTLP
+        status = span.get('status', {}) or {}
+        if is_error_status(status):  # accepts 2 and "STATUS_CODE_ERROR" (the old `== 2` missed the latter)
             for rule in self.rules:
                 if not rule.enabled or rule.type != "span_error":
                     continue
@@ -120,23 +157,43 @@ class AlertManager:
                 })
 
     async def _send_webhook(self, rule: AlertRule, payload: dict):
-        """Send webhook notification.
+        """Queue a webhook notification without blocking the caller (ingest).
 
-        Args:
-            rule (AlertRule): Alert rule that triggered
-            payload (dict): Alert payload to send
+        Alerts used to be awaited serially inside the ingest request, once per error span: a slow webhook
+        stalled ingestion and a burst of errors meant a burst of identical webhooks. Now: one webhook per rule
+        per cooldown window (the count of skipped ones is included in the next payload), sent as a bounded
+        background task.
         """
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    rule.webhook_url,
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                    timeout=aiohttp.ClientTimeout(total=5)
-                ) as response:
-                    if response.status >= 400:
-                        logger.error(f"Webhook failed: {response.status} for rule {rule.name}")
-                    else:
-                        logger.info(f"Alert sent for rule {rule.name}")
-        except Exception as e:
-            logger.error(f"Error sending webhook for rule {rule.name}: {e}")
+        now = time.monotonic()
+        last = self._last_sent.get(rule.name)
+        if last is not None and now - last < WEBHOOK_COOLDOWN_SECONDS:
+            self._suppressed[rule.name] = self._suppressed.get(rule.name, 0) + 1
+            return
+        self._last_sent[rule.name] = now
+        suppressed = self._suppressed.pop(rule.name, 0)
+        if suppressed:
+            payload = {**payload, "suppressed_since_last": suppressed}
+
+        task = asyncio.get_running_loop().create_task(self._deliver(rule, payload))
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+
+    async def _deliver(self, rule: AlertRule, payload: dict):
+        if self._sem is None:
+            self._sem = asyncio.Semaphore(WEBHOOK_MAX_CONCURRENCY)
+        async with self._sem:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        rule.webhook_url,
+                        json=payload,
+                        headers={"Content-Type": "application/json"},
+                        timeout=aiohttp.ClientTimeout(total=5),
+                        allow_redirects=False,   # a redirect could point at an address validate_webhook_url refuses
+                    ) as response:
+                        if response.status >= 400:
+                            logger.error(f"Webhook failed: {response.status} for rule {rule.name}")
+                        else:
+                            logger.info(f"Alert sent for rule {rule.name}")
+            except Exception as e:
+                logger.error(f"Error sending webhook for rule {rule.name}: {e}")

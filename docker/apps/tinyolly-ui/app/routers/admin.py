@@ -4,7 +4,7 @@ import datetime
 import time
 
 import psutil
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from models import AdminStatsResponse, AlertConfig, AlertRule
 
 from tinyolly_common import Storage
@@ -91,7 +91,10 @@ async def create_alert(
     }
     ```
     """
-    alert_manager.add_rule(rule)
+    try:
+        alert_manager.add_rule(rule)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
     return rule
 
 
