@@ -54,9 +54,9 @@ if ! kubectl apply -f "$SCRIPT_DIR/otelcol-configs/supervisor.yaml" 2>/dev/null;
         FAILED=true
     fi
 fi
-if ! kubectl apply -f "$SCRIPT_DIR/otelcol-configs/templates/prometheus-remote-write.yaml" 2>/dev/null; then
+if ! kubectl apply -f "$SCRIPT_DIR/otelcol-configs/templates/templates.yaml" 2>/dev/null; then
     echo "    Warning: Validation failed, trying with --validate=false..."
-    if ! kubectl apply -f "$SCRIPT_DIR/otelcol-configs/templates/prometheus-remote-write.yaml" --validate=false; then
+    if ! kubectl apply -f "$SCRIPT_DIR/otelcol-configs/templates/templates.yaml" --validate=false; then
         echo "    Error: Failed to create otelcol-templates ConfigMap"
         FAILED=true
     fi

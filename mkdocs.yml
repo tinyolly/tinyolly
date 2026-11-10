@@ -61,6 +61,7 @@ nav:
       - Docker: docker.md
       - Kubernetes: kubernetes.md
       - OpenTelemetry Collector: otel-collector.md
+      - Collector Presets: collector-presets.md
   - Demos:
       - eBPF Zero-Code Tracing: ebpf.md
       - AI Agent with Ollama: ai-agent.md

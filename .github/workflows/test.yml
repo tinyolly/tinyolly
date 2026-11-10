@@ -84,22 +84,19 @@ jobs:
           go build -o /dev/null .
 
   validate-collector-configs:
-    name: Validate collector configs
+    name: Validate and start collector configs
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: otelcol-contrib validate
+      - name: otelcol-contrib validate + startup smoke test (all presets)
+        run: ./scripts/test-collector-configs.sh
+
+      - name: k8s ConfigMaps are in sync with docker/otelcol-configs
         run: |
-          VER=$(grep '^OTELCOL_VERSION=' versions.env | cut -d= -f2 | awk '{print $1}')
-          for f in docker/otelcol-configs/config.yaml docker/otelcol-configs/templates/*.yaml; do
-            case "$f" in *incorrect.yaml) continue ;; esac   # deliberately invalid example
-            echo "validating $f"
-            docker run --rm -v "$PWD/$f":/c.yaml \
-              ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:$VER \
-              validate --config /c.yaml
-          done
+          ./scripts/sync-k8s-configs.sh
+          git diff --exit-code k8s k8s-core-only
 
   test-common:
     name: Test TinyOlly Common

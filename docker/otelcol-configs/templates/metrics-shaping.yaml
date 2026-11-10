@@ -1,0 +1,93 @@
+# Metrics shaping: temporality conversion, rate limiting, filtering and label dropping to cut cardinality
+# DEMO: delta inputs become cumulative, noisy runtime metrics are dropped, flush interval is 30s, labels are aggregated.
+# Components: memory_limiter, resourcedetection, deltatocumulative, filter, metricstransform, interval, spanmetrics
+# (cumulativetodelta is available too: add it after 'interval' for backends that want delta.)
+# NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+# defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+extensions:
+  opamp:
+    server:
+      ws:
+        endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+processors:
+  # --- baseline (always on) ---
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+  resourcedetection:
+    detectors: [env, system]
+    timeout: 2s
+    override: false
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  # --- preset: metrics shaping ---
+  deltatocumulative:
+    max_stale: 5m
+  filter/metrics:
+    error_mode: ignore
+    metrics:
+      metric:
+        - 'IsMatch(name, "^process\\.runtime\\..*")'
+        - 'IsMatch(name, "^runtime\\..*")'
+  metricstransform/cardinality:
+    transforms:
+      - include: ^http\.(server|client)\..*duration$
+        match_type: regexp
+        action: update
+        operations:
+          - action: aggregate_labels
+            label_set: [http.request.method, http.response.status_code, http.method, http.status_code, service.name]
+            aggregation_type: sum
+  interval:
+    interval: 30s
+
+connectors:
+  spanmetrics:
+    histogram:
+      explicit:
+        buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+    dimensions:
+      - name: http.method
+      - name: http.status_code
+      - name: http.request.method
+      - name: http.response.status_code
+    dimensions_cache_size: 1000
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+    metrics_flush_interval: 15s
+    metrics_expiration: 5m
+
+exporters:
+  debug:
+    verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+  otlp:
+    endpoint: "tinyolly-otlp-receiver:4343"
+    tls:
+      insecure: true
+
+service:
+  extensions: [opamp]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [debug, otlp, spanmetrics]
+    metrics:
+      receivers: [otlp, spanmetrics]
+      processors: [memory_limiter, resourcedetection, deltatocumulative, filter/metrics, metricstransform/cardinality, interval, batch]
+      exporters: [debug, otlp]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [debug, otlp]

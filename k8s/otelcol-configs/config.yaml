@@ -5,9 +5,11 @@ metadata:
 data:
   otel-collector-config.yaml: |
     # Default TinyOlly OTel Collector Config
-    # This is the default configuration template used when no agents are connected.
-    # It includes OTLP receivers, OpAMP extension, batch processing, spanmetrics connector,
-    # and exports to both debug and OTLP endpoints.
+    # This is the default configuration used when no agents are connected. It includes OTLP receivers,
+    # the OpAMP extension, the baseline processors (memory_limiter -> resourcedetection -> batch), a spanmetrics
+    # connector, and exports to the debug (basic) and TinyOlly OTLP exporters.
+    # NOTE: the supervisor MERGES remote config into this file by pipeline name; presets override 'traces',
+    # 'metrics' and 'logs' (see docs/collector-presets.md).
 
     receivers:
       otlp:
@@ -24,6 +26,14 @@ data:
             endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
 
     processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
       batch:
         timeout: 1s
         send_batch_size: 1024
@@ -46,8 +56,8 @@ data:
 
     exporters:
       debug:
-        verbosity: detailed
-      
+        verbosity: basic   # was 'detailed'; set to detailed to debug a pipeline
+
       otlp:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
@@ -58,16 +68,15 @@ data:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [batch]
+          processors: [memory_limiter, resourcedetection, batch]
           exporters: [debug, otlp, spanmetrics]
-        
+
         metrics:
           receivers: [otlp, spanmetrics]
-          processors: [batch]
-          exporters: [debug, otlp]
-        
-        logs:
-          receivers: [otlp]
-          processors: [batch]
+          processors: [memory_limiter, resourcedetection, batch]
           exporters: [debug, otlp]
 
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp]

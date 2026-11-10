@@ -1,0 +1,98 @@
+# Connectors (metrics): spanmetrics with exemplars, servicegraph, count and signaltometrics derive metrics from traces/logs
+# DEMO: RED metrics with exemplars linking to traces, a collector-built service graph, span/log counts, custom span-duration metric.
+# Components: spanmetrics (exemplars on), servicegraph, count, signaltometrics
+# NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+# defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+extensions:
+  opamp:
+    server:
+      ws:
+        endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+processors:
+  # --- baseline (always on) ---
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+  resourcedetection:
+    detectors: [env, system]
+    timeout: 2s
+    override: false
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+
+connectors:
+  spanmetrics:
+    histogram:
+      explicit:
+        buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+    dimensions:
+      - name: http.method
+      - name: http.status_code
+      - name: http.request.method
+      - name: http.response.status_code
+    exemplars:
+      enabled: true
+    dimensions_cache_size: 1000
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+    metrics_flush_interval: 15s
+    metrics_expiration: 5m
+  servicegraph:
+    latency_histogram_buckets: [10ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
+    dimensions: [http.method, http.request.method]
+    store:
+      ttl: 5s
+      max_items: 1000
+    metrics_flush_interval: 15s
+  count:
+    spans:
+      tinyolly.span.count:
+        description: Spans seen by the collector, by status
+        attributes:
+          - key: service.name
+    logs:
+      tinyolly.log.count:
+        description: Log records seen by the collector
+  signaltometrics:
+    spans:
+      - name: tinyolly.span.duration
+        description: Span duration as an exponential histogram
+        unit: ms
+        exponential_histogram:
+          value: Milliseconds(end_time - start_time)
+
+exporters:
+  debug:
+    verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+  otlp:
+    endpoint: "tinyolly-otlp-receiver:4343"
+    tls:
+      insecure: true
+
+service:
+  extensions: [opamp]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [debug, otlp, spanmetrics, servicegraph, count, signaltometrics]
+    metrics:
+      receivers: [otlp, spanmetrics, servicegraph, count, signaltometrics]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [debug, otlp]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [debug, otlp, count]

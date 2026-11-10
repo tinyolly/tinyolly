@@ -1,0 +1,87 @@
+# Enrichment: resource/attributes add deployment context; groupbyattrs compacts telemetry per service
+# DEMO: every span/log/metric carries service.namespace + deployment.environment.name + collector host info.
+# Kubernetes pod/namespace enrichment (k8sattributes) and geoip are not in this preset: they need RBAC / a MaxMind DB.
+# Components: memory_limiter, resourcedetection, resource, groupbyattrs
+# NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+# defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+extensions:
+  opamp:
+    server:
+      ws:
+        endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+processors:
+  # --- baseline (always on) ---
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+  resourcedetection:
+    detectors: [env, system]
+    timeout: 2s
+    override: false
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  # --- preset: enrichment ---
+  resource/enrich:
+    attributes:
+      - key: service.namespace
+        value: tinyolly-demo
+        action: insert
+      - key: deployment.environment.name
+        value: demo
+        action: insert
+      - key: collector.preset
+        value: enrichment
+        action: upsert
+  groupbyattrs/service:
+    keys: [service.name]
+
+connectors:
+  spanmetrics:
+    histogram:
+      explicit:
+        buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+    dimensions:
+      - name: http.method
+      - name: http.status_code
+      - name: http.request.method
+      - name: http.response.status_code
+    dimensions_cache_size: 1000
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+    metrics_flush_interval: 15s
+    metrics_expiration: 5m
+
+exporters:
+  debug:
+    verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+  otlp:
+    endpoint: "tinyolly-otlp-receiver:4343"
+    tls:
+      insecure: true
+
+service:
+  extensions: [opamp]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service, batch]
+      exporters: [debug, otlp, spanmetrics]
+    metrics:
+      receivers: [otlp, spanmetrics]
+      processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service, batch]
+      exporters: [debug, otlp]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service, batch]
+      exporters: [debug, otlp]

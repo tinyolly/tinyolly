@@ -5,7 +5,7 @@ echo "==================================="
 
 # Apply ConfigMaps first
 echo "Creating ConfigMaps..."
-kubectl apply -f otelcol-configs/templates/prometheus-remote-write.yaml
+kubectl apply -f otelcol-configs/templates/templates.yaml
 
 # Apply manifests
 echo "Deploying services..."

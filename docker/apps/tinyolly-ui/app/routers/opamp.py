@@ -312,9 +312,9 @@ async def opamp_list_templates():
     """
     List all available OTel Collector configuration templates.
 
-    The default configuration is always returned first, followed by up to 3 alternate examples
-    from the templates directory. Each template includes metadata extracted from YAML comments.
-    Returns a maximum of 4 templates total (1 default + 3 alternates).
+    The default configuration is always returned first, followed by all presets
+    from the templates directory (top level only; `examples/` is not listed). Each template includes
+    metadata extracted from YAML comments.
     """
     templates = []
     
@@ -347,13 +347,10 @@ async def opamp_list_templates():
         except Exception as e:
             logger.warning(f"Failed to read default config {default_config_path}: {e}")
     
-    # Then, add up to 3 alternate templates from the templates directory
+    # Then, add all templates (presets) from the templates directory
     templates_dir = Path(settings.otelcol_templates_dir)
     if templates_dir.exists():
-        alternate_count = 0
         for yaml_file in sorted(templates_dir.glob("*.yaml")):
-            if alternate_count >= 3:  # Maximum 3 alternate templates
-                break
             try:
                 content = yaml_file.read_text()
                 # Extract description from first comment line
@@ -378,7 +375,6 @@ async def opamp_list_templates():
                     "description": description,
                     "filename": yaml_file.name
                 })
-                alternate_count += 1
             except Exception as e:
                 logger.warning(f"Failed to read template {yaml_file}: {e}")
 

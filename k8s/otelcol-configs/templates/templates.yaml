@@ -1,0 +1,854 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otelcol-templates
+data:
+  connectors-metrics.yaml: |
+    # Connectors (metrics): spanmetrics with exemplars, servicegraph, count and signaltometrics derive metrics from traces/logs
+    # DEMO: RED metrics with exemplars linking to traces, a collector-built service graph, span/log counts, custom span-duration metric.
+    # Components: spanmetrics (exemplars on), servicegraph, count, signaltometrics
+    # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+    # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    extensions:
+      opamp:
+        server:
+          ws:
+            endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+    processors:
+      # --- baseline (always on) ---
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+
+
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          - name: http.request.method
+          - name: http.response.status_code
+        exemplars:
+          enabled: true
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+        metrics_flush_interval: 15s
+        metrics_expiration: 5m
+      servicegraph:
+        latency_histogram_buckets: [10ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
+        dimensions: [http.method, http.request.method]
+        store:
+          ttl: 5s
+          max_items: 1000
+        metrics_flush_interval: 15s
+      count:
+        spans:
+          tinyolly.span.count:
+            description: Spans seen by the collector, by status
+            attributes:
+              - key: service.name
+        logs:
+          tinyolly.log.count:
+            description: Log records seen by the collector
+      signaltometrics:
+        spans:
+          - name: tinyolly.span.duration
+            description: Span duration as an exponential histogram
+            unit: ms
+            exponential_histogram:
+              value: Milliseconds(end_time - start_time)
+
+    exporters:
+      debug:
+        verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+      otlp:
+        endpoint: "tinyolly-otlp-receiver:4343"
+        tls:
+          insecure: true
+
+    service:
+      extensions: [opamp]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp, spanmetrics, servicegraph, count, signaltometrics]
+        metrics:
+          receivers: [otlp, spanmetrics, servicegraph, count, signaltometrics]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp, count]
+  connectors-routing.yaml: |
+    # Connectors (routing): routing sends error spans to a dedicated pipeline; failover falls back to a backup exporter
+    # DEMO: error traces take a separate 'traces/errors' pipeline (extra attribute, never sampled); if the primary
+    # exporter fails, failover switches to the backup. Components: routing, failover, attributes
+    # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+    # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    extensions:
+      opamp:
+        server:
+          ws:
+            endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+    processors:
+      # --- baseline (always on) ---
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      # --- preset: routing ---
+      attributes/errors:
+        actions:
+          - key: collector.route
+            value: errors
+            action: insert
+
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          - name: http.request.method
+          - name: http.response.status_code
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+        metrics_flush_interval: 15s
+        metrics_expiration: 5m
+      routing:
+        default_pipelines: [traces/normal]
+        error_mode: ignore
+        table:
+          - context: span
+            condition: status.code == STATUS_CODE_ERROR
+            pipelines: [traces/errors]
+      failover:
+        priority_levels:
+          - [traces/primary]
+          - [traces/backup]
+        retry_interval: 30s
+
+    exporters:
+      debug:
+        verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+      otlp:
+        endpoint: "tinyolly-otlp-receiver:4343"
+        tls:
+          insecure: true
+
+    service:
+      extensions: [opamp]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection]
+          exporters: [routing, spanmetrics]
+        traces/normal:
+          receivers: [routing]
+          processors: [batch]
+          exporters: [failover]
+        traces/errors:
+          receivers: [routing]
+          processors: [attributes/errors, batch]
+          exporters: [failover]
+        traces/primary:
+          receivers: [failover]
+          exporters: [otlp]
+        traces/backup:
+          receivers: [failover]
+          exporters: [debug]
+        metrics:
+          receivers: [otlp, spanmetrics]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp]
+  enrichment.yaml: |
+    # Enrichment: resource/attributes add deployment context; groupbyattrs compacts telemetry per service
+    # DEMO: every span/log/metric carries service.namespace + deployment.environment.name + collector host info.
+    # Kubernetes pod/namespace enrichment (k8sattributes) and geoip are not in this preset: they need RBAC / a MaxMind DB.
+    # Components: memory_limiter, resourcedetection, resource, groupbyattrs
+    # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+    # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    extensions:
+      opamp:
+        server:
+          ws:
+            endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+    processors:
+      # --- baseline (always on) ---
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      # --- preset: enrichment ---
+      resource/enrich:
+        attributes:
+          - key: service.namespace
+            value: tinyolly-demo
+            action: insert
+          - key: deployment.environment.name
+            value: demo
+            action: insert
+          - key: collector.preset
+            value: enrichment
+            action: upsert
+      groupbyattrs/service:
+        keys: [service.name]
+
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          - name: http.request.method
+          - name: http.response.status_code
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+        metrics_flush_interval: 15s
+        metrics_expiration: 5m
+
+    exporters:
+      debug:
+        verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+      otlp:
+        endpoint: "tinyolly-otlp-receiver:4343"
+        tls:
+          insecure: true
+
+    service:
+      extensions: [opamp]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service, batch]
+          exporters: [debug, otlp, spanmetrics]
+        metrics:
+          receivers: [otlp, spanmetrics]
+          processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service, batch]
+          exporters: [debug, otlp]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service, batch]
+          exporters: [debug, otlp]
+  logs-dedup.yaml: |
+    # Logs: logdedup collapses repeated identical logs into one record with a count; transform normalizes severity
+    # DEMO: a log spam burst becomes one record with log_count; WARN/Warning/CRITICAL etc. map to canonical severities.
+    # Components: memory_limiter, resourcedetection, transform, logdedup (filelog receiver can be added for file sources)
+    # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+    # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    extensions:
+      opamp:
+        server:
+          ws:
+            endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+    processors:
+      # --- baseline (always on) ---
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      # --- preset: logs ---
+      transform/severity:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              - set(severity_number, SEVERITY_NUMBER_WARN) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsMatch(severity_text, "(?i)^warn")
+              - set(severity_number, SEVERITY_NUMBER_FATAL) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsMatch(severity_text, "(?i)^(crit|fatal)")
+              - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsMatch(severity_text, "(?i)^err")
+      logdedup:
+        interval: 10s
+        log_count_attribute: dedup_count
+        timezone: UTC
+
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          - name: http.request.method
+          - name: http.response.status_code
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+        metrics_flush_interval: 15s
+        metrics_expiration: 5m
+
+    exporters:
+      debug:
+        verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+      otlp:
+        endpoint: "tinyolly-otlp-receiver:4343"
+        tls:
+          insecure: true
+
+    service:
+      extensions: [opamp]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp, spanmetrics]
+        metrics:
+          receivers: [otlp, spanmetrics]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, transform/severity, logdedup, batch]
+          exporters: [debug, otlp]
+  metrics-shaping.yaml: |
+    # Metrics shaping: temporality conversion, rate limiting, filtering and label dropping to cut cardinality
+    # DEMO: delta inputs become cumulative, noisy runtime metrics are dropped, flush interval is 30s, labels are aggregated.
+    # Components: memory_limiter, resourcedetection, deltatocumulative, filter, metricstransform, interval, spanmetrics
+    # (cumulativetodelta is available too: add it after 'interval' for backends that want delta.)
+    # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+    # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    extensions:
+      opamp:
+        server:
+          ws:
+            endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+    processors:
+      # --- baseline (always on) ---
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      # --- preset: metrics shaping ---
+      deltatocumulative:
+        max_stale: 5m
+      filter/metrics:
+        error_mode: ignore
+        metrics:
+          metric:
+            - 'IsMatch(name, "^process\\.runtime\\..*")'
+            - 'IsMatch(name, "^runtime\\..*")'
+      metricstransform/cardinality:
+        transforms:
+          - include: ^http\.(server|client)\..*duration$
+            match_type: regexp
+            action: update
+            operations:
+              - action: aggregate_labels
+                label_set: [http.request.method, http.response.status_code, http.method, http.status_code, service.name]
+                aggregation_type: sum
+      interval:
+        interval: 30s
+
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          - name: http.request.method
+          - name: http.response.status_code
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+        metrics_flush_interval: 15s
+        metrics_expiration: 5m
+
+    exporters:
+      debug:
+        verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+      otlp:
+        endpoint: "tinyolly-otlp-receiver:4343"
+        tls:
+          insecure: true
+
+    service:
+      extensions: [opamp]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp, spanmetrics]
+        metrics:
+          receivers: [otlp, spanmetrics]
+          processors: [memory_limiter, resourcedetection, deltatocumulative, filter/metrics, metricstransform/cardinality, interval, batch]
+          exporters: [debug, otlp]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp]
+  pii-redaction.yaml: |
+    # PII / security: redaction masks emails, card numbers and tokens; attributes hashes/deletes sensitive keys
+    # DEMO: send spans/logs with user.email, http.url?token=..., card numbers -> they appear masked in TinyOlly.
+    # Components: memory_limiter, resourcedetection, redaction, attributes (hash/delete)
+    # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+    # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    extensions:
+      opamp:
+        server:
+          ws:
+            endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+    processors:
+      # --- baseline (always on) ---
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      # --- preset: pii / security ---
+      attributes/pii:
+        actions:
+          - key: user.id
+            action: hash
+          - key: http.request.header.authorization
+            action: delete
+          - key: http.request.header.cookie
+            action: delete
+      redaction:
+        allow_all_keys: true
+        blocked_key_patterns: [".*password.*", ".*secret.*", ".*api[_-]?key.*"]
+        blocked_values:
+          - "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"      # email addresses
+          - "\\b(?:\\d[ -]*?){13,16}\\b"                              # payment card numbers
+          - "(?i)bearer\\s+[a-z0-9._~+/=-]+"                         # bearer tokens
+          - "(?i)(token|access_token|apikey)=[^&\\s]+"                # secrets in URL query strings
+        summary: info   # adds redaction.masked.count etc. so the UI can show what was masked
+
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          - name: http.request.method
+          - name: http.response.status_code
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+        metrics_flush_interval: 15s
+        metrics_expiration: 5m
+
+    exporters:
+      debug:
+        verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+      otlp:
+        endpoint: "tinyolly-otlp-receiver:4343"
+        tls:
+          insecure: true
+
+    service:
+      extensions: [opamp]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, attributes/pii, redaction, batch]
+          exporters: [debug, otlp, spanmetrics]
+        metrics:
+          receivers: [otlp, spanmetrics]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, attributes/pii, redaction, batch]
+          exporters: [debug, otlp]
+  prometheus-remote-write.yaml: |
+    # Configuration with Prometheus Remote Write receiver
+    # Extends the default config to accept Prometheus remote write metrics
+    # in addition to OTLP. Useful for integrating Prometheus exporters and
+    # Prometheus-compatible clients that use the Remote Write protocol.
+    #
+    # The prometheusremotewrite receiver accepts metrics via Prometheus Remote Write v2 protocol.
+    # Clients should configure their remote_write endpoint to:
+    #   http://<collector-host>:19291/api/v1/write
+    #
+    # Reference: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusremotewritereceiver
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+      # Prometheus Remote Write receiver
+      # Receives metrics via Prometheus Remote Write protocol
+      # Clients should send to: http://<collector-host>:19291/api/v1/write
+      # Reference: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusremotewritereceiver
+      prometheusremotewrite:
+        endpoint: "0.0.0.0:19291"
+        # Optional: configure authentication
+        # auth:
+        #   authenticator: basicauth
+        # Optional: configure TLS
+        # tls:
+        #   cert_file: /path/to/cert.pem
+        #   key_file: /path/to/key.pem
+
+    extensions:
+      opamp:
+        server:
+          ws:
+            endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+    processors:
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          # current semconv names (old ones kept for older instrumentation)
+          - name: http.request.method
+          - name: http.response.status_code
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+        metrics_flush_interval: 15s
+        metrics_expiration: 5m
+
+    exporters:
+      debug:
+        verbosity: detailed
+
+      otlp:
+        endpoint: "tinyolly-otlp-receiver:4343"
+        tls:
+          insecure: true
+
+    service:
+      extensions: [opamp]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [debug, otlp, spanmetrics]
+
+        metrics:
+          # Include both OTLP metrics and Prometheus remote write metrics
+          receivers: [otlp, prometheusremotewrite, spanmetrics]
+          processors: [batch]
+          exporters: [debug, otlp]
+
+        logs:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [debug, otlp]
+  sampling.yaml: |
+    # Sampling: tail_sampling keeps errors + slow traces + 10% of the rest; probabilistic_sampler thins logs
+    # DEMO: trace count drops while every error/slow trace is retained. RED metrics (spanmetrics) are computed
+    # BEFORE sampling via the forward connector, so rates stay accurate. See docs/collector-presets.md.
+    # Components: memory_limiter, resourcedetection, tail_sampling, probabilistic_sampler, forward, spanmetrics
+    # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+    # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    extensions:
+      opamp:
+        server:
+          ws:
+            endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+    processors:
+      # --- baseline (always on) ---
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      # --- preset: sampling ---
+      tail_sampling:
+        decision_wait: 5s
+        num_traces: 10000
+        policies:
+          - name: keep-errors
+            type: status_code
+            status_code: { status_codes: [ERROR] }
+          - name: keep-slow
+            type: latency
+            latency: { threshold_ms: 500 }
+          - name: sample-10-percent
+            type: probabilistic
+            probabilistic: { sampling_percentage: 10 }
+      probabilistic_sampler/logs:
+        sampling_percentage: 25
+
+    connectors:
+      forward/traces: {}
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          - name: http.request.method
+          - name: http.response.status_code
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+        metrics_flush_interval: 15s
+        metrics_expiration: 5m
+
+    exporters:
+      debug:
+        verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+      otlp:
+        endpoint: "tinyolly-otlp-receiver:4343"
+        tls:
+          insecure: true
+
+    service:
+      extensions: [opamp]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection]
+          exporters: [spanmetrics, forward/traces]
+        traces/sampled:
+          receivers: [forward/traces]
+          processors: [tail_sampling, batch]
+          exporters: [debug, otlp]
+        metrics:
+          receivers: [otlp, spanmetrics]
+          processors: [memory_limiter, resourcedetection, batch]
+          exporters: [debug, otlp]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, probabilistic_sampler/logs, batch]
+          exporters: [debug, otlp]
+  transform-ottl.yaml: |
+    # Transform / OTTL: normalize routes, derive log severity, flatten JSON bodies, drop health checks and debug logs
+    # DEMO: cleaner route names, correct severity, no health-check noise (see dropped counts on the Collector tab).
+    # Components: memory_limiter, resourcedetection, transform, filter, resource
+    # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+    # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    extensions:
+      opamp:
+        server:
+          ws:
+            endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+    processors:
+      # --- baseline (always on) ---
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 2s
+        override: false
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      # --- preset: transform / OTTL ---
+      resource/env:
+        attributes:
+          - key: deployment.environment.name
+            value: demo
+            action: insert
+      transform/traces:
+        error_mode: ignore
+        trace_statements:
+          - context: span
+            statements:
+              - replace_pattern(attributes["http.route"], "/[0-9]+", "/{id}")
+              - replace_pattern(name, "/[0-9]+", "/{id}")
+      transform/logs:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              - merge_maps(attributes, ParseJSON(body), "upsert") where IsString(body) and IsMatch(body, "^\\s*\\{")
+              - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsMatch(body, "(?i)\\b(error|exception|failed)\\b")
+              - set(severity_text, "ERROR") where severity_number == SEVERITY_NUMBER_ERROR and severity_text == ""
+      filter/noise:
+        error_mode: ignore
+        traces:
+          span:
+            - 'IsMatch(attributes["url.path"], "^/(health|healthz|ready|livez)")'
+            - 'IsMatch(attributes["http.target"], "^/(health|healthz|ready|livez)")'
+        logs:
+          log_record:
+            - 'severity_number != SEVERITY_NUMBER_UNSPECIFIED and severity_number < SEVERITY_NUMBER_INFO'
+
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+        dimensions:
+          - name: http.method
+          - name: http.status_code
+          - name: http.request.method
+          - name: http.response.status_code
+        dimensions_cache_size: 1000
+        aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+        metrics_flush_interval: 15s
+        metrics_expiration: 5m
+
+    exporters:
+      debug:
+        verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+      otlp:
+        endpoint: "tinyolly-otlp-receiver:4343"
+        tls:
+          insecure: true
+
+    service:
+      extensions: [opamp]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, resource/env, filter/noise, transform/traces, batch]
+          exporters: [debug, otlp, spanmetrics]
+        metrics:
+          receivers: [otlp, spanmetrics]
+          processors: [memory_limiter, resourcedetection, resource/env, batch]
+          exporters: [debug, otlp]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resourcedetection, resource/env, filter/noise, transform/logs, batch]
+          exporters: [debug, otlp]
