@@ -1,5 +1,5 @@
 # Test dependencies for TinyOlly UI
 pytest>=8.0.0
-pytest-asyncio>=0.23.0
+pytest-asyncio>=1.4.1.post1
 pytest-cov>=4.1.0
 httpx>=0.26.0
