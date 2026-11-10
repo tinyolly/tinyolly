@@ -9,7 +9,7 @@ TinyOlly ships a baseline collector config plus **presets** you can apply from t
 | Preset | Components | What you see |
 |---|---|---|
 | `sampling` | `tail_sampling` (errors, >500 ms, 10 % of the rest), `probabilistic_sampler` (logs 25 %), `forward` + `spanmetrics` | Trace count drops ~90 %; every error trace is kept. RED metrics are computed *before* sampling, so rates stay accurate. |
-| `pii-redaction` | `redaction` (emails, card numbers, bearer tokens, `token=` URL secrets, password/secret keys), `attributes` (hash `user.id`, delete auth/cookie headers) | `user.email` → `****`, `?token=…` masked, `user.id` hashed, log bodies masked, `redaction.masked.count` added. |
+| `pii-redaction` | `redaction` on traces, logs **and metrics** (emails, card numbers, bearer tokens, `token=` URL secrets, `*password*`/`*secret*`/`*cvv*`/`*card number*` keys), `attributes` (hash `user.id`, delete auth/cookie headers; traces and logs) | `user.email` → `****`, `?token=…` masked, `user.id` hashed, log bodies masked, `redaction.masked.count` added. Card patterns only match real card formats (grouped digits, or contiguous Visa/MC/Amex/Discover), so epoch timestamps and numeric IDs are left alone. |
 | `transform-ottl` | `transform`, `filter`, `resource` | `/users/123` → `/users/{id}`, JSON log bodies flattened to attributes, health checks and debug logs dropped, `deployment.environment.name` added. |
 | `enrichment` | `resource`, `groupbyattrs` | `service.namespace`, `deployment.environment.name`, `collector.preset` on everything. |
 | `metrics-shaping` | `deltatocumulative`, `filter`, `metricstransform`, `interval` | Delta inputs become cumulative, noisy runtime metrics dropped, labels aggregated, 30 s flush. |

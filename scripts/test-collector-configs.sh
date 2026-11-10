@@ -19,8 +19,10 @@ for f in "${FILES[@]}"; do
   sleep 6
   logs=$(docker logs "$name" 2>&1)
   docker rm -f "$name" >/dev/null 2>&1
-  # exporter/OpAMP connection errors are expected (no backend in this test); config/startup errors are not
-  bad=$(echo "$logs" | grep -E '"level":"error"|^Error:|panic|cannot|invalid' | grep -v -E 'tinyolly-otlp-receiver|tinyolly-opamp-server|opamp|dial tcp|lookup|export' | head -3)
+  # Only connection errors to the two backends that do not exist in this test are expected (the OTLP exporter and the
+  # OpAMP extension cannot resolve tinyolly-otlp-receiver / tinyolly-opamp-server). Every other error line is a failure,
+  # so keep this filter specific: broad words like "export" or "opamp" would hide real config errors.
+  bad=$(echo "$logs" | grep -E '"level":"error"|	error	|^Error:|panic|cannot|invalid' | grep -v -E 'tinyolly-otlp-receiver|tinyolly-opamp-server' | head -3)
   if echo "$logs" | grep -q "Everything is ready" && [ -z "$bad" ]; then
     echo "ok             $f"
   else
