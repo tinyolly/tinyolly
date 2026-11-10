@@ -1278,7 +1278,9 @@
         gap: 10px;
         padding: 6px 12px;
         border-bottom: 2px solid var(--border-color);
-        background: var(--bg-secondary);
+        /* Must be opaque: the header is position:sticky and rows scroll underneath it.
+           (--bg-secondary is not defined in either theme, which made this transparent.) */
+        background: var(--bg-hover);
         font-weight: bold;
         font-size: 10px;
         color: var(--text-muted);
