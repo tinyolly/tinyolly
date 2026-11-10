@@ -45,15 +45,15 @@ fi
 echo -e "${GREEN}✓ TinyOlly core services found${NC}"
 echo ""
 
-# Check if using Minikube
-USE_MINIKUBE=false
+# Check if using the local kind cluster
+USE_KIND=false
 RESTORE_MANIFESTS=false
-if [ "$CONTEXT" = "minikube" ]; then
-    USE_MINIKUBE=true
+if [ "$CONTEXT" = "kind-tinyolly" ]; then
+    USE_KIND=true
 fi
 
-# Build images if using Minikube (optional - will pull from Docker Hub by default)
-if [ "$USE_MINIKUBE" = true ]; then
+# Build images if using kind (optional - will pull from Docker Hub by default)
+if [ "$USE_KIND" = true ]; then
     echo -e "${CYAN}Note: Images will be pulled from Docker Hub by default.${NC}"
     echo -e "${CYAN}Do you want to build images locally instead? [y/N]:${NC} "
     read -n 1 -r
@@ -61,7 +61,7 @@ if [ "$USE_MINIKUBE" = true ]; then
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${CYAN}Building demo images locally...${NC}"
-        bash "$SCRIPT_DIR/../build/local/build-demo-minikube.sh"
+        bash "$SCRIPT_DIR/../build/local/build-demo-kind.sh"
 
         if [ $? -ne 0 ]; then
             echo -e "${RED}✗ Failed to build images${NC}"
@@ -119,10 +119,10 @@ echo -e "${GREEN}Demo Deployment Complete!${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-if [ "$USE_MINIKUBE" = true ]; then
+if [ "$USE_KIND" = true ]; then
     echo -e "${CYAN}Access the demo:${NC}"
-    echo -e "1. Make sure ${YELLOW}minikube tunnel${NC} is running"
-    echo -e "2. TinyOlly UI: ${GREEN}http://localhost:5002${NC}"
+    echo -e "1. Ports are mapped by ${YELLOW}scripts/kind-config.yaml${NC}"
+    echo -e "2. TinyOlly UI: ${GREEN}http://localhost:5005${NC}"
     echo -e "3. Demo Frontend: ${GREEN}http://localhost:5001${NC}"
     echo ""
     echo -e "${CYAN}Auto-Traffic:${NC}"

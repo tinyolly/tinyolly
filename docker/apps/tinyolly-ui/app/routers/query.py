@@ -1,18 +1,17 @@
 """Query endpoints for traces, spans, logs, and metrics"""
 
+import asyncio
 import json
 import time
-import asyncio
-from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, Query, Request, HTTPException, Depends
-from fastapi.responses import StreamingResponse
+from typing import Any, Dict, List, Optional
 
-from models import (
-    TraceDetail, ErrorResponse, MetricMetadata, MetricDetail,
-    MetricQueryResult
-)
-from ..dependencies import get_storage
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
+from models import ErrorResponse, MetricDetail, MetricMetadata, MetricQueryResult, TraceDetail
+
 from tinyolly_common import Storage
+
+from ..dependencies import get_storage
 
 router = APIRouter(prefix="/api", tags=["Traces", "Spans", "Logs", "Metrics"])
 
@@ -181,7 +180,6 @@ async def stream_logs(storage: Storage = Depends(get_storage)):
     logger = logging.getLogger(__name__)
     
     async def event_generator():
-        last_check = time.time()
         sent_log_ids = set()
         
         while True:

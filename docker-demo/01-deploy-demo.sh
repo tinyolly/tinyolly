@@ -22,8 +22,8 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null; then
-    echo "✗ docker-compose is not installed or not in PATH"
+if ! command -v docker compose &> /dev/null; then
+    echo "✗ docker compose is not installed or not in PATH"
     exit 1
 fi
 
@@ -63,7 +63,7 @@ if [ ! -f "docker-compose-demo.yml" ]; then
     exit 1
 fi
 
-docker-compose -f docker-compose-demo.yml up -d
+docker compose -f docker-compose-demo.yml up -d
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then

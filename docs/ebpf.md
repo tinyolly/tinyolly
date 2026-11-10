@@ -31,7 +31,7 @@ Access the UI at `http://localhost:5005`
 
 ```bash
 # Start TinyOlly core first
-minikube start
+./scripts/colima-up.sh && ./scripts/kind-up.sh
 ./k8s/02-deploy-tinyolly.sh
 
 # Deploy eBPF demo (pulls pre-built images from Docker Hub)
@@ -39,7 +39,7 @@ cd k8s-demo-ebpf
 ./02-deploy.sh
 ```
 
-Run `minikube tunnel` in a separate terminal, then access the UI at `http://localhost:5002`
+Access the UI at `http://localhost:5005` (kind port mapping)
 
 ### Docker Hub Images
 

@@ -61,7 +61,9 @@ nav:
       - Docker: docker.md
       - Kubernetes: kubernetes.md
       - OpenTelemetry Collector: otel-collector.md
+      - Collector Presets: collector-presets.md
   - Demos:
+      - OpenTelemetry Demo (Astronomy Shop): otel-demo.md
       - eBPF Zero-Code Tracing: ebpf.md
       - AI Agent with Ollama: ai-agent.md
   - API Reference:
@@ -69,7 +71,6 @@ nav:
   - Advanced:
       - Architecture: technical.md
       - Cardinality Protection: CARDINALITY-PROTECTION.md
-      - Redis Storage (Archive): redis-archive.md
   - Licensing: licensing.md
 
 extra:

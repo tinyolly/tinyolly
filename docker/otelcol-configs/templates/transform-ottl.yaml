@@ -1,0 +1,102 @@
+# Transform / OTTL: normalize routes, derive log severity, flatten JSON bodies, drop health checks and debug logs
+# DEMO: cleaner route names, correct severity, no health-check noise (see dropped counts on the Collector tab).
+# Components: memory_limiter, resourcedetection, transform, filter, resource
+# NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+# defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+extensions:
+  opamp:
+    server:
+      ws:
+        endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+processors:
+  # --- baseline (always on) ---
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+  resourcedetection:
+    detectors: [env, system]
+    timeout: 2s
+    override: false
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  # --- preset: transform / OTTL ---
+  resource/env:
+    attributes:
+      - key: deployment.environment.name
+        value: demo
+        action: insert
+  transform/traces:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - replace_pattern(attributes["http.route"], "/[0-9]+", "/{id}")
+          - replace_pattern(name, "/[0-9]+", "/{id}")
+  transform/logs:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - merge_maps(attributes, ParseJSON(body), "upsert") where IsString(body) and IsMatch(body, "^\\s*\\{")
+          - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_number == SEVERITY_NUMBER_UNSPECIFIED and IsMatch(body, "(?i)\\b(error|exception|failed)\\b")
+          - set(severity_text, "ERROR") where severity_number == SEVERITY_NUMBER_ERROR and severity_text == ""
+  filter/noise:
+    error_mode: ignore
+    traces:
+      span:
+        - 'IsMatch(attributes["url.path"], "^/(health|healthz|ready|livez)")'
+        - 'IsMatch(attributes["http.target"], "^/(health|healthz|ready|livez)")'
+    logs:
+      log_record:
+        - 'severity_number != SEVERITY_NUMBER_UNSPECIFIED and severity_number < SEVERITY_NUMBER_INFO'
+
+connectors:
+  spanmetrics:
+    histogram:
+      explicit:
+        buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+    dimensions:
+      - name: http.method
+      - name: http.status_code
+      - name: http.request.method
+      - name: http.response.status_code
+    dimensions_cache_size: 1000
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+    metrics_flush_interval: 15s
+    metrics_expiration: 5m
+
+exporters:
+  debug:
+    verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+  otlp:
+    endpoint: "tinyolly-otlp-receiver:4343"
+    tls:
+      insecure: true
+
+service:
+  extensions: [opamp]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, resource/env, filter/noise, transform/traces, batch]
+      exporters: [debug, otlp, spanmetrics]
+    metrics:
+      receivers: [otlp, spanmetrics]
+      processors: [memory_limiter, resourcedetection, resource/env, batch]
+      exporters: [debug, otlp]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, resource/env, filter/noise, transform/logs, batch]
+      exporters: [debug, otlp]

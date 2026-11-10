@@ -2,15 +2,15 @@
 
 import asyncio
 import logging
-from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect, Depends, HTTPException
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
 from models import HealthResponse
-from ..dependencies import get_storage, get_connection_manager
-from ..config import settings
+
 from tinyolly_common import Storage
-from ..managers.websocket import ConnectionManager
+
+from ..config import settings
+from ..dependencies import get_connection_manager, get_storage
 
 router = APIRouter(tags=["System", "UI"])
 

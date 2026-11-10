@@ -9,7 +9,6 @@ These tests verify:
 - Database recovery
 """
 import pytest
-import pytest_asyncio
 
 
 class TestConcurrency:

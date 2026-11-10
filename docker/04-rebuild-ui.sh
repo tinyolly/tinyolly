@@ -9,7 +9,7 @@ echo ""
 # Rebuild and restart only the tinyolly-ui service
 # Use local compose file for building (has build context defined)
 echo "Rebuilding tinyolly-ui..."
-docker-compose -f docker-compose-tinyolly-core-local.yml build tinyolly-ui
+docker compose -f docker-compose-tinyolly-core-local.yml build tinyolly-ui
 BUILD_EXIT_CODE=$?
 
 if [ $BUILD_EXIT_CODE -ne 0 ]; then
@@ -20,7 +20,7 @@ fi
 
 echo ""
 echo "Restarting tinyolly-ui..."
-docker-compose -f docker-compose-tinyolly-core-local.yml up -d --no-deps --force-recreate tinyolly-ui
+docker compose -f docker-compose-tinyolly-core-local.yml up -d --no-deps --force-recreate tinyolly-ui
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then

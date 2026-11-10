@@ -18,7 +18,7 @@ spec:
       containers:
       - name: otel-collector
         image: tinyolly/otel-supervisor:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 4317
           name: otlp-grpc
@@ -57,6 +57,7 @@ kind: Service
 metadata:
   name: otel-collector
 spec:
+  type: NodePort
   selector:
     app: otel-collector
   ports:
@@ -64,10 +65,12 @@ spec:
       protocol: TCP
       port: 4317
       targetPort: 4317
+      nodePort: 30317
     - name: http
       protocol: TCP
       port: 4318
       targetPort: 4318
+      nodePort: 30318
     - name: prom-rw
       protocol: TCP
       port: 19291

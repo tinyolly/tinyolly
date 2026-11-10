@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
       - name: ollama
-        image: ollama/ollama:latest
+        image: ollama/ollama:0.40.15
         ports:
         - containerPort: 11434
         volumeMounts:

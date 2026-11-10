@@ -3,16 +3,14 @@ set +e
 
 # This script rebuilds the UI image and restarts the K8s pod to pick up changes.
 
-# Point to Minikube's Docker daemon
-eval $(minikube docker-env)
 
-echo "Rebuilding TinyOlly UI (Minikube)..."
+echo "Rebuilding TinyOlly UI (kind)..."
 echo "=================================================="
 
-# Build image locally for minikube (only for UI)
+# Build on Colima docker, then load into the kind cluster (only for UI)
 # Using --no-cache to ensure latest changes are picked up
 echo "Building tinyolly-ui:latest..."
-docker build --no-cache -t tinyolly-ui:latest \
+docker build --no-cache -t tinyolly/ui:latest \
   -f ../docker/dockerfiles/Dockerfile.tinyolly-ui \
   --build-arg APP_DIR=tinyolly-ui \
   ../docker/
@@ -23,8 +21,12 @@ if [ $? -ne 0 ]; then
 fi
 
 echo ""
+echo "Loading image into kind..."
+kind load docker-image tinyolly/ui:latest --name "${KIND_CLUSTER:-tinyolly}"
+
+echo ""
 echo "Restarting UI Pod..."
-# Deleting the pod forces the Deployment to recreate it, picking up the new image (imagePullPolicy: Never uses local image)
+# Deleting the pod forces the Deployment to recreate it with the newly loaded image (imagePullPolicy: IfNotPresent)
 kubectl delete pod -l app=tinyolly-ui
 
 echo ""
@@ -33,4 +35,4 @@ kubectl wait --for=condition=ready pod -l app=tinyolly-ui --timeout=60s
 
 echo ""
 echo "✓ UI Rebuilt and Restarted!"
-echo "URL: http://localhost:5002 (via minikube tunnel)"
+echo "URL: http://localhost:5005 (kind port mapping)"

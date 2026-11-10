@@ -1,6 +1,6 @@
 # Kubernetes Deployment
 
-Deploy TinyOlly on Kubernetes (Minikube) for local development!
+Deploy TinyOlly on Kubernetes (kind on Colima) for local development!
 
 <div align="center">
   <img src="../images/servicemap.png" alt="TinyOlly on Kubernetes" width="600">
@@ -16,15 +16,19 @@ git clone https://github.com/tinyolly/tinyolly
 
 ## Prerequisites
 
-- [Minikube](https://minikube.sigs.k8s.io/docs/start/)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [Colima](https://github.com/abiosoft/colima), `docker`, [kind](https://kind.sigs.k8s.io/), [kubectl](https://kubernetes.io/docs/tasks/tools/)
+
+```bash
+brew install colima docker docker-compose kubectl kind helm
+```
 
 ## 1. Deploy TinyOlly Core
 
-1.  **Start Minikube:**
+1.  **Start Colima and the kind cluster:**
 
     ```bash
-    minikube start
+    ./scripts/colima-up.sh   # defaults: 4 CPU / 4 GB (COLIMA_MEMORY=8 for more)
+    ./scripts/kind-up.sh
     ```
 
 2.  **Deploy TinyOlly:**
@@ -38,24 +42,14 @@ git clone https://github.com/tinyolly/tinyolly
     Alternatively, you can manually apply all manifests with `kubectl apply -f k8s/`
 
     !!! note "Local Development Build (Optional)"
-        To build images locally for Minikube instead of pulling from Docker Hub:
+        To build images locally and load them into kind instead of pulling from Docker Hub:
         ```bash
-        ./build/local/build-core-minikube.sh
+        ./build/local/build-core-kind.sh
         ```
 
 3.  **Access the UI:**
 
-    To access the TinyOlly UI (Service Type: LoadBalancer) on macOS with Minikube, you need to use `minikube tunnel`.
-
-    Open a **new terminal window** and run:
-
-    ```bash
-    minikube tunnel
-    ```
-
-    You may be asked for your password. Keep this terminal open.
-
-    Now you can access the TinyOlly UI at: [http://localhost:5002](http://localhost:5002)
+    The UI is a NodePort service mapped to the host by `scripts/kind-config.yaml` (no tunnel needed). Access the TinyOlly UI at: [http://localhost:5005](http://localhost:5005)
 
     **OpenTelemetry Collector + OpAMP Config Page:** Navigate to the "OpenTelemetry Collector + OpAMP Config" tab in the UI to view and manage collector configurations remotely. See the [OpAMP Configuration](#opamp-configuration-optional) section below for setup instructions.
 
@@ -91,14 +85,10 @@ git clone https://github.com/tinyolly/tinyolly
     ./k8s/03-cleanup.sh
     ```
 
-    Shut down Minikube:
+    Delete the kind cluster and stop Colima:
     ```bash
-    minikube stop
-    ```
-    
-    Minikube may be more stable if you delete it:
-    ```bash
-    minikube delete
+    kind delete cluster --name tinyolly
+    colima stop -p tinyolly
     ```
 
 ---
@@ -159,7 +149,7 @@ To deploy TinyOlly without the bundled OTel Collector (e.g., if you have an exis
     ```
 
 2.  **Access UI:**
-    Run `minikube tunnel` and access `http://localhost:5002`.
+    Access `http://localhost:5005` (kind port mapping).
 
 3.  **Cleanup:**
     ```bash
@@ -223,7 +213,7 @@ The default configuration template (included as a ConfigMap in `k8s-core-only/ti
 
 ## Building Images
 
-By default, deployment scripts pull pre-built images from Docker Hub. For building images locally (Minikube) or publishing to Docker Hub, see [build/README.md](https://github.com/tinyolly/tinyolly/blob/main/build/README.md).
+By default, deployment scripts pull pre-built images from Docker Hub. For building images locally (kind) or publishing to Docker Hub, see [build/README.md](https://github.com/tinyolly/tinyolly/blob/main/build/README.md).
 
 ---
 

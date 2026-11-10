@@ -5,7 +5,7 @@ echo "==================================="
 
 # Apply ConfigMaps first
 echo "Creating ConfigMaps..."
-kubectl apply -f otelcol-configs/templates/prometheus-remote-write.yaml
+kubectl apply -f otelcol-configs/templates/templates.yaml
 
 # Apply manifests
 echo "Deploying services..."
@@ -19,4 +19,4 @@ echo "Deployment applied successfully!"
 echo "Run 'kubectl get pods' to check status."
 echo ""
 echo "TinyOlly UI will be available at: http://localhost:5002"
-echo "If using minikube: Make sure 'minikube tunnel' is running"
+echo "(kind: UI is mapped to host port 5005 by scripts/kind-config.yaml)"

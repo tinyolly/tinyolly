@@ -19,7 +19,7 @@ spec:
       hostPID: true
       containers:
       - name: ebpf-agent
-        image: docker.io/otel/ebpf-instrument:main
+        image: docker.io/otel/ebpf-instrument:v1.0.0
         securityContext:
           privileged: true
         env:

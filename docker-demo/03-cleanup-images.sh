@@ -81,7 +81,7 @@ if [ -n "$REMAINING" ]; then
     docker images | grep -E "REPOSITORY|demo-frontend|demo-backend"
     echo ""
     echo -e "${YELLOW}Stop containers first with:${NC}"
-    echo "  docker-compose -f docker-compose-demo.yml down"
+    echo "  docker compose -f docker-compose-demo.yml down"
 fi
 
 echo ""

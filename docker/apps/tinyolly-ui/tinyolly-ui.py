@@ -8,6 +8,7 @@ from app.main import app
 
 if __name__ == '__main__':
     import uvicorn
+
     from app.config import settings
     
     # Port 5002 is the internal container port

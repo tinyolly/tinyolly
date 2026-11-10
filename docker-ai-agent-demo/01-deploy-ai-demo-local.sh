@@ -25,8 +25,8 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null; then
-    echo "✗ docker-compose is not installed or not in PATH"
+if ! command -v docker compose &> /dev/null; then
+    echo "✗ docker compose is not installed or not in PATH"
     exit 1
 fi
 
@@ -62,7 +62,7 @@ echo "NOTE: First run will pull the Ollama image and tinyllama model (~1.5GB tot
 echo "      This may take a few minutes..."
 echo ""
 
-docker-compose -f docker-compose-local.yml build $NO_CACHE
+docker compose -f docker-compose-local.yml build $NO_CACHE
 BUILD_EXIT_CODE=$?
 
 if [ $BUILD_EXIT_CODE -ne 0 ]; then
@@ -72,7 +72,7 @@ if [ $BUILD_EXIT_CODE -ne 0 ]; then
     exit 1
 fi
 
-docker-compose -f docker-compose-local.yml up -d
+docker compose -f docker-compose-local.yml up -d
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then
@@ -95,10 +95,10 @@ echo "TinyOlly UI: http://localhost:5005"
 echo "  → Click 'AI Agents' tab to see GenAI traces"
 echo ""
 echo "Watch agent logs:"
-echo "  docker-compose -f docker-compose-local.yml logs -f ai-agent"
+echo "  docker compose -f docker-compose-local.yml logs -f ai-agent"
 echo ""
 echo "Watch Ollama logs:"
-echo "  docker-compose -f docker-compose-local.yml logs -f ollama"
+echo "  docker compose -f docker-compose-local.yml logs -f ollama"
 echo ""
 echo "To stop AI demo:"
 echo "  ./02-stop-ai-demo.sh"

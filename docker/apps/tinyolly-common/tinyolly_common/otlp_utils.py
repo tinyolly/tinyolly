@@ -2,7 +2,7 @@
 OpenTelemetry Protocol (OTLP) utility functions for parsing attributes and resources.
 Centralized to avoid code duplication across trace, log, and metric processing.
 """
-from typing import Dict, Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 
 def parse_attributes(attrs_list: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -58,6 +58,18 @@ def extract_resource_attributes(resource: Dict[str, Any]) -> Dict[str, Any]:
     
     attributes = resource.get('attributes', [])
     return parse_attributes(attributes)
+
+
+def is_error_status(status: Any) -> bool:
+    """True if an OTLP span status is an error.
+
+    OTLP JSON from protobuf carries the enum name (``STATUS_CODE_ERROR``) or the number (2), depending on the
+    path the data took, so accept both.
+    """
+    if not isinstance(status, dict):
+        return False
+    code = status.get("code")
+    return code == 2 or code == "2" or code in ("STATUS_CODE_ERROR", "ERROR")
 
 
 def get_attr_value(obj: Dict[str, Any], keys: List[str]) -> Optional[Union[str, int, bool, float]]:

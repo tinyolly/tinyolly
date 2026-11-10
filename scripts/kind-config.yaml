@@ -1,0 +1,10 @@
+# kind cluster for TinyOlly. Host ports map to NodePorts in the k8s manifests.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - { containerPort: 30005, hostPort: 5005, protocol: TCP }   # TinyOlly UI
+      - { containerPort: 30001, hostPort: 5001, protocol: TCP }   # demo frontend
+      - { containerPort: 30317, hostPort: 4317, protocol: TCP }   # OTLP gRPC
+      - { containerPort: 30318, hostPort: 4318, protocol: TCP }   # OTLP HTTP

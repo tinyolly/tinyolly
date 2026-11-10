@@ -29,10 +29,12 @@ Visualize and correlate logs, metrics, and traces without sending data to the cl
 - Smart auto-refresh that pauses when search filters are active
 - Space-based data retention (keeps data until storage limit; no fixed TTL)
 - Works with any OTel Collector distro
+- Collector presets applied from the UI via OpAMP: tail sampling, PII redaction, OTTL transforms, enrichment, metrics shaping, log dedup, derived-metric and routing connectors ([docs](docs/collector-presets.md))
+- Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags ([docs](docs/otel-demo.md))
 - Built with Python (FastAPI), SQLite, and JavaScript
 - Pre-built Docker images available on Docker Hub
 
-**Platform Support:** Tested on Docker Desktop and Minikube Kubernetes (Apple Silicon Mac)
+**Platform Support:** Docker via Colima, Kubernetes via kind on Colima (Apple Silicon Mac)
 **Architectures:** linux/amd64, linux/arm64 (Apple Silicon)
 
 ## Screenshots
@@ -81,6 +83,19 @@ All examples are launched from the repo- clone it first:
 git clone https://github.com/tinyolly/tinyolly
 ```  
 
+## Prerequisites (macOS)
+
+TinyOlly uses [Colima](https://github.com/abiosoft/colima) as the container runtime and [kind](https://kind.sigs.k8s.io/) for Kubernetes.
+
+```bash
+brew install colima docker docker-compose docker-buildx kubectl kind helm
+mkdir -p ~/.docker   # let the docker CLI find the compose/buildx plugins:
+echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json  # (merge into an existing file if you have one)
+./scripts/colima-up.sh      # starts the 'tinyolly' Colima VM: 4 CPU / 4 GB by default
+```
+
+Override VM sizing with `COLIMA_CPU`, `COLIMA_MEMORY` (GiB) and `COLIMA_DISK` (GiB). On an 8 GB Mac keep the default; on larger machines `COLIMA_MEMORY=8` is more comfortable when running demos. Only one of the Docker stack or the kind cluster should run at a time, since both bind host ports 4317/4318/5005.
+
 ## Docker Deployment
 
 ### 1. Deploy TinyOlly Core (Required)
@@ -91,6 +106,9 @@ Start the observability backend (pulls pre-built images from Docker Hub):
 cd docker
 ./01-start-core.sh
 ```
+
+> **Working from a checkout of the modernization branches?** The published Docker Hub images predate them (Python 3.13, pinned collector 0.165.0, error-status fix, new presets).
+> Use `./01-start-core-local.sh` to build from this checkout instead.
 
 **Deployment time:** ~30 seconds (pulls images from Docker Hub)
 
@@ -121,14 +139,12 @@ Two Flask microservices with automatic traffic generation (pulls from Docker Hub
 
 ### 3. eBPF Zero-Code Tracing Demo (Optional)
 
-Deploy a demo showing OpenTelemetry eBPF Instrumentation (OBI) - traces captured at the kernel level with zero code changes:
+Deploy a demo showing OpenTelemetry eBPF Instrumentation (OBI) - traces captured at the kernel level with zero code changes (~30 secs deploy):
 
 ```bash
 cd docker-demo-ebpf
 ./01-deploy-ebpf-demo.sh
 ```
-
-**Deployment time:** ~30 seconds (pulls pre-built images from Docker Hub)
 
 This demonstrates:
 - **eBPF Agent** captures HTTP traces automatically at kernel level
@@ -162,9 +178,16 @@ View AI traces in the **AI Agents** tab - see prompts, responses, token usage (i
 
 ---
 
-### 6. OpenTelemetry Demo (~20 Services - Optional)
+### 6. OpenTelemetry Demo / Astronomy Shop (Optional)
 
-Clone and configure the [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) to route telemetry to TinyOlly. Edit `src/otel-collector/otelcol-config-extras.yml` to add TinyOlly as an exporter, then deploy with built-in observability tools disabled.
+A 16-service subset of the upstream [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) wired to TinyOlly (~1.6 GB of VM memory, fits an 8 GB Mac), with failure-injection flags. Start TinyOlly core first:
+
+```bash
+cd docker-otel-demo
+./01-start-otel-demo.sh                  # shop: http://localhost:8080
+./03-set-flag.sh paymentFailure 50%      # inject failures; see docs/otel-demo.md
+./02-stop-otel-demo.sh
+```
 
 ---
 
@@ -205,6 +228,8 @@ service:
 
 The default configuration template (located at `docker/otelcol-configs/config.yaml`) shows a complete example with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.
 
+**Presets:** the Collector tab lists ready-made configs (sampling, PII redaction, transform/OTTL, enrichment, metrics shaping, log dedup, connectors). Each preset overrides the `traces`/`metrics`/`logs` pipelines because the supervisor merges remote config into the base config by name, and takes ~10-30 s to become active. See [Collector presets](docs/collector-presets.md). Validate configs with `./scripts/test-collector-configs.sh`.
+
 **Stop:** `./02-stop-core.sh`
 
 ## Kubernetes Deployment
@@ -212,15 +237,12 @@ The default configuration template (located at `docker/otelcol-configs/config.ya
 ### 1. Deploy TinyOlly Core
 
 ```bash
-minikube start
+./scripts/colima-up.sh && ./scripts/kind-up.sh
 ./k8s/02-deploy-tinyolly.sh
 ```
 
 **Access UI:**
-```bash
-minikube tunnel  # Keep running in separate terminal
-```
-UI available at: `http://localhost:5002`
+UI available at: `http://localhost:5005` (kind port mapping, no tunnel needed)
 
 **Cleanup:** `./k8s/03-cleanup.sh`
 
@@ -233,7 +255,7 @@ cd k8s-demo
 ./02-deploy.sh  # Automatically builds images if needed
 ```
 
-**Manual image build (optional):** `./build/local/build-demo-minikube.sh`
+**Manual image build (optional):** `./build/local/build-demo-kind.sh`
 **Cleanup:** `./03-cleanup.sh`
 
 ### 3. eBPF Zero-Code Tracing Demo (Optional)
@@ -376,3 +398,11 @@ All responses return OpenTelemetry-native JSON with full trace/span context.
     <a href="https://github.com/tinyolly/tinyolly/issues">Issues</a>
   </p>
 </div>
+## Development notes
+
+- Python dependencies are locked: edit `requirements.in` in a service directory, then regenerate with
+  `uv pip compile requirements.in --universal --python-version 3.13 -o requirements.txt`.
+- Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in `versions.env`; the Dockerfiles carry matching `ARG` defaults. Update both together.
+- Lint: `pip install ruff==0.17.4 && ruff check docker/apps/` (rules are in `ruff.toml`; keep the ruff version pinned, its defaults change between releases). There is no CI; run the checks locally.
+- Tests: `cd docker/apps/tinyolly-common && pip install -r requirements-test.txt . && pytest tests`.
+- Collector configs: `./scripts/test-collector-configs.sh` (validate + start every preset); after editing them run `./scripts/sync-k8s-configs.sh`.

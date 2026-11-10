@@ -40,15 +40,11 @@ def format_otelcol_errors(error_msg: str) -> dict:
     # Pattern 5: "invalid character(s) in type "type""
     invalid_char_pattern = r'invalid character\(s\) in type\s+"([^"]+)"'
     
-    # Pattern 6: Component type indicators (receivers:, exporters:, etc.)
-    component_type_pattern = r'^(\w+):\s*error reading configuration'
-
     # Track current component type and name for context
     current_component_type = None
     current_component_name = None
     
     for line in lines:
-        original_line = line
         line = line.strip()
         if not line:
             continue

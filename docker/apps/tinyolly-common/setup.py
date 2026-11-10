@@ -1,7 +1,7 @@
 """
 Setup script for tinyolly-common package
 """
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="tinyolly-common",
@@ -10,7 +10,6 @@ setup(
     packages=find_packages(),
     python_requires=">=3.12",
     install_requires=[
-        "redis>=4.5.0,<6.0.0",
         "aiosqlite>=0.20.0,<1.0.0",
         "zstandard>=0.21.0,<1.0.0",
         "msgpack>=1.0.0,<2.0.0",

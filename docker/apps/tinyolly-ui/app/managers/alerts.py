@@ -1,12 +1,12 @@
 """Alert manager for handling alert rules and notifications"""
 
 import json
+import logging
 import os
 import time
-import logging
 from typing import List
-import aiohttp
 
+import aiohttp
 from models import AlertRule
 
 logger = logging.getLogger(__name__)

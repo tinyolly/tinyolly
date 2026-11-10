@@ -1,8 +1,9 @@
 """
 Pydantic models for TinyOlly API request/response validation and OpenAPI schema generation.
 """
+from typing import Any, Dict, List, Literal, Optional
+
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List, Literal
 
 
 class ErrorResponse(BaseModel):

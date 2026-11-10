@@ -1,18 +1,19 @@
 """OpAMP endpoints for managing OpenTelemetry Collector configuration"""
 
-import os
-import tempfile
-import subprocess
 import logging
-from typing import Optional
+import os
+import subprocess
+import tempfile
 from pathlib import Path
-from fastapi import APIRouter, Query, HTTPException, Depends
-from pydantic import BaseModel, Field
-import yaml
+from typing import Optional
+
 import aiohttp
+import yaml
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from ..config import settings
-from ..services.validation import format_otelcol_errors, basic_validation
+from ..services.validation import basic_validation, format_otelcol_errors
 
 router = APIRouter(prefix="/api/opamp", tags=["OpAMP"])
 
@@ -65,7 +66,7 @@ async def opamp_status():
         raise HTTPException(
             status_code=503,
             detail=f"OpAMP server unavailable: {str(e)}"
-        )
+        ) from e
 
 
 @router.get(
@@ -107,7 +108,7 @@ async def opamp_get_config(
         raise HTTPException(
             status_code=503,
             detail=f"OpAMP server unavailable: {str(e)}"
-        )
+        ) from e
 
 
 @router.post(
@@ -237,7 +238,7 @@ async def opamp_update_config(request: ConfigUpdateRequest):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid YAML configuration: {str(e)}"
-        )
+        ) from e
 
     try:
         async with aiohttp.ClientSession() as session:
@@ -262,7 +263,7 @@ async def opamp_update_config(request: ConfigUpdateRequest):
         raise HTTPException(
             status_code=503,
             detail=f"OpAMP server unavailable: {str(e)}"
-        )
+        ) from e
 
 
 @router.get(
@@ -297,7 +298,7 @@ async def opamp_health():
         raise HTTPException(
             status_code=503,
             detail=f"OpAMP server unavailable: {str(e)}"
-        )
+        ) from e
 
 
 @router.get(
@@ -312,9 +313,9 @@ async def opamp_list_templates():
     """
     List all available OTel Collector configuration templates.
 
-    The default configuration is always returned first, followed by up to 3 alternate examples
-    from the templates directory. Each template includes metadata extracted from YAML comments.
-    Returns a maximum of 4 templates total (1 default + 3 alternates).
+    The default configuration is always returned first, followed by all presets
+    from the templates directory (top level only; `examples/` is not listed). Each template includes
+    metadata extracted from YAML comments.
     """
     templates = []
     
@@ -347,13 +348,10 @@ async def opamp_list_templates():
         except Exception as e:
             logger.warning(f"Failed to read default config {default_config_path}: {e}")
     
-    # Then, add up to 3 alternate templates from the templates directory
+    # Then, add all templates (presets) from the templates directory
     templates_dir = Path(settings.otelcol_templates_dir)
     if templates_dir.exists():
-        alternate_count = 0
         for yaml_file in sorted(templates_dir.glob("*.yaml")):
-            if alternate_count >= 3:  # Maximum 3 alternate templates
-                break
             try:
                 content = yaml_file.read_text()
                 # Extract description from first comment line
@@ -378,7 +376,6 @@ async def opamp_list_templates():
                     "description": description,
                     "filename": yaml_file.name
                 })
-                alternate_count += 1
             except Exception as e:
                 logger.warning(f"Failed to read template {yaml_file}: {e}")
 
@@ -420,7 +417,7 @@ async def opamp_get_template(template_id: str):
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to read default config: {str(e)}"
-            )
+            ) from e
     
     # Handle other templates
     templates_dir = Path(settings.otelcol_templates_dir)
@@ -443,4 +440,4 @@ async def opamp_get_template(template_id: str):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to read template: {str(e)}"
-        )
+        ) from e

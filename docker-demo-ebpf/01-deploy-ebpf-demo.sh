@@ -32,11 +32,11 @@ echo ""
 
 # Stop any existing containers
 echo "Stopping any existing eBPF demo containers..."
-docker-compose down 2>/dev/null
+docker compose down 2>/dev/null
 
 # Force rebuild images (no cache) to ensure clean build
 echo "Building demo images (force rebuild)..."
-docker-compose build --no-cache
+docker compose build --no-cache
 BUILD_EXIT_CODE=$?
 
 if [ $BUILD_EXIT_CODE -ne 0 ]; then
@@ -46,7 +46,7 @@ if [ $BUILD_EXIT_CODE -ne 0 ]; then
 fi
 
 echo "Starting services..."
-docker-compose up -d
+docker compose up -d
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then

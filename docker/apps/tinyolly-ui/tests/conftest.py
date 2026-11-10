@@ -4,11 +4,11 @@ Pytest configuration and fixtures for TinyOlly UI tests.
 This file provides shared fixtures for testing the SQLite storage backend,
 API endpoints, and data processing functionality.
 """
+import os
+import tempfile
+
 import pytest
 import pytest_asyncio
-import tempfile
-import os
-from pathlib import Path
 
 # TODO: Import storage module after SQLite migration
 # from app.storage import SQLiteStorage

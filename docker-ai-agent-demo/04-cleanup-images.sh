@@ -81,7 +81,7 @@ if [ -n "$REMAINING" ]; then
     docker images | grep -E "REPOSITORY|ai-agent-demo|ollama"
     echo ""
     echo -e "${YELLOW}Stop containers first with:${NC}"
-    echo "  docker-compose down"
+    echo "  docker compose down"
 fi
 
 echo ""

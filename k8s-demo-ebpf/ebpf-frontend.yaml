@@ -19,6 +19,7 @@ spec:
       containers:
       - name: ebpf-frontend
         image: tinyolly/ebpf-frontend:latest
+        imagePullPolicy: IfNotPresent
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
@@ -37,10 +38,11 @@ kind: Service
 metadata:
   name: ebpf-frontend
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: ebpf-frontend
   ports:
     - protocol: TCP
       port: 5001
       targetPort: 5000
+      nodePort: 30001

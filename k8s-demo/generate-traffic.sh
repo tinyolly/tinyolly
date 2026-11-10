@@ -22,7 +22,7 @@ if ! curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL/" | grep -q "200"; th
     echo -e "${YELLOW}⚠ Frontend not accessible at ${FRONTEND_URL}${NC}"
     echo -e "${YELLOW}Make sure:${NC}"
     echo -e "  1. Demo apps are deployed: ${CYAN}./deploy.sh${NC}"
-    echo -e "  2. Minikube tunnel is running: ${CYAN}minikube tunnel${NC}"
+    echo -e "  2. kind cluster is up: ${CYAN}./scripts/kind-up.sh${NC}"
     echo ""
     echo -e "${YELLOW}Attempting to generate traffic anyway...${NC}"
     echo ""

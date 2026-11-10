@@ -1,0 +1,17 @@
+# Lint config for the Python code under docker/apps/ (run locally: `pip install ruff==0.17.4 && ruff check docker/apps/`).
+# The rule set is explicit on purpose: ruff's *default* rules change between releases (0.17 defaults flagged
+# 354 mostly stylistic issues), so keep the ruff version pinned too.
+target-version = "py313"
+line-length = 120
+extend-exclude = ["docker/apps/tinyolly-common/build"]
+
+[lint]
+# E4/E7/E9 + F: pycodestyle errors and pyflakes (real bugs); B: flake8-bugbear; I: import sorting
+select = ["E4", "E7", "E9", "F", "B", "I"]
+
+[lint.flake8-bugbear]
+# FastAPI's dependency-injection idiom puts calls in argument defaults
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body", "fastapi.Path", "fastapi.Header", "fastapi.Form", "fastapi.File"]
+
+[lint.isort]
+known-first-party = ["tinyolly_common", "app"]

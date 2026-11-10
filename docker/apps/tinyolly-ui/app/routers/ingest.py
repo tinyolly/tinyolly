@@ -1,13 +1,14 @@
 """OTLP ingestion endpoints"""
 
 import json
-from fastapi import APIRouter, Request, HTTPException, status, Depends
-from fastapi.responses import ORJSONResponse
 
-from models import IngestResponse, ErrorResponse
-from ..dependencies import get_storage, get_alert_manager
-from ..core.telemetry import get_metrics
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from models import ErrorResponse, IngestResponse
+
 from tinyolly_common import Storage
+
+from ..core.telemetry import get_metrics
+from ..dependencies import get_alert_manager, get_storage
 from ..managers.alerts import AlertManager
 
 router = APIRouter(prefix="/v1", tags=["Ingestion"])
@@ -74,9 +75,9 @@ async def ingest_traces(
         if not data:
             raise HTTPException(status_code=400, detail='Invalid JSON')
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=400, detail=f'Invalid JSON: {str(e)}')
+        raise HTTPException(status_code=400, detail=f'Invalid JSON: {str(e)}') from e
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f'Invalid request body: {str(e)}')
+        raise HTTPException(status_code=400, detail=f'Invalid request body: {str(e)}') from e
 
     spans_to_store = []
     
@@ -149,9 +150,9 @@ async def ingest_logs(
         if not data:
             raise HTTPException(status_code=400, detail='Invalid JSON')
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=400, detail=f'Invalid JSON: {str(e)}')
+        raise HTTPException(status_code=400, detail=f'Invalid JSON: {str(e)}') from e
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f'Invalid request body: {str(e)}')
+        raise HTTPException(status_code=400, detail=f'Invalid request body: {str(e)}') from e
 
     # Handle array or single log
     logs = data if isinstance(data, list) else [data]
@@ -218,9 +219,9 @@ async def ingest_metrics(
         if not data:
             raise HTTPException(status_code=400, detail='Invalid JSON')
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=400, detail=f'Invalid JSON: {str(e)}')
+        raise HTTPException(status_code=400, detail=f'Invalid JSON: {str(e)}') from e
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f'Invalid request body: {str(e)}')
+        raise HTTPException(status_code=400, detail=f'Invalid request body: {str(e)}') from e
 
     # Check if this is OTLP format
     if isinstance(data, dict) and 'resourceMetrics' in data:

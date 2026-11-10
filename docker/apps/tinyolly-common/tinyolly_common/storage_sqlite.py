@@ -6,13 +6,13 @@ Handles all telemetry storage interactions using SQLite.
 import asyncio
 import base64
 import json
+import logging
 import os
 import sqlite3
 import time
 import uuid
-import logging
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import aiosqlite
 import msgpack
@@ -20,7 +20,7 @@ import orjson
 import zstandard as zstd
 from async_lru import alru_cache
 
-from .otlp_utils import parse_attributes, extract_resource_attributes, get_attr_value
+from .otlp_utils import extract_resource_attributes, get_attr_value, is_error_status, parse_attributes
 
 logger = logging.getLogger(__name__)
 
@@ -726,6 +726,8 @@ class StorageSQLite:
 
         root_span = next((s for s in spans if not s.get("parentSpanId") and not s.get("parent_span_id")), spans[0])
 
+        error_count = sum(1 for s in spans if is_error_status(s.get("status", {}) or {}))
+
         root_span_method = get_attr_value(root_span, ["http.method", "http.request.method"])
         root_span_route = get_attr_value(root_span, ["http.route", "http.target", "url.path"])
         root_span_status_code = get_attr_value(root_span, ["http.status_code", "http.response.status_code"])
@@ -746,6 +748,8 @@ class StorageSQLite:
             "root_span_route": root_span_route,
             "root_span_status_code": root_span_status_code,
             "root_span_status": root_span.get("status", {}),
+            "error_count": error_count,
+            "has_error": error_count > 0,
             "root_span_server_name": root_span_server_name,
             "root_span_scheme": root_span_scheme,
             "root_span_host": root_span_host,
@@ -1598,9 +1602,7 @@ class StorageSQLite:
             end_time = int(span.get("endTimeUnixNano", span.get("end_time", 0)) or 0)
             duration_ms = (end_time - start_time) / 1_000_000 if end_time > start_time else 0.0
 
-            status_obj = span.get("status", {}) or {}
-            status_code = status_obj.get("code") if isinstance(status_obj, dict) else None
-            is_error = status_code == 2
+            is_error = is_error_status(span.get("status", {}) or {})
 
             if service_name not in services:
                 services[service_name] = {
@@ -1622,7 +1624,7 @@ class StorageSQLite:
                 services[service_name]["error_count"] += 1
 
         result = []
-        for service_name, data in services.items():
+        for data in services.values():
             durations = sorted(data["durations"])
             p50 = None
             p95 = None

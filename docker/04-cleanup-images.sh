@@ -82,8 +82,8 @@ if [ -n "$REMAINING" ]; then
     echo ""
     echo -e "${YELLOW}Stop containers first with:${NC}"
     echo "  ./02-stop-core.sh"
-    echo "  cd ../docker-demo && docker-compose down"
-    echo "  cd ../docker-ai-agent-demo && docker-compose down"
+    echo "  cd ../docker-demo && docker compose down"
+    echo "  cd ../docker-ai-agent-demo && docker compose down"
 fi
 
 echo ""

@@ -1,0 +1,90 @@
+# PII / security: redaction masks emails, card numbers and tokens; attributes hashes/deletes sensitive keys
+# DEMO: send spans/logs with user.email, http.url?token=..., card numbers -> they appear masked in TinyOlly.
+# Components: memory_limiter, resourcedetection, redaction, attributes (hash/delete)
+# NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
+# defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+extensions:
+  opamp:
+    server:
+      ws:
+        endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
+
+processors:
+  # --- baseline (always on) ---
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+  resourcedetection:
+    detectors: [env, system]
+    timeout: 2s
+    override: false
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  # --- preset: pii / security ---
+  attributes/pii:
+    actions:
+      - key: user.id
+        action: hash
+      - key: http.request.header.authorization
+        action: delete
+      - key: http.request.header.cookie
+        action: delete
+  redaction:
+    allow_all_keys: true
+    blocked_key_patterns: [".*password.*", ".*secret.*", ".*api[_-]?key.*", ".*cvv.*", ".*cvc.*", ".*card[_.]?number.*"]
+    blocked_values:
+      - "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"      # email addresses
+      - "\\b(?:\\d[ -]*?){13,16}\\b"                              # payment card numbers
+      - "(?i)bearer\\s+[a-z0-9._~+/=-]+"                         # bearer tokens
+      - "(?i)(token|access_token|apikey)=[^&\\s]+"                # secrets in URL query strings
+    summary: info   # adds redaction.masked.count etc. so the UI can show what was masked
+
+connectors:
+  spanmetrics:
+    histogram:
+      explicit:
+        buckets: [1ms, 4ms, 10ms, 20ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+    dimensions:
+      - name: http.method
+      - name: http.status_code
+      - name: http.request.method
+      - name: http.response.status_code
+    dimensions_cache_size: 1000
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+    metrics_flush_interval: 15s
+    metrics_expiration: 5m
+
+exporters:
+  debug:
+    verbosity: basic   # was 'detailed'; switch back to debug a single pipeline
+  otlp:
+    endpoint: "tinyolly-otlp-receiver:4343"
+    tls:
+      insecure: true
+
+service:
+  extensions: [opamp]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, attributes/pii, redaction, batch]
+      exporters: [debug, otlp, spanmetrics]
+    metrics:
+      receivers: [otlp, spanmetrics]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [debug, otlp]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, attributes/pii, redaction, batch]
+      exporters: [debug, otlp]

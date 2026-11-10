@@ -1,25 +1,26 @@
-# Build stage
-FROM golang:1.22-alpine AS builder
+# Build stage (keep versions in sync with /versions.env)
+ARG GO_VERSION=1.27
+FROM golang:${GO_VERSION}-alpine AS builder
 
 WORKDIR /app
 
 # Install git for fetching dependencies
 RUN apk add --no-cache git
 
-# Copy go mod files
-COPY apps/tinyolly-opamp-server/go.mod ./
+# Copy go mod files (go.sum is committed; do NOT run `go mod tidy` here)
+COPY apps/tinyolly-opamp-server/go.mod apps/tinyolly-opamp-server/go.sum ./
 
-# Copy source code (needed for go mod tidy to resolve imports)
+# Copy source code
 COPY apps/tinyolly-opamp-server/*.go ./
 
-# Download dependencies and generate go.sum
-RUN go mod download && go mod tidy
+# Download dependencies (verified against go.sum)
+RUN go mod download
 
 # Build the binary
 RUN CGO_ENABLED=0 GOOS=linux go build -o /tinyolly-opamp-server .
 
 # Runtime stage
-FROM alpine:3.19
+FROM alpine:3.22
 
 # Install bash for better shell experience (bash-completion not readily available in Alpine)
 RUN apk add --no-cache \

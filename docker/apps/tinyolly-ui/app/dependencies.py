@@ -1,10 +1,11 @@
 """Shared dependencies for dependency injection"""
 
 from functools import lru_cache
+
 from tinyolly_common import Storage
 
-from .managers.websocket import ConnectionManager
 from .managers.alerts import AlertManager
+from .managers.websocket import ConnectionManager
 
 
 @lru_cache()

@@ -13,7 +13,7 @@ Get TinyOlly running in under 5 minutes!
 
 ## Prerequisites
 
-- Docker Desktop installed and running
+- Colima + docker CLI installed and running (`brew install colima docker docker-compose`, then `./scripts/colima-up.sh`)
 - Git (to clone the repository)
 - 5 minutes of your time
 
@@ -154,7 +154,7 @@ This page allows you to:
 
 - **View current configuration** from connected collectors
 - **Apply configuration changes** with validation and diff preview
-- **Use configuration templates** for common scenarios (default, prometheus-remote-write, etc.)
+- **Use collector presets** for common scenarios (sampling, PII redaction, transforms, connectors, prometheus-remote-write...); see [Collector presets](collector-presets.md)
 - **Check OpAMP server status** and see connected collector agents
 - **Validate configurations** before applying to catch errors early
 

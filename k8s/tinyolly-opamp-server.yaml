@@ -17,7 +17,7 @@ spec:
       containers:
       - name: tinyolly-opamp-server
         image: tinyolly/opamp-server:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 4320
           name: websocket
