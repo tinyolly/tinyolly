@@ -105,13 +105,13 @@ else
 fi
 
 # Offer to clean up Docker images if using kind
-if command -v kind &> /dev/null && [ "$CONTEXT" = "kind-tinyolly" ]; then
+if command -v kind &> /dev/null && [ "$CONTEXT" = "kind-${KIND_CLUSTER:-tinyolly}" ]; then
     echo ""
     read -p "$(echo -e ${YELLOW}Do you want to remove demo Docker images from kind node? [y/N]:${NC} )" -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${BLUE}Removing Docker images from kind node...${NC}"
-        docker exec tinyolly-control-plane sh -c 'crictl images | grep demo | awk "{print \$1\":\"\$2}" | xargs -r crictl rmi' || true
+        docker exec "${KIND_CLUSTER:-tinyolly}-control-plane" sh -c 'crictl images | grep demo | awk "{print \$1\":\"\$2}" | xargs -r crictl rmi' || true
         echo -e "${GREEN}✓ Docker images removed${NC}"
     fi
 fi

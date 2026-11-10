@@ -1,4 +1,5 @@
 #!/bin/bash
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 set +e  # Don't exit on errors
 
 # Trap to prevent terminal exit

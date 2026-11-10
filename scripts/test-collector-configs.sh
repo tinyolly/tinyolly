@@ -14,15 +14,16 @@ if [ $# -gt 0 ]; then FILES=("$@"); else FILES=(docker/otelcol-configs/config.ya
 # Colima only shares $HOME with containers.
 DATA_DIR=$(mktemp -d -p "$PWD" .cfgtest-data.XXXXXX)
 chmod 777 "$DATA_DIR"
-trap 'rm -rf "$DATA_DIR"' EXIT
+name="cfgtest-$$"
+trap 'docker rm -f "$name" >/dev/null 2>&1; rm -rf "$DATA_DIR"' EXIT INT TERM
 
 fail=0
 for f in "${FILES[@]}"; do
-  if ! out=$(docker run --rm -v "$PWD/$f":/c.yaml "$IMG" validate --config /c.yaml 2>&1); then
+  case "$f" in /*) abs="$f" ;; *) abs="$PWD/$f" ;; esac   # accept absolute or repo-relative paths
+  if ! out=$(docker run --rm -v "$abs":/c.yaml "$IMG" validate --config /c.yaml 2>&1); then
     echo "FAIL validate  $f"; echo "$out" | tail -5 | sed 's/^/    /'; fail=1; continue
   fi
-  name="cfgtest-$$"
-  docker run -d --name "$name" -v "$PWD/$f":/c.yaml -v "$DATA_DIR":/var/lib/otelcol "$IMG" --config /c.yaml >/dev/null
+  docker run -d --name "$name" -v "$abs":/c.yaml -v "$DATA_DIR":/var/lib/otelcol "$IMG" --config /c.yaml >/dev/null
   sleep 6
   logs=$(docker logs "$name" 2>&1)
   docker rm -f "$name" >/dev/null 2>&1

@@ -1,4 +1,5 @@
 #!/bin/bash
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 set +e
 
 echo "Rebuilding TinyOlly UI..."

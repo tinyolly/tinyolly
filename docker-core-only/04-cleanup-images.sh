@@ -1,4 +1,5 @@
 #!/bin/bash
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 set +e  # Don't exit on errors
 
 # Colors for output
@@ -23,7 +24,7 @@ fi
 echo -e "${BLUE}Searching for TinyOlly Docker images...${NC}"
 echo ""
 
-IMAGES=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "tinyolly" || true)
+IMAGES=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E '^(tinyolly/)' || true)
 
 if [ -z "$IMAGES" ]; then
     echo -e "${YELLOW}No TinyOlly-related images found${NC}"
@@ -35,11 +36,11 @@ fi
 # Display images that will be removed
 echo -e "${YELLOW}The following Docker images will be removed:${NC}"
 echo ""
-docker images | grep -E "REPOSITORY|tinyolly"
+docker images | grep -E 'REPOSITORY|^(tinyolly/)'
 echo ""
 
 # Calculate total size
-TOTAL_SIZE=$(docker images --format "{{.Repository}}:{{.Tag}} {{.Size}}" | grep -E "tinyolly" | awk '{print $2}' | sed 's/MB//;s/GB/*1024/;s/KB\/1024/' | bc 2>/dev/null | awk '{sum+=$1} END {printf "%.1f", sum}' || echo "unknown")
+TOTAL_SIZE=$(docker images --format "{{.Repository}}:{{.Tag}} {{.Size}}" | grep -E '^(tinyolly/)' | awk '{v=$2; u=v; gsub(/[0-9.]/,"",u); n=v+0; if(u=="GB")n*=1024; else if(u=="kB"||u=="KB")n/=1024; else if(u=="B")n/=1048576; s+=n} END{printf "%.1f", s}') || echo "unknown"
 echo -e "${BLUE}Total size: ${TOTAL_SIZE}MB${NC}"
 echo ""
 
@@ -75,10 +76,10 @@ echo -e "${GREEN}✓ Removed ${COUNT} image(s)${NC}"
 echo ""
 
 # Check if any images remain
-REMAINING=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "tinyolly" || true)
+REMAINING=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E '^(tinyolly/)' || true)
 if [ -n "$REMAINING" ]; then
     echo -e "${YELLOW}Note: Some images could not be removed (likely in use by running containers):${NC}"
-    docker images | grep -E "REPOSITORY|tinyolly"
+    docker images | grep -E 'REPOSITORY|^(tinyolly/)'
     echo ""
     echo -e "${YELLOW}Stop containers first with:${NC}"
     echo "  docker compose -f docker-compose-tinyolly-core.yml down"

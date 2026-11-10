@@ -4,6 +4,7 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts/lib" && pwd)/kubectx.sh" && require_kind_context || { return 1 2>/dev/null || exit 1; }
 set +e
 
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 # This script rebuilds the UI image and restarts the K8s pod to pick up changes.
 
 
@@ -25,7 +26,10 @@ fi
 
 echo ""
 echo "Loading image into kind..."
-kind load docker-image tinyolly/ui:latest --name "${KIND_CLUSTER:-tinyolly}"
+if ! kind load docker-image tinyolly/ui:latest --name "${KIND_CLUSTER:-tinyolly}"; then
+    echo "✗ kind load failed; not restarting the pod"
+    exit 1
+fi
 
 echo ""
 echo "Restarting UI Pod..."

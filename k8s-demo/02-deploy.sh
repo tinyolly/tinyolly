@@ -51,7 +51,7 @@ echo ""
 # Check if using the local kind cluster
 USE_KIND=false
 RESTORE_MANIFESTS=false
-if [ "$CONTEXT" = "kind-tinyolly" ]; then
+if [ "$CONTEXT" = "kind-${KIND_CLUSTER:-tinyolly}" ]; then
     USE_KIND=true
 fi
 

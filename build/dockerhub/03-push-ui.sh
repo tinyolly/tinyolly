@@ -12,6 +12,7 @@ cd "$SCRIPT_DIR/../../docker"
 
 # Always use the Colima docker daemon
 unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 
 VERSION=${1:-"latest"}
 DOCKER_HUB_ORG=${DOCKER_HUB_ORG:-"tinyolly"}
