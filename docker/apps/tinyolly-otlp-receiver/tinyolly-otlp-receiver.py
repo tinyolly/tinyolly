@@ -3,15 +3,16 @@ TinyOlly OTLP Receiver - gRPC Implementation with Async Storage
 Receives OTLP data from OpenTelemetry Collector via gRPC and stores in TinyOlly storage
 Optimized with Batch Operations and uvloop
 """
-import grpc
-from concurrent import futures
-import time
-import sys
 import asyncio
-import threading
-import uvloop
-import os
 import logging
+import os
+import sys
+import threading
+import time
+from concurrent import futures
+
+import grpc
+import uvloop
 
 # Configure OpenTelemetry logging before other imports
 # This will automatically instrument logging to send logs via OTLP
@@ -28,12 +29,9 @@ except ImportError:
     # If OpenTelemetry is not available, continue without instrumentation
     pass
 
-from opentelemetry.proto.collector.trace.v1 import trace_service_pb2_grpc
-from opentelemetry.proto.collector.trace.v1 import trace_service_pb2
-from opentelemetry.proto.collector.logs.v1 import logs_service_pb2_grpc
-from opentelemetry.proto.collector.logs.v1 import logs_service_pb2
-from opentelemetry.proto.collector.metrics.v1 import metrics_service_pb2_grpc
-from opentelemetry.proto.collector.metrics.v1 import metrics_service_pb2
+from opentelemetry.proto.collector.logs.v1 import logs_service_pb2, logs_service_pb2_grpc
+from opentelemetry.proto.collector.metrics.v1 import metrics_service_pb2, metrics_service_pb2_grpc
+from opentelemetry.proto.collector.trace.v1 import trace_service_pb2, trace_service_pb2_grpc
 
 from tinyolly_common import Storage
 

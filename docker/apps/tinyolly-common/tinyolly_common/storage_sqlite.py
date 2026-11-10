@@ -6,13 +6,13 @@ Handles all telemetry storage interactions using SQLite.
 import asyncio
 import base64
 import json
+import logging
 import os
 import sqlite3
 import time
 import uuid
-import logging
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import aiosqlite
 import msgpack
@@ -20,7 +20,7 @@ import orjson
 import zstandard as zstd
 from async_lru import alru_cache
 
-from .otlp_utils import parse_attributes, extract_resource_attributes, get_attr_value, is_error_status
+from .otlp_utils import extract_resource_attributes, get_attr_value, is_error_status, parse_attributes
 
 logger = logging.getLogger(__name__)
 
@@ -1624,7 +1624,7 @@ class StorageSQLite:
                 services[service_name]["error_count"] += 1
 
         result = []
-        for service_name, data in services.items():
+        for data in services.values():
             durations = sorted(data["durations"])
             p50 = None
             p95 = None

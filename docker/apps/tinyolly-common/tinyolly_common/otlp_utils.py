@@ -2,7 +2,7 @@
 OpenTelemetry Protocol (OTLP) utility functions for parsing attributes and resources.
 Centralized to avoid code duplication across trace, log, and metric processing.
 """
-from typing import Dict, Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 
 def parse_attributes(attrs_list: List[Dict[str, Any]]) -> Dict[str, Any]:

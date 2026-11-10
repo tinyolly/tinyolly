@@ -4,6 +4,8 @@ import time
 
 import pytest
 
+from tinyolly_common.otlp_utils import is_error_status
+
 
 def _otlp(trace_id, attrs):
     now = time.time_ns()
@@ -41,13 +43,10 @@ async def test_roundtrip_logs(storage):
                                        "body": {"stringValue": "hello"}}]}],
     }]})
     logs = await storage.get_logs(limit=10)
-    assert any("hello" in str(l) for l in logs)
+    assert any("hello" in str(entry) for entry in logs)
 
 
 # --- error status detection (OTLP carries the enum name or the number depending on ingest path) ---
-
-from tinyolly_common.otlp_utils import is_error_status
-
 
 @pytest.mark.parametrize("status,expected", [
     ({"code": 2}, True),
@@ -66,13 +65,18 @@ def test_is_error_status(status, expected):
 async def test_trace_summary_flags_error_below_root(storage):
     tid = "6c8efff798038103d269b633813fc60d"
     now = time.time_ns()
-    b64 = lambda h: base64.b64encode(bytes.fromhex(h)).decode()
-    span = lambda sid, parent, status: {
-        "traceId": b64(tid), "spanId": b64(sid), "name": "s", "kind": 1,
-        **({"parentSpanId": b64(parent)} if parent else {}),
-        "startTimeUnixNano": str(now), "endTimeUnixNano": str(now + 1_000_000),
-        "status": status, "attributes": [],
-    }
+
+    def b64(h):
+        return base64.b64encode(bytes.fromhex(h)).decode()
+
+    def span(sid, parent, status):
+        return {
+            "traceId": b64(tid), "spanId": b64(sid), "name": "s", "kind": 1,
+            **({"parentSpanId": b64(parent)} if parent else {}),
+            "startTimeUnixNano": str(now), "endTimeUnixNano": str(now + 1_000_000),
+            "status": status, "attributes": [],
+        }
+
     await storage.store_traces({"resourceSpans": [{
         "resource": {"attributes": [{"key": "service.name", "value": {"stringValue": "svc"}}]},
         "scopeSpans": [{"spans": [

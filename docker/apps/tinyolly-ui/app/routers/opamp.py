@@ -1,18 +1,19 @@
 """OpAMP endpoints for managing OpenTelemetry Collector configuration"""
 
-import os
-import tempfile
-import subprocess
 import logging
-from typing import Optional
+import os
+import subprocess
+import tempfile
 from pathlib import Path
-from fastapi import APIRouter, Query, HTTPException, Depends
-from pydantic import BaseModel, Field
-import yaml
+from typing import Optional
+
 import aiohttp
+import yaml
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from ..config import settings
-from ..services.validation import format_otelcol_errors, basic_validation
+from ..services.validation import basic_validation, format_otelcol_errors
 
 router = APIRouter(prefix="/api/opamp", tags=["OpAMP"])
 
@@ -65,7 +66,7 @@ async def opamp_status():
         raise HTTPException(
             status_code=503,
             detail=f"OpAMP server unavailable: {str(e)}"
-        )
+        ) from e
 
 
 @router.get(
@@ -107,7 +108,7 @@ async def opamp_get_config(
         raise HTTPException(
             status_code=503,
             detail=f"OpAMP server unavailable: {str(e)}"
-        )
+        ) from e
 
 
 @router.post(
@@ -237,7 +238,7 @@ async def opamp_update_config(request: ConfigUpdateRequest):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid YAML configuration: {str(e)}"
-        )
+        ) from e
 
     try:
         async with aiohttp.ClientSession() as session:
@@ -262,7 +263,7 @@ async def opamp_update_config(request: ConfigUpdateRequest):
         raise HTTPException(
             status_code=503,
             detail=f"OpAMP server unavailable: {str(e)}"
-        )
+        ) from e
 
 
 @router.get(
@@ -297,7 +298,7 @@ async def opamp_health():
         raise HTTPException(
             status_code=503,
             detail=f"OpAMP server unavailable: {str(e)}"
-        )
+        ) from e
 
 
 @router.get(
@@ -416,7 +417,7 @@ async def opamp_get_template(template_id: str):
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to read default config: {str(e)}"
-            )
+            ) from e
     
     # Handle other templates
     templates_dir = Path(settings.otelcol_templates_dir)
@@ -439,4 +440,4 @@ async def opamp_get_template(template_id: str):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to read template: {str(e)}"
-        )
+        ) from e

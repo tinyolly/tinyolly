@@ -143,7 +143,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install linters
-        run: pip install ruff
+        run: pip install ruff==0.17.4   # keep in sync with ruff.toml; the default rule set changes between releases
 
       - name: Run ruff
         run: ruff check docker/apps/

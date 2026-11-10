@@ -1,7 +1,6 @@
 import asyncio
 import tempfile
 
-import aiosqlite
 import pytest
 import pytest_asyncio
 

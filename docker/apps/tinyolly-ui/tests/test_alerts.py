@@ -8,7 +8,6 @@ These tests verify:
 - Alert queries
 """
 import pytest
-import pytest_asyncio
 
 
 class TestAlertStorage:

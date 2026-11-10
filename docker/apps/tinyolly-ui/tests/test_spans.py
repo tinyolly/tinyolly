@@ -9,7 +9,6 @@ These tests verify:
 - Parent-child relationships
 """
 import pytest
-import pytest_asyncio
 
 
 class TestSpanStorage:

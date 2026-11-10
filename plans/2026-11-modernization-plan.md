@@ -15,7 +15,7 @@ Handoff / how to resume: `plans/HANDOFF.md`
 | 5 UI gaps | not started | – | see `plans/2026-11-trace-accuracy-plan.md` (waterfall work) first |
 | 6 CI & release | not started | – | consolidation of deploy dirs, buildx multi-arch, v3.0.0 |
 
-Open items carried forward: 136 placeholder UI tests, `ruff` reports 354 pre-existing errors (CI lint job fails), `versions.env` vs Dockerfile `ARG` sync check, `k8s-core-only` embeds its own collector config.
+Open items carried forward: 136 placeholder UI tests, `versions.env` vs Dockerfile `ARG` sync check, `k8s-core-only` embeds its own collector config.
 
 ## Goals
 
@@ -179,3 +179,9 @@ Decision: the custom 6-service Python shop is dropped. `docker-otel-demo/` runs 
 - Dropped from original Phase 4: custom Postgres/Redis/queue services and the loadgen scenario profiles, "cardinality bomb" and "duplicate log spam" failure modes (not in the upstream demo; `docker-demo` Flask apps remain for ad-hoc presets), Kafka/messaging spans + span links (Kafka consumers are not in the 16-service subset; they need ~1.1 GB more — possible stretch via `compose.full.yaml`).
 - Not done / untested: Helm path (`k8s-otel-demo/`, chart 0.42.6 pinned, load generator trimmed; chart needs Kafka so ≥ 6 GB VM); flags other than the two verified; eBPF + AI-agent variants unchanged (AI agent GenAI-semconv upgrade not done); Prom RW v2 replacement not done.
 - Android plan: its "mini Python shop first" backend choice is obsolete — the app should target the OTel Demo frontend `/api/*` (reachable at `10.0.2.2:8080` from the emulator, which this setup already exposes).
+
+### Lint fix (2026-11-09)
+- The 354 `ruff` errors were mostly an artifact: with no config, ruff's *default* rule set depends on its version (0.17 enables UP/B/BLE/SIM/PERF/RUF families), so the unpinned CI lint job was a moving target. Added `ruff.toml` (explicit rules `E4,E7,E9,F,B,I`, py313, FastAPI `Depends` etc. as immutable calls) and pinned `ruff==0.17.4` in CI.
+- Real findings fixed (64 under the chosen set): 19 unused imports, 20 unsorted import blocks (auto-fix), 13 `raise HTTPException` inside `except` now `from e` (B904), 3 dead variables, 1 unused loop variable, 3 test style issues. The 24 B008 hits were all FastAPI `Depends()` (config, not code).
+- Deliberately NOT enabled: pyupgrade (`UP`, 150+ `List`→`list` rewrites), `BLE001` blind-except (12 sites), `SIM`, `RUF`, `PERF`; worth a separate pass if wanted.
+- Verified after the refactor: common tests 11 pass, UI tests 2 pass (136 skipped), images rebuilt, stack up with no tracebacks, ingest/validate/template endpoints (including the error paths) behave as before.

@@ -1,11 +1,13 @@
 """Service-related endpoints"""
 
-from typing import Dict, Any, List
-from fastapi import APIRouter, Query, Depends
+from typing import Any, Dict, List
 
+from fastapi import APIRouter, Depends, Query
 from models import ServiceMap
-from ..dependencies import get_storage
+
 from tinyolly_common import Storage
+
+from ..dependencies import get_storage
 
 router = APIRouter(prefix="/api", tags=["Services"])
 

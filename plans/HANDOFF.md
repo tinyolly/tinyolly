@@ -52,7 +52,7 @@ See the status table in the modernization plan. Short version: Colima + kind run
 * Phase 3: presets `enrichment`, `metrics-shaping`, `connectors-metrics` applied with zero collector errors but their output was not inspected; the transform preset's "derive severity from body" rule was never exercised; k8s ConfigMaps (generated) not deployed to kind; `k8s-core-only` embeds its own collector config in `tinyolly-opamp-server.yaml` (not synced).
 * Phase 4: only `paymentFailure` and `emitRawPii` (+ `pii-redaction`) were verified; the other flags in `docs/otel-demo.md` are expectations. Helm path (`k8s-otel-demo/`, chart 0.42.6) untested and needs ≥ 6 GB because the chart deploys Kafka.
 * UI visual checks: the user tested the UI visually (service map, charts after the Chart.js/Cytoscape bumps) and reported it fine; the sticky-header fix was deployed but not re-checked by eye.
-* Tests: 136 of the UI tests are placeholder `pytest.skip` stubs. `ruff check docker/apps/` reports 354 pre-existing errors, so the CI lint job fails. The receiver has no tests (CI only byte-compiles it). The `ui`/`receiver` CI jobs have not run on GitHub at all.
+* Tests: 136 of the UI tests are placeholder `pytest.skip` stubs. Lint was fixed (see below): `ruff.toml` pins an explicit rule set and CI pins `ruff==0.17.4`. The receiver has no tests (CI only byte-compiles it). The `ui`/`receiver` CI jobs have not run on GitHub at all.
 * Nothing was ever run in GitHub CI; workflows were only YAML-parsed locally.
 
 ## Gotchas learned (save yourself the time)
@@ -74,7 +74,7 @@ See the status table in the modernization plan. Short version: Colima + kind run
 
 ## Suggested next steps (in order)
 
-1. Push/PR: open one PR per phase (recreate the phase branches from the SHAs above) or one stacked PR; fix the CI lint job first (`ruff` errors) so PR checks are meaningful.
+1. Push/PR: open one PR per phase (recreate the phase branches from the SHAs above) or one stacked PR. The lint job should now pass (`ruff check docker/apps/` is clean locally); nothing has run on GitHub yet.
 2. Close the verification gaps above that are cheap: run `k8s-demo` / `k8s-core-only` on kind, inspect the three un-inspected presets, run the remaining demo flags.
 3. **Trace accuracy / waterfall work** (`plans/2026-11-trace-accuracy-plan.md`): fixtures → BigInt timestamps → nest spans by parent → fix the 100-span cap → incomplete-trace indicator → Jaeger diff → render test.
 4. Phase 5 UI gaps (exemplar→trace links, span events/exceptions pane, span links, processor-effect panel on the Collector tab) and Phase 6 (consolidate deploy dirs, buildx multi-arch with a `docker-container` builder, v3.0.0).

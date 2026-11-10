@@ -1,18 +1,18 @@
 """Main FastAPI application factory"""
 
-import time
-import uvloop
 import asyncio
+import time
+
+import uvloop
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .config import settings
 from .core.logging import setup_logging
-from .core.telemetry import setup_telemetry
 from .core.middleware import setup_middleware
-from .routers import ingest, query, services, admin, system, opamp
+from .core.telemetry import setup_telemetry
+from .routers import admin, ingest, opamp, query, services, system
 from .routers.system import set_templates
 
 # Install uvloop policy for faster event loop

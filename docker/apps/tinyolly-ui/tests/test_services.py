@@ -8,7 +8,6 @@ These tests verify:
 - Service health tracking
 """
 import pytest
-import pytest_asyncio
 
 
 class TestServiceCatalog:
