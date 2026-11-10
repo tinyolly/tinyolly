@@ -200,6 +200,7 @@ def serve(port=4343):
     except KeyboardInterrupt:
         logger.info("\nShutting down...")
         server.stop(0)
+        run_async(storage.close())
 
 
 if __name__ == '__main__':

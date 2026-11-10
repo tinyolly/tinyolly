@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+from contextlib import asynccontextmanager
 
 import uvloop
 from fastapi import FastAPI
@@ -12,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 from .core.logging import setup_logging
 from .core.middleware import setup_middleware
 from .core.telemetry import setup_telemetry
+from .dependencies import get_storage
 from .routers import admin, ingest, opamp, query, services, system
 from .routers.system import set_templates
 
@@ -25,9 +27,16 @@ setup_logging()
 setup_telemetry()
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    await get_storage().close()     # stop the storage cleanup task on shutdown
+
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application"""
     app = FastAPI(
+        lifespan=lifespan,
         title="TinyOlly",
         version="2.0.0",
         description="""

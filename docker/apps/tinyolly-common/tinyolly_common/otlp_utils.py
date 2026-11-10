@@ -2,6 +2,8 @@
 OpenTelemetry Protocol (OTLP) utility functions for parsing attributes and resources.
 Centralized to avoid code duplication across trace, log, and metric processing.
 """
+import base64
+import binascii
 from typing import Any, Dict, List, Optional, Union
 
 
@@ -72,40 +74,67 @@ def is_error_status(status: Any) -> bool:
     return code == 2 or code == "2" or code in ("STATUS_CODE_ERROR", "ERROR")
 
 
+def normalize_id(value: Any, nbytes: int) -> str:
+    """Return a trace/span id as lowercase hex, or "" when absent or malformed.
+
+    OTLP/JSON from protobuf (MessageToDict) carries ids as base64, but the OTLP/JSON spec and many
+    non-protobuf clients send hex. The two are told apart by length (16-byte ids: 32 hex vs 24 base64
+    chars; 8-byte ids: 16 hex vs 12 base64 chars), so decoding unconditionally turned hex ids into garbage
+    and a malformed id raised and failed the whole batch. All-zero ids are treated as absent.
+    """
+    if not value:
+        return ""
+    if isinstance(value, (bytes, bytearray)):
+        raw = bytes(value)
+        return raw.hex() if len(raw) == nbytes and any(raw) else ""
+    if not isinstance(value, str):
+        return ""
+    v = value.strip()
+    if len(v) == nbytes * 2:
+        try:
+            raw = bytes.fromhex(v)
+        except ValueError:
+            raw = None
+        if raw is not None:
+            return raw.hex() if any(raw) else ""
+    try:
+        raw = base64.b64decode(v, validate=True)
+    except (binascii.Error, ValueError):
+        return ""
+    return raw.hex() if len(raw) == nbytes and any(raw) else ""
+
+
 def get_attr_value(obj: Dict[str, Any], keys: List[str]) -> Optional[Union[str, int, bool, float]]:
-    """Extract attribute value from span/log object by trying multiple key names.
-    
-    Handles both OTLP list format and normalized dict format for attributes.
-    Tries keys in order and returns the first match found.
-    
-    Args:
-        obj: Span or log object containing attributes
-        keys: List of attribute keys to try (in order of preference)
-        
-    Returns:
-        First matching attribute value or None if not found
-        
+    """Extract an attribute value from a span/log object, trying key names in order of preference.
+
+    Handles both the OTLP list format and the normalized dict format. The first *key* in `keys` that is
+    present wins (previously the first *attribute* in the span whose key was in `keys` won, so a less
+    preferred key could shadow the preferred one).
+
     Example:
         get_attr_value(span, ['http.method', 'http.request.method'])
-        # Returns 'GET' if either key exists
     """
     attributes = obj.get('attributes', [])
-    
-    # Handle OTLP list of dicts format
+
     if isinstance(attributes, list):
+        by_key: Dict[str, Any] = {}
         for attr in attributes:
-            if attr.get('key') in keys:
+            if not isinstance(attr, dict):
+                continue
+            k = attr.get('key')
+            if k in keys and k not in by_key:
                 val = attr.get('value', {})
-                # Return the first non-null value found
-                for k in ['stringValue', 'intValue', 'boolValue', 'doubleValue']:
-                    if k in val:
-                        return val[k]
-    
-    # Handle dict format (if normalized)
+                if isinstance(val, dict):
+                    for vk in ('stringValue', 'intValue', 'boolValue', 'doubleValue'):
+                        if vk in val:
+                            by_key[k] = val[vk]
+                            break
+        for key in keys:
+            if key in by_key:
+                return by_key[key]
     elif isinstance(attributes, dict):
         for key in keys:
             if key in attributes:
                 return attributes[key]
-    
-    return None
 
+    return None
