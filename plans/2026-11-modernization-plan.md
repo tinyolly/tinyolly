@@ -1,6 +1,21 @@
 # TinyOlly Modernization Plan
 
-Date: 2026-11-09 · Last commit: 2026-04-22 (v2.3.0) · Status: Phase 0 done (branch `modernize/phase-0-baseline`)
+Date: 2026-11-09 · Last upstream commit before this work: 2026-04-22 (v2.3.0) · Status: **Phases 0–4 done** (stacked branches, see Status below); Phases 5–6 not started
+Handoff / how to resume: `plans/HANDOFF.md`
+
+## Status (updated 2026-11-09)
+
+| Phase | State | Branch (each stacked on the previous) | Notes |
+|---|---|---|---|
+| 0 Baseline | done | `modernize/phase-0-baseline` | `versions.env`, Redis removed, `site/` untracked |
+| 1 Colima + kind | done, partly verified | `modernize/phase-1-colima-kind` | core stack + kind core deploy verified; k8s-demo/ebpf/cleanup scripts, eBPF under vz **not** run |
+| 2 Deps/images | done | `modernize/phase-2-deps` | pins, locks, Go 1.27, CI jobs, Dependabot |
+| 3 Collector presets | done | `modernize/phase-3-processors` | 8 presets; 5 verified live, 3 only applied cleanly |
+| 4 Demo | **changed**: upstream OTel Demo (16-service subset) instead of a custom shop | `modernize/phase-4-otel-demo` | fits 8 GB; Helm path untested |
+| 5 UI gaps | not started | – | see `plans/2026-11-trace-accuracy-plan.md` (waterfall work) first |
+| 6 CI & release | not started | – | consolidation of deploy dirs, buildx multi-arch, v3.0.0 |
+
+Open items carried forward: 136 placeholder UI tests, `ruff` reports 354 pre-existing errors (CI lint job fails), `versions.env` vs Dockerfile `ARG` sync check, `k8s-core-only` embeds its own collector config.
 
 ## Goals
 
@@ -71,7 +86,7 @@ Notes / to verify at execution time: which of these are beta/alpha in the pinned
 - Make `incorrect.yaml` an explicit "validation demo" under `templates/examples/` and add ≥6 real templates (one per preset above).
 - Collector tab: ensure effective-config + health from supervisor surface processor-level stats (collector internal telemetry on :8888 scraped into TinyOlly; show accepted/refused/dropped per processor).
 
-### Phase 4 — Better telemetry demo (2 PRs)
+### Phase 4 — Better telemetry demo (2 PRs)  — SUPERSEDED: see "Phase 4 (2026-11-09) — CHANGED" in the execution log; the custom-shop text below is kept for history
 Replace the two-service Flask demo with a small multi-service "shop" (single compose + single k8s manifest, one code base per language, shared load generator):
 - Python-only (decided): `web` (Flask/FastAPI), `cart`, `payments`, `inventory` (Postgres via SQLAlchemy), `worker` (Redis/RabbitMQ or Kafka consumer), `loadgen` (Locust or k6 with scenario profiles).
 - Real dependencies: Postgres, Redis (as a demo dependency only), a queue → DB spans, messaging spans with span links, `db.*` and `messaging.*` semconv.

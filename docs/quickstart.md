@@ -154,7 +154,7 @@ This page allows you to:
 
 - **View current configuration** from connected collectors
 - **Apply configuration changes** with validation and diff preview
-- **Use configuration templates** for common scenarios (default, prometheus-remote-write, etc.)
+- **Use collector presets** for common scenarios (sampling, PII redaction, transforms, connectors, prometheus-remote-write...); see [Collector presets](collector-presets.md)
 - **Check OpAMP server status** and see connected collector agents
 - **Validate configurations** before applying to catch errors early
 

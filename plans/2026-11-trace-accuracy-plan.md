@@ -1,6 +1,6 @@
 # Trace Accuracy & Waterfall Plan
 
-Date: 2026-11-09 · Status: draft · Branch: `modernize/phase-4-otel-demo` (follow-up; fits modernization Phase 5 "UI gaps")
+Date: 2026-11-09 · Status: in progress (item 1 done, rest not started) · Branch: `modernize/phase-4-otel-demo` (follow-up; fits modernization Phase 5 "UI gaps")
 
 ## Goal
 

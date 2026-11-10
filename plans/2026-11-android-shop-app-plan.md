@@ -1,6 +1,6 @@
 # TinyOlly Otel Shop — Android App (clean-room, OTel SDK)
 
-Date: 2026-11-09 · Status: draft · Companion to `2026-11-modernization-plan.md` (Phase 4 shop, Phase 3 collector presets)
+Date: 2026-11-09 · Status: draft, **not started** (backend decision updated: OTel Demo) · Companion to `2026-11-modernization-plan.md` (Phase 4 demo, Phase 3 collector presets)
 
 ## Goal
 
@@ -98,7 +98,7 @@ Emulator-only for v1. Everything runs from scripts, same style as the demo `0N-*
 | M5 | TinyOlly support | Mobile collector preset, UI gaps above, demo tour section ("follow one tap to the DB") | 3 d |
 | M6 | Tooling, CI, docs | the five CLI scripts above, unit + instrumented smoke test, CI build, README + screenshots | 2 d |
 
-M0 can start immediately and runs in parallel with modernization Phases 1–3. M3–M5 need the Phase 3 collector baseline and Phase 4 shop.
+M0 can start immediately. M3–M5 needed the Phase 3 collector baseline and the Phase 4 demo; both now exist (collector presets, OTel Demo at `docker-otel-demo/`, shop frontend on `localhost:8080`), so the Android work is unblocked once M0 (spec + API contract against the demo `/api/*` routes) is written.
 
 ## Verification (per phase, acceptance)
 

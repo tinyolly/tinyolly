@@ -29,6 +29,8 @@ Visualize and correlate logs, metrics, and traces without sending data to the cl
 - Smart auto-refresh that pauses when search filters are active
 - Space-based data retention (keeps data until storage limit; no fixed TTL)
 - Works with any OTel Collector distro
+- Collector presets applied from the UI via OpAMP: tail sampling, PII redaction, OTTL transforms, enrichment, metrics shaping, log dedup, derived-metric and routing connectors ([docs](docs/collector-presets.md))
+- Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags ([docs](docs/otel-demo.md))
 - Built with Python (FastAPI), SQLite, and JavaScript
 - Pre-built Docker images available on Docker Hub
 
@@ -83,7 +85,7 @@ git clone https://github.com/tinyolly/tinyolly
 
 ## Prerequisites (macOS)
 
-TinyOlly uses [Colima](https://github.com/abiosoft/colima) as the container runtime and [kind](https://kind.sigs.k8s.io/) for Kubernetes (Docker Desktop and Minikube are no longer used).
+TinyOlly uses [Colima](https://github.com/abiosoft/colima) as the container runtime and [kind](https://kind.sigs.k8s.io/) for Kubernetes.
 
 ```bash
 brew install colima docker docker-compose docker-buildx kubectl kind helm
@@ -104,6 +106,9 @@ Start the observability backend (pulls pre-built images from Docker Hub):
 cd docker
 ./01-start-core.sh
 ```
+
+> **Working from a checkout of the modernization branches?** The published Docker Hub images predate them (Python 3.13, pinned collector 0.165.0, error-status fix, new presets).
+> Use `./01-start-core-local.sh` to build from this checkout instead.
 
 **Deployment time:** ~30 seconds (pulls images from Docker Hub)
 
@@ -134,14 +139,12 @@ Two Flask microservices with automatic traffic generation (pulls from Docker Hub
 
 ### 3. eBPF Zero-Code Tracing Demo (Optional)
 
-Deploy a demo showing OpenTelemetry eBPF Instrumentation (OBI) - traces captured at the kernel level with zero code changes:
+Deploy a demo showing OpenTelemetry eBPF Instrumentation (OBI) - traces captured at the kernel level with zero code changes (~30 secs deploy):
 
 ```bash
 cd docker-demo-ebpf
 ./01-deploy-ebpf-demo.sh
 ```
-
-**Deployment time:** ~30 seconds (pulls pre-built images from Docker Hub)
 
 This demonstrates:
 - **eBPF Agent** captures HTTP traces automatically at kernel level
@@ -177,11 +180,11 @@ View AI traces in the **AI Agents** tab - see prompts, responses, token usage (i
 
 ### 6. OpenTelemetry Demo / Astronomy Shop (Optional)
 
-A 16-service subset of the upstream [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) wired to TinyOlly (~1.6 GB VM memory), with failure-injection flags:
+A 16-service subset of the upstream [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) wired to TinyOlly (~1.6 GB of VM memory, fits an 8 GB Mac), with failure-injection flags. Start TinyOlly core first:
 
 ```bash
 cd docker-otel-demo
-./01-start-otel-demo.sh                  # shop: http://localhost:8080  (start TinyOlly core first)
+./01-start-otel-demo.sh                  # shop: http://localhost:8080
 ./03-set-flag.sh paymentFailure 50%      # inject failures; see docs/otel-demo.md
 ./02-stop-otel-demo.sh
 ```
@@ -224,6 +227,8 @@ service:
 ```
 
 The default configuration template (located at `docker/otelcol-configs/config.yaml`) shows a complete example with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.
+
+**Presets:** the Collector tab lists ready-made configs (sampling, PII redaction, transform/OTTL, enrichment, metrics shaping, log dedup, connectors). Each preset overrides the `traces`/`metrics`/`logs` pipelines because the supervisor merges remote config into the base config by name, and takes ~10-30 s to become active. See [Collector presets](docs/collector-presets.md). Validate configs with `./scripts/test-collector-configs.sh`.
 
 **Stop:** `./02-stop-core.sh`
 
