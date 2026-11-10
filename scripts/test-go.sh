@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Always use the Colima docker daemon (not Docker Desktop / the default colima VM)
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 # gofmt + go vet + go test -race for the OpAMP server, in the pinned golang image (no local Go needed).
 set -euo pipefail
 cd "$(dirname "$0")/.."

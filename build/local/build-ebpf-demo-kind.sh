@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Always use the Colima docker daemon
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
+
 # Build TinyOlly eBPF demo images locally via Colima docker + kind load
 # Usage: ./build-ebpf-demo-kind.sh
 #

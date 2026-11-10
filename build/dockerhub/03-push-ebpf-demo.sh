@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Always use the Colima docker daemon
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
+
 # Push TinyOlly eBPF demo images to Docker Hub
 # Usage: ./push-ebpf-demo.sh [version]
 # Example: ./push-ebpf-demo.sh v2.1.0

@@ -9,13 +9,33 @@ own collector, Jaeger, Grafana, Prometheus, OpenSearch, Kafka and its consumers 
 **Footprint:** ~1.1 GB of containers for demo + TinyOlly, ~1.6 GB used inside the Colima VM (4 GB default), so it runs on an 8 GB Mac.
 
 ```bash
-./scripts/colima-up.sh
-(cd docker && ./01-start-core-local.sh)         # TinyOlly core first (UI :5005, OTLP :4317)
+# 1. One-time prerequisites (macOS)
+brew install colima docker docker-compose docker-buildx git
+mkdir -p ~/.docker && echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json   # merge into an existing file if you have one
+
+# 2. Get TinyOlly and start its Colima VM
+git clone https://github.com/tinyolly/tinyolly.git && cd tinyolly
+./scripts/colima-up.sh                  # VM 'tinyolly' (Docker context: colima-tinyolly); COLIMA_MEMORY=6 ./scripts/colima-up.sh for more headroom
+
+# 3. Start TinyOlly core (UI :5005, OTLP :4317/:4318)
+(cd docker && ./01-start-core.sh)       # use ./01-start-core-local.sh to build from this checkout instead
+
+# 4. Start the OpenTelemetry Demo (first run pulls ~16 images)
 cd docker-otel-demo
-./01-start-otel-demo.sh                          # shop on http://localhost:8080 (first run pulls ~16 images)
-./03-set-flag.sh                                 # list failure-injection flags
-./02-stop-otel-demo.sh                           # stop the demo (TinyOlly keeps running)
+./01-start-otel-demo.sh                 # clones opentelemetry-demo into .demo/ and starts a 16-service subset
+
+# 5. Use it
+open http://localhost:8080              # the shop
+open http://localhost:5005              # TinyOlly
+./03-set-flag.sh                        # list failure-injection flags
+./03-set-flag.sh paymentFailure 50%     # inject failures
+./03-set-flag.sh --reset                # turn all flags off
+
+# 6. Stop
+./02-stop-otel-demo.sh                  # demo only; add --purge to delete the .demo/ clone
 ```
+
+**No config edits are needed.** The script clones the demo at the pinned version and points every service at TinyOlly's collector (`host.docker.internal:4317`).
 
 Options: `LOADGEN=0` (no load generator), `LOCUST_USERS=3`, `SERVICES="..."` (custom service list).
 

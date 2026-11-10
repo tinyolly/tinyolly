@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Always use the Colima docker daemon (not Docker Desktop / the default colima VM)
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 # Validate AND start every collector config/template with the pinned collector-contrib image.
 # `validate` only checks schema; OTTL statements / regexes are only parsed when the collector starts,
 # so each config is also run for a few seconds and must log "Everything is ready" with no errors.

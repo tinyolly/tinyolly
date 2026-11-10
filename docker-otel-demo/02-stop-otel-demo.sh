@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Always use the Colima docker daemon (not Docker Desktop / the default colima VM)
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 # Stop and remove the OpenTelemetry Demo containers (TinyOlly core keeps running).
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
