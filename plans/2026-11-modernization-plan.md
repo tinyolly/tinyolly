@@ -11,9 +11,9 @@ Handoff / how to resume: `plans/HANDOFF.md`
 | 1 Colima + kind | done, partly verified | `modernize/phase-1-colima-kind` | core stack + kind core deploy verified; k8s-demo/ebpf/cleanup scripts, eBPF under vz **not** run |
 | 2 Deps/images | done | `modernize/phase-2-deps` | pins, locks, Go 1.27, Dependabot (its CI jobs were later removed) |
 | 3 Collector presets | done | `modernize/phase-3-processors` | 8 presets; 5 verified live, 3 only applied cleanly |
-| 4 Demo | **changed**: upstream OTel Demo (16-service subset) instead of a custom shop | `modernize/phase-4-otel-demo` | fits 8 GB; Helm path untested |
+| 4 Demo | done; remaining demo work moved to `plans/supplemental/` | merged | upstream OTel Demo (16-service subset) |
 | 5 UI gaps | not started | – | see `plans/2026-11-trace-accuracy-plan.md` (waterfall work) first |
-| 6 Release (CI dropped) | not started | – | consolidation of deploy dirs, buildx multi-arch, v3.0.0; the CI items in this phase are out of scope |
+| 6 Release (CI dropped) | not started | – | consolidation of deploy dirs, v3.0.0 (multi-arch builds dropped: single-arch works); the CI items in this phase are out of scope |
 
 Open items carried forward: 136 placeholder UI tests, `versions.env` vs Dockerfile `ARG` sync check, `k8s-core-only` embeds its own collector config.
 
@@ -86,15 +86,8 @@ Notes / to verify at execution time: which of these are beta/alpha in the pinned
 - Make `incorrect.yaml` an explicit "validation demo" under `templates/examples/` and add ≥6 real templates (one per preset above).
 - Collector tab: ensure effective-config + health from supervisor surface processor-level stats (collector internal telemetry on :8888 scraped into TinyOlly; show accepted/refused/dropped per processor).
 
-### Phase 4 — Better telemetry demo (2 PRs)  — SUPERSEDED: see "Phase 4 (2026-11-09) — CHANGED" in the execution log; the custom-shop text below is kept for history
-Replace the two-service Flask demo with a small multi-service "shop" (single compose + single k8s manifest, one code base per language, shared load generator):
-- Python-only (decided): `web` (Flask/FastAPI), `cart`, `payments`, `inventory` (Postgres via SQLAlchemy), `worker` (Redis/RabbitMQ or Kafka consumer), `loadgen` (Locust or k6 with scenario profiles).
-- Real dependencies: Postgres, Redis (as a demo dependency only), a queue → DB spans, messaging spans with span links, `db.*` and `messaging.*` semconv.
-- Failure injection endpoints/flags (`/chaos?mode=latency|error|leak`) driven by loadgen schedule so there is always something interesting: error bursts, slow dependency, retry storms, cardinality bomb (for protection demo), PII in attributes (for redaction demo), duplicate log spam (for logdedup).
-- Signals: exponential histograms, exemplars, gauge/UpDownCounter, runtime metrics, structured logs with trace correlation, baggage propagation, span events + exceptions, span links.
-- Keep: eBPF/OBI variant (pinned image), AI agent variant. Upgrade AI agent: use current GenAI semconv (`gen_ai.*` incl. agent/tool spans), multi-step agent with tool calls, token usage metrics, and evaluate a small current Ollama model; pin Ollama.
-- Replace hand-rolled Prom RW v2 with a maintained approach or document why kept; keep one Prometheus-scrape path (`prometheus` receiver) in the demo.
-- Demo "tour" doc: `docs/demo-tour.md` — 5-minute script mapping each preset to what to click.
+### Phase 4 — Telemetry demo — MOVED to `plans/supplemental/otel-demo-and-demo-apps.md`
+Done: the upstream OpenTelemetry Demo (Astronomy Shop, 16-service subset) replaced the custom shop. Remaining demo work and history are in the supplemental plan.
 
 ### Phase 5 — Product/UI gaps surfaced by the demo (as time allows)
 - Exemplar → trace link in Metrics tab; span links view; exponential histogram rendering check; span events/exceptions pane; GenAI-specific view polish; processor-effect panel on Collector tab.
@@ -102,7 +95,7 @@ Replace the two-service Flask demo with a small multi-service "shop" (single com
 
 ### Phase 6 — CI & release (1 PR)
 - CI uses kind for a k8s smoke test.
-- CI: matrix test on pinned Python, Go tests, `otelcol-contrib validate` for every config/template, `docker compose config` + `kubectl kustomize/--dry-run` linting, multi-arch image build (amd64/arm64) with buildx, smoke test (compose up, send OTLP via `telemetrygen`, assert API returns trace/log/metric).
+- CI: matrix test on pinned Python, Go tests, `otelcol-contrib validate` for every config/template, `docker compose config` + `kubectl kustomize/--dry-run` linting, smoke test (compose up, send OTLP via `telemetrygen`, assert API returns trace/log/metric).
 - Consolidate duplicated deploy dirs: single `deploy/compose/` with profiles (`core`, `demo`, `ebpf`, `ai`) and `deploy/k8s/` with kustomize overlays; keep thin shims/redirect notes for old script paths for one release.
 - Cut **v3.0.0** (breaking: path layout, pinned versions, Colima-first); write release notes; update README/docs/site.
 
@@ -169,16 +162,8 @@ Phases 1 and 2 can run in parallel.
 - k8s: `scripts/sync-k8s-configs.sh` generates `k8s/otelcol-configs/config.yaml` and `templates/templates.yaml` (all presets) from the docker files; CI checks they are in sync. NOT tested on kind. `k8s-core-only` embeds its own collector config in `tinyolly-opamp-server.yaml` (not synced).
 - Not done: before/after view in the UI, collector internal telemetry (:8888) per-processor stats on the Collector tab (Phase 5), `k8sattributes`/`geoip`/`filelog`/`metricstarttime`/`cumulativetodelta` presets, `docker` resource detector.
 
-### Phase 4 (2026-11-09) — CHANGED: use the upstream OpenTelemetry Demo (Astronomy Shop) instead of a custom Python shop
-Decision: the custom 6-service Python shop is dropped. `docker-otel-demo/` runs a 16-service subset of the upstream demo (tag 3.1.0, `OTEL_DEMO_VERSION` in `versions.env`) against TinyOlly's collector. Branch `modernize/phase-4-otel-demo` (stacked on phase 3).
-- Measured on the 8 GB Mac: demo (16 services + 3-user Locust, browser traffic off) + TinyOlly = ~1.06 GB containers, ~1.57 GB used in the 4 GB Colima VM. Fits.
-- Scripts: `01-start-otel-demo.sh` (clone pinned tag, `DEMO_VERSION` pinned to the tag, `OTEL_COLLECTOR_HOST=host.docker.internal`, `--no-deps` so the demo's own collector is not started), `02-stop-otel-demo.sh [--purge]`, `03-set-flag.sh` (edits flagd's file; hot-reloaded). `docs/otel-demo.md` has the flag ↔ preset tour.
-- **Gotchas found:** (1) the demo `.env` has `DEMO_VERSION=latest`; images from `main` do not match the 3.1.0 compose (new `recommendation` image lacks `nc` → healthcheck fails) — pin it; (2) Java services default to http/protobuf, so pointing them at :4317 logs "port is likely incorrect" warnings (only seen on the unhealthy `latest` image; none after pinning).
-- **TinyOlly bug found and fixed by this demo:** spans arrive with status code `STATUS_CODE_ERROR` (string) but the storage layer only recognised `2`, so Service Catalog showed 0 % errors and the trace list never flagged errors. Fixed (`is_error_status`), added trace `has_error`/`error_count` (the demo's load-generator root span has no status, so root-only detection missed every failure), UI badges use `spanStatusLabel`. Verified: payment 65 %, checkout 19 % error rate under `paymentFailure=100%`. 3 regression tests added.
-- Verified end to end: `paymentFailure` (errors visible), `emitRawPii` + `pii-redaction` preset (email/card masked). The demo's raw CVV (`demo.payment.card_cvv`) leaked through the first version of the preset → added `.*cvv.*`, `.*cvc.*`, `.*card[_.]?number.*` key patterns; re-verified masked.
-- Dropped from original Phase 4: custom Postgres/Redis/queue services and the loadgen scenario profiles, "cardinality bomb" and "duplicate log spam" failure modes (not in the upstream demo; `docker-demo` Flask apps remain for ad-hoc presets), Kafka/messaging spans + span links (Kafka consumers are not in the 16-service subset; they need ~1.1 GB more — possible stretch via `compose.full.yaml`).
-- Not done / untested: Helm path (`k8s-otel-demo/`, chart 0.42.6 pinned, load generator trimmed; chart needs Kafka so ≥ 6 GB VM); flags other than the two verified; eBPF + AI-agent variants unchanged (AI agent GenAI-semconv upgrade not done); Prom RW v2 replacement not done.
-- Android plan: its "mini Python shop first" backend choice is obsolete — the app should target the OTel Demo frontend `/api/*` (reachable at `10.0.2.2:8080` from the emulator, which this setup already exposes).
+### Phase 4 (2026-11-09) — demo: see `plans/supplemental/otel-demo-and-demo-apps.md`
+The execution log for the OpenTelemetry Demo work moved there. The TinyOlly bug it found (error status `STATUS_CODE_ERROR` not recognised) was fixed and is covered by tests.
 
 ### Lint fix (2026-11-09)
 - The 354 `ruff` errors were mostly an artifact: with no config, ruff's *default* rule set depends on its version (0.17 enables UP/B/BLE/SIM/PERF/RUF families), so the unpinned CI lint job was a moving target. Added `ruff.toml` (explicit rules `E4,E7,E9,F,B,I`, py313, FastAPI `Depends` etc. as immutable calls) and pinned `ruff==0.17.4` in CI.
@@ -202,7 +187,7 @@ Each fix has a test written first and shown to fail on the old code (except wher
 - New local check scripts (no CI): `scripts/test-go.sh`, `scripts/test-kubectx-guard.sh`.
 - Still open from the review (P1/P2): see `plans/code-review-high-2026-11-09.md` once PR #10 merges (presets that do not do what their blurbs say, release scripts calling missing files, OpAMP reconnect/ack tracking, storage N+1 and cardinality enforcement, ingest validation, auth for the OpAMP/UI write endpoints, `versions.env` not consumed by builds).
 
-### P1 review fixes — IN PROGRESS (branch `fix/p1-review-findings`, pushed, no PR yet)
-See `plans/HANDOFF.md` ("RESUME HERE") for the exact state. Preset fixes for sampling and logs-dedup are verified by the new `scripts/test-preset-behavior.py`; transform-ottl, pii-redaction, connectors-metrics, connectors-routing (real failover to a file exporter) and prometheus-remote-write are edited and start cleanly but their behaviour tests have not been run. The release/cleanup shell-script fixes have not been started.
+### P1 review fixes — DONE (merged into `main` 2026-11-10 with P2 and the e2e harness)
+Preset fixes for sampling and logs-dedup are verified by the new `scripts/test-preset-behavior.py`; transform-ottl, pii-redaction, connectors-metrics, connectors-routing (real failover to a file exporter) and prometheus-remote-write are edited and start cleanly but their behaviour tests have not been run. The release/cleanup shell-script fixes have not been started.
 - Real bug found by the behaviour test: the logs `probabilistic_sampler` hashes the trace id and **drops every log that has none** (INFO logs were 0 of 400 instead of ~25 %); fixed with a per-record sampling key.
 - Also found: `trace_id.string == ""` never matches an empty trace id in OTTL; use `trace_id == TraceID(0x00000000000000000000000000000000)`.

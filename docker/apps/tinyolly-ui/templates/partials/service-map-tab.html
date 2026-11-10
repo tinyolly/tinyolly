@@ -4,6 +4,11 @@
             style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
             Refresh
         </button>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+            <input type="checkbox" id="map-hide-self" onchange="window.toggleHideSelfServices(this.checked)">
+            Hide TinyOlly services
+        </label>
+        <script>document.getElementById('map-hide-self').checked = localStorage.getItem('tinyolly.map.hideSelf') === '1';</script>
     </div>
     <div class="map-container"
         style="background: #fff; border: 1px solid #ddd; border-radius: 4px; height: 600px; position: relative; overflow: hidden;">

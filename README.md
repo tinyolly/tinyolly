@@ -109,9 +109,6 @@ cd docker
 ./01-start-core.sh
 ```
 
-> **Working from a checkout of the modernization branches?** The published Docker Hub images predate them (Python 3.13, pinned collector 0.165.0, error-status fix, new presets).
-> Use `./01-start-core-local.sh` to build from this checkout instead.
-
 **Deployment time:** ~30 seconds (pulls images from Docker Hub)
 
 **Services:**

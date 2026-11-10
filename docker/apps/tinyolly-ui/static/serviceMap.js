@@ -16,6 +16,68 @@ function formatMs(ms) {
 
 const fmtNum = v => (isFinite(Number(v)) ? +Number(v).toFixed(2) : v);
 
+// Layout: connected services as a left-to-right dagre graph; isolated services (no edges) in a grid to its right.
+const HIDE_SELF_KEY = 'tinyolly.map.hideSelf';
+function hideSelfServices() { return localStorage.getItem(HIDE_SELF_KEY) === '1'; }
+window.toggleHideSelfServices = (on) => {
+    localStorage.setItem(HIDE_SELF_KEY, on ? '1' : '0');
+    lastSignature = null;                    // force a re-layout
+    if (window.refreshServiceMap) window.refreshServiceMap();
+};
+
+// Identity of the drawn graph (nodes + edges + inferred types). Re-layout/re-fit only when it changes,
+// so the 20 s auto-refresh does not reset the user's pan and zoom.
+let lastSignature = null;
+function graphSignature(elements) {
+    return elements.map(e => e.group === 'nodes' ? `n:${e.data.id}:${e.data.type}` : `e:${e.data.id}`).sort().join('|');
+}
+
+// Size the map to the visible window (below its top edge) so the fitted graph is always fully in view.
+function sizeMapToViewport() {
+    const box = document.querySelector('.map-container');
+    if (!box) return;
+    const pageTop = box.getBoundingClientRect().top + window.scrollY;   // independent of current scroll
+    box.style.height = `${Math.max(420, window.innerHeight - pageTop - 16)}px`;
+}
+
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (cy && document.querySelector('.map-container')) { sizeMapToViewport(); cy.resize(); cy.fit(undefined, 30); } }, 150);
+});
+
+function layoutMap() {
+    sizeMapToViewport();
+    const connected = cy.nodes().filter(n => n.degree(false) > 0);
+    const isolated = cy.nodes().filter(n => n.degree(false) === 0);
+
+    const place = () => {
+        const bb = connected.empty() ? { x1: 0, x2: 0, y1: 0, h: 0 } : connected.boundingBox();
+        const rows = Math.max(3, Math.ceil(bb.h / 96));
+        const x0 = connected.empty() ? 0 : bb.x2 + 140;
+        isolated.sort((a, b) => a.data('label').localeCompare(b.data('label'))).forEach((n, i) => {
+            n.position({ x: x0 + Math.floor(i / rows) * 150, y: bb.y1 + (i % rows) * 96 });
+        });
+        cy.resize();
+        cy.fit(undefined, 30);   // whole graph visible
+        applyPendingSelection();
+    };
+
+    if (connected.empty()) { place(); return; }
+    const layout = connected.union(connected.connectedEdges()).layout({
+        name: 'dagre',
+        rankDir: 'LR',
+        nodeSep: 60,
+        rankSep: 120,
+        edgeSep: 30,
+        animate: false,
+        fit: false,
+        padding: 30
+    });
+    layout.one('layoutstop', place);
+    layout.run();
+}
+
 export function renderServiceMap(graph) {
     const container = document.getElementById('service-map-cy');
     if (!container) return;
@@ -38,6 +100,16 @@ export function renderServiceMap(graph) {
         }
         container.innerHTML = '<div style="height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--text-muted); padding: 24px;">No persisted service map is available. Click Refresh to clear the snapshot, then wait for new traces to arrive.</div>';
         return;
+    }
+
+    // Optionally hide TinyOlly's own services (set by the checkbox above the map)
+    if (hideSelfServices()) {
+        const isSelf = id => String(id).startsWith('tinyolly-');
+        graph = {
+            ...graph,
+            nodes: graph.nodes.filter(n => !isSelf(n.label || n.id)),
+            edges: (graph.edges || []).filter(e => !isSelf(e.source) && !isSelf(e.target)),
+        };
     }
 
     // Calculate node types (Root, Leaf, Intermediate)
@@ -149,19 +221,14 @@ export function renderServiceMap(graph) {
             currentNodes.forEach(nodeId => cy.$id(nodeId).remove());
             currentEdges.forEach(edgeId => cy.$id(edgeId).remove());
         });
-        // Re-run layout to position any new nodes properly
-        cy.one('layoutstop', applyPendingSelection);
-        cy.layout({
-            name: 'dagre',
-            rankDir: 'LR',
-            nodeSep: 60,
-            rankSep: 120,
-            edgeSep: 30,
-            animate: true,
-            animationDuration: 500,
-            fit: true,
-            padding: 30
-        }).run();
+        const sig = graphSignature(elements);
+        if (sig !== lastSignature) {
+            lastSignature = sig;
+            layoutMap();
+        } else {
+            cy.resize();
+            applyPendingSelection();
+        }
         return;
     }
 
@@ -227,23 +294,14 @@ export function renderServiceMap(graph) {
                 }
             }
         ],
-        layout: {
-            name: 'dagre',
-            rankDir: 'LR',
-            nodeSep: 60,
-            rankSep: 120,
-            edgeSep: 30,
-            animate: true,
-            animationDuration: 500,
-            fit: true,
-            padding: 30
-        },
-        minZoom: 0.5,
+        layout: { name: 'preset' },
+        minZoom: 0.1,
         maxZoom: 3,
         wheelSensitivity: 0.2
     });
 
-    cy.one('layoutstop', applyPendingSelection);
+    lastSignature = graphSignature(elements);
+    layoutMap();
 
     // Click Handler for Details Panel
     cy.on('tap', 'node', function (evt) {
