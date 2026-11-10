@@ -225,7 +225,7 @@ class AdminStatsResponse(BaseModel):
     """Detailed admin statistics including DB and performance metrics"""
     telemetry: Dict[str, int] = Field(..., description="Telemetry data counts (traces, spans, logs, metrics)")
     db: Dict[str, Any] = Field(..., description="SQLite database size and page stats")
-    cardinality: Dict[str, int] = Field(..., description="Metric cardinality stats")
+    cardinality: Dict[str, float] = Field(..., description="Metric cardinality stats (percent_used is fractional)")
     uptime: Optional[str] = Field(None, description="TinyOlly uptime")
 
 

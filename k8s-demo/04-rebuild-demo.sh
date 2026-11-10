@@ -1,4 +1,7 @@
 #!/bin/bash
+# Always use the Colima docker daemon (not Docker Desktop / the default colima VM)
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 
 # Safety: only operate on the local kind cluster (see scripts/lib/kubectx.sh)
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts/lib" && pwd)/kubectx.sh" && require_kind_context || { return 1 2>/dev/null || exit 1; }

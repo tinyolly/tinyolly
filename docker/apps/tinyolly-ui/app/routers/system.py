@@ -10,6 +10,7 @@ from models import HealthResponse
 from tinyolly_common import Storage
 
 from ..config import settings
+from ..core.origin import origin_allowed
 from ..dependencies import get_connection_manager, get_storage
 
 router = APIRouter(tags=["System", "UI"])
@@ -105,6 +106,9 @@ async def websocket_updates(websocket: WebSocket):
     ```
     """
     # Get dependencies directly (WebSocket doesn't support Depends)
+    if not origin_allowed(websocket.headers.get("origin"), websocket.headers.get("host"), settings.allowed_origins):
+        await websocket.close(code=1008)   # policy violation: cross-site page trying to read live data
+        return
     storage = get_storage()
     manager = get_connection_manager()
     await manager.connect(websocket)

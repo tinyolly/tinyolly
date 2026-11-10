@@ -6,6 +6,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -15,9 +17,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -36,24 +40,46 @@ var tracer trace.Tracer
 
 // AgentState tracks the state of a connected OTel Collector agent
 type AgentState struct {
-	InstanceID      string           `json:"instance_id"`
-	AgentType       string           `json:"agent_type"`
-	AgentVersion    string           `json:"agent_version"`
-	EffectiveConfig string           `json:"effective_config"`
-	LastSeen        time.Time        `json:"last_seen"`
-	Status          string           `json:"status"`
-	conn            types.Connection `json:"-"`
+	InstanceID      string    `json:"instance_id"`
+	AgentType       string    `json:"agent_type"`
+	AgentVersion    string    `json:"agent_version"`
+	EffectiveConfig string    `json:"effective_config"`
+	LastSeen        time.Time `json:"last_seen"`
+	Status          string    `json:"status"`
+	// Remote-config delivery tracking: "", "pending" (queued/sent), "applying", "applied", "failed".
+	ConfigStatus      string `json:"config_status,omitempty"`
+	ConfigError       string `json:"config_error,omitempty"`
+	AppliedConfigHash string `json:"applied_config_hash,omitempty"`
+
+	conn       types.Connection // current connection (a reconnect replaces it)
+	sentHash   string           // hash of the config last sent on the current connection
+	failedHash string           // hash the agent reported FAILED for; not re-sent until re-POSTed
+}
+
+// remoteConfig is a config body with its content hash (sha256, hex).
+type remoteConfig struct {
+	body string
+	hash string
+}
+
+func newRemoteConfig(body string) *remoteConfig {
+	sum := sha256.Sum256([]byte(body))
+	return &remoteConfig{body: body, hash: hex.EncodeToString(sum[:])}
 }
 
 // OpAMPServer wraps the OpAMP server with REST API
 type OpAMPServer struct {
-	opampServer    server.OpAMPServer
-	agents         map[string]*AgentState      // keyed by instance ID
-	connToAgent    map[types.Connection]string // maps connection to instance ID
-	agentsMu       sync.RWMutex
-	pendingConfigs map[string]string // instanceID -> pending config
+	opampServer server.OpAMPServer
+	agents      map[string]*AgentState      // keyed by instance ID
+	connToAgent map[types.Connection]string // maps connection to instance ID
+	agentsMu    sync.RWMutex                // lock order: agentsMu before configMu
+
 	configMu       sync.RWMutex
-	currentConfig  string
+	pendingConfigs map[string]*remoteConfig // instanceID -> config from a targeted POST
+	fleetConfig    *remoteConfig            // config from a fleet-wide POST; offered to every agent, incl. new/reconnecting ones
+	currentConfig  string                   // what GET /config shows when no agent is connected
+
+	apiToken string // optional bearer token required for writes (OPAMP_API_TOKEN)
 }
 
 // maxConfigBodyBytes caps the size of a POST /config body.
@@ -76,7 +102,8 @@ func NewOpAMPServer() *OpAMPServer {
 	s := &OpAMPServer{
 		agents:         make(map[string]*AgentState),
 		connToAgent:    make(map[types.Connection]string),
-		pendingConfigs: make(map[string]string),
+		pendingConfigs: make(map[string]*remoteConfig),
+		apiToken:       os.Getenv("OPAMP_API_TOKEN"),
 	}
 	s.loadInitialConfig()
 	return s
@@ -128,38 +155,46 @@ func (s *OpAMPServer) onConnected(ctx context.Context, conn types.Connection) {
 
 // onMessage handles messages from agents
 func (s *OpAMPServer) onMessage(ctx context.Context, conn types.Connection, msg *protobufs.AgentToServer) *protobufs.ServerToAgent {
-	// Extract instance ID from the message
-	instanceID := ""
-	if len(msg.InstanceUid) > 0 {
-		instanceID = hex.EncodeToString(msg.InstanceUid)
-	}
+	return s.handleAgentMessage(conn, msg)
+}
 
-	if instanceID == "" {
+const serverCapabilities = uint64(protobufs.ServerCapabilities_ServerCapabilities_AcceptsStatus |
+	protobufs.ServerCapabilities_ServerCapabilities_OffersRemoteConfig |
+	protobufs.ServerCapabilities_ServerCapabilities_AcceptsEffectiveConfig)
+
+func (s *OpAMPServer) handleAgentMessage(conn types.Connection, msg *protobufs.AgentToServer) *protobufs.ServerToAgent {
+	if len(msg.InstanceUid) == 0 {
 		log.Printf("Received message without instance ID")
 		return &protobufs.ServerToAgent{}
 	}
+	instanceID := hex.EncodeToString(msg.InstanceUid)
+
+	response := &protobufs.ServerToAgent{InstanceUid: msg.InstanceUid, Capabilities: serverCapabilities}
 
 	s.agentsMu.Lock()
+	defer s.agentsMu.Unlock()
 
-	// Find or create agent
 	agent, exists := s.agents[instanceID]
 	if !exists {
-		agent = &AgentState{
-			InstanceID: instanceID,
-			AgentType:  "otel-collector",
-			Status:     "connected",
-			conn:       conn,
-		}
+		agent = &AgentState{InstanceID: instanceID, AgentType: "otel-collector"}
 		s.agents[instanceID] = agent
-		s.connToAgent[conn] = instanceID
 		log.Printf("New agent registered: %s", instanceID)
 	}
 
+	// (Re)bind the connection on EVERY message: after a reconnect the new connection must map to the agent,
+	// and the old one must stop mapping (its later close must not mark the live agent disconnected).
+	if agent.conn != conn {
+		if agent.conn != nil {
+			delete(s.connToAgent, agent.conn)
+		}
+		agent.conn = conn
+		agent.sentHash = "" // a new connection has not been sent anything yet
+	}
+	s.connToAgent[conn] = instanceID
+
 	agent.LastSeen = time.Now()
 	agent.Status = "connected"
-	agent.conn = conn
 
-	// Extract agent description
 	if msg.AgentDescription != nil {
 		for _, attr := range msg.AgentDescription.IdentifyingAttributes {
 			if attr.Key == "service.name" {
@@ -169,9 +204,11 @@ func (s *OpAMPServer) onMessage(ctx context.Context, conn types.Connection, msg 
 				agent.AgentVersion = attr.Value.GetStringValue()
 			}
 		}
+	} else if !exists || agent.AgentVersion == "" {
+		// We know nothing about this agent yet (new, or the server restarted): ask for its full state.
+		response.Flags |= uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState)
 	}
 
-	// Extract effective config
 	if msg.EffectiveConfig != nil && msg.EffectiveConfig.ConfigMap != nil {
 		for _, configBody := range msg.EffectiveConfig.ConfigMap.ConfigMap {
 			agent.EffectiveConfig = string(configBody.Body)
@@ -179,31 +216,58 @@ func (s *OpAMPServer) onMessage(ctx context.Context, conn types.Connection, msg 
 		}
 	}
 
-	s.agentsMu.Unlock()
-
-	// Check if there's a pending config for this agent
-	s.configMu.Lock()
-	pendingConfig, hasPending := s.pendingConfigs[instanceID]
-	if hasPending {
-		delete(s.pendingConfigs, instanceID)
+	if rcs := msg.RemoteConfigStatus; rcs != nil && len(rcs.LastRemoteConfigHash) > 0 {
+		s.recordConfigStatus(agent, hex.EncodeToString(rcs.LastRemoteConfigHash), rcs)
 	}
-	s.configMu.Unlock()
 
-	response := &protobufs.ServerToAgent{}
-
-	if hasPending {
-		log.Printf("Sending pending config to agent %s", instanceID)
+	if cfg := s.configFor(instanceID); cfg != nil &&
+		agent.AppliedConfigHash != cfg.hash && agent.failedHash != cfg.hash && agent.sentHash != cfg.hash {
+		log.Printf("Sending config %s to agent %s", cfg.hash[:12], instanceID)
+		agent.sentHash = cfg.hash
+		if agent.ConfigStatus != "applying" {
+			agent.ConfigStatus = "pending"
+		}
 		response.RemoteConfig = &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigObject{
-					"": {Body: []byte(pendingConfig)},
-				},
+				ConfigMap: map[string]*protobufs.AgentConfigObject{"": {Body: []byte(cfg.body)}},
 			},
-			ConfigHash: []byte(fmt.Sprintf("%d", time.Now().UnixNano())),
+			ConfigHash: []byte(cfg.hash),
 		}
 	}
-
 	return response
+}
+
+// recordConfigStatus updates delivery tracking from the agent's RemoteConfigStatus. The hash the agent echoes
+// back is the ConfigHash we sent (the hex string's bytes), so compare against both forms.
+func (s *OpAMPServer) recordConfigStatus(agent *AgentState, echoed string, rcs *protobufs.RemoteConfigStatus) {
+	hash := string(rcs.LastRemoteConfigHash) // we send the hex string as the hash bytes
+	if len(hash) != sha256.Size*2 {
+		hash = echoed
+	}
+	switch rcs.Status {
+	case protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED:
+		agent.ConfigStatus, agent.ConfigError, agent.AppliedConfigHash = "applied", "", hash
+		s.configMu.Lock()
+		if p, ok := s.pendingConfigs[agent.InstanceID]; ok && p.hash == hash {
+			delete(s.pendingConfigs, agent.InstanceID)
+		}
+		s.configMu.Unlock()
+	case protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING:
+		agent.ConfigStatus = "applying"
+	case protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED:
+		agent.ConfigStatus, agent.ConfigError, agent.failedHash = "failed", rcs.ErrorMessage, hash
+		log.Printf("Agent %s failed to apply config %.12s: %s", agent.InstanceID, hash, rcs.ErrorMessage)
+	}
+}
+
+// configFor returns the config that should be on this agent: a targeted one if queued, else the fleet one.
+func (s *OpAMPServer) configFor(instanceID string) *remoteConfig {
+	s.configMu.RLock()
+	defer s.configMu.RUnlock()
+	if p, ok := s.pendingConfigs[instanceID]; ok {
+		return p
+	}
+	return s.fleetConfig
 }
 
 // onConnectionClose handles disconnections
@@ -211,22 +275,27 @@ func (s *OpAMPServer) onConnectionClose(conn types.Connection) {
 	s.agentsMu.Lock()
 	defer s.agentsMu.Unlock()
 
-	if instanceID, exists := s.connToAgent[conn]; exists {
-		if agent, ok := s.agents[instanceID]; ok {
-			agent.Status = "disconnected"
-			agent.LastSeen = time.Now()
-			log.Printf("Agent disconnected: %s", instanceID)
-		}
-		delete(s.connToAgent, conn)
+	instanceID, exists := s.connToAgent[conn]
+	if !exists {
+		return
+	}
+	delete(s.connToAgent, conn)
+	// Only mark the agent disconnected if THIS was its current connection; a stale connection closing after
+	// a reconnect must not flip a live agent to disconnected.
+	if agent, ok := s.agents[instanceID]; ok && agent.conn == conn {
+		agent.Status = "disconnected"
+		agent.LastSeen = time.Now()
+		agent.conn = nil
+		log.Printf("Agent disconnected: %s", instanceID)
 	}
 }
 
 // REST API Types
 
 type StatusResponse struct {
-	Status     string                 `json:"status"`
-	AgentCount int                    `json:"agent_count"`
-	Agents     map[string]*AgentState `json:"agents"`
+	Status     string                `json:"status"`
+	AgentCount int                   `json:"agent_count"`
+	Agents     map[string]AgentState `json:"agents"`
 }
 
 type ConfigUpdateRequest struct {
@@ -238,6 +307,7 @@ type ConfigUpdateResponse struct {
 	Status      string   `json:"status"`
 	Message     string   `json:"message"`
 	AffectedIDs []string `json:"affected_instance_ids"`
+	ConfigHash  string   `json:"config_hash"` // sha256 of the config; agents echo it back when applied (see /status)
 }
 
 // REST Handlers
@@ -248,10 +318,11 @@ func (s *OpAMPServer) handleStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Snapshot by value under the lock: encoding live pointers after unlocking raced with onMessage.
 	s.agentsMu.RLock()
-	agentsCopy := make(map[string]*AgentState)
+	agentsCopy := make(map[string]AgentState, len(s.agents))
 	for k, v := range s.agents {
-		agentsCopy[k] = v
+		agentsCopy[k] = *v
 	}
 	s.agentsMu.RUnlock()
 
@@ -273,41 +344,48 @@ func (s *OpAMPServer) handleGetConfig(w http.ResponseWriter, r *http.Request) {
 
 	instanceID := r.URL.Query().Get("instance_id")
 
+	// Copy what we need under the lock, then write the response without holding it
+	// (a slow client used to block every agent message while the lock was held across the write).
+	var out map[string]interface{}
+	found := false
 	s.agentsMu.RLock()
-	defer s.agentsMu.RUnlock()
-
 	if instanceID != "" {
 		if agent, exists := s.agents[instanceID]; exists {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"instance_id": instanceID,
-				"config":      agent.EffectiveConfig,
-				"status":      agent.Status,
-			})
-			return
+			found = true
+			out = map[string]interface{}{
+				"instance_id":   instanceID,
+				"config":        agent.EffectiveConfig,
+				"status":        agent.Status,
+				"config_status": agent.ConfigStatus,
+				"config_error":  agent.ConfigError,
+			}
 		}
+	} else {
+		for _, agent := range s.agents { // first connected agent
+			if agent.Status == "connected" {
+				found = true
+				out = map[string]interface{}{
+					"instance_id":   agent.InstanceID,
+					"config":        agent.EffectiveConfig,
+					"status":        agent.Status,
+					"config_status": agent.ConfigStatus,
+					"config_error":  agent.ConfigError,
+				}
+				break
+			}
+		}
+	}
+	s.agentsMu.RUnlock()
+
+	if instanceID != "" && !found {
 		http.Error(w, "Agent not found", http.StatusNotFound)
 		return
 	}
-
-	// Return first connected agent's config
-	for _, agent := range s.agents {
-		if agent.Status == "connected" {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"instance_id": agent.InstanceID,
-				"config":      agent.EffectiveConfig,
-				"status":      agent.Status,
-			})
-			return
-		}
+	if !found {
+		out = map[string]interface{}{"config": s.getCurrentConfig(), "status": "no_agents_connected"}
 	}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"config": s.getCurrentConfig(),
-		"status": "no_agents_connected",
-	})
+	json.NewEncoder(w).Encode(out)
 }
 
 func (s *OpAMPServer) handleUpdateConfig(w http.ResponseWriter, r *http.Request) {
@@ -340,35 +418,44 @@ func (s *OpAMPServer) handleUpdateConfig(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	s.setCurrentConfig(req.Config)
+	cfg := newRemoteConfig(req.Config)
+	affectedIDs := []string{} // empty slice, not nil, so JSON marshals to [] not null
 
-	s.agentsMu.RLock()
-	affectedIDs := []string{} // Initialize as empty slice, not nil, so JSON marshals to [] not null
-
+	s.agentsMu.Lock()
 	if req.InstanceID != "" {
-		if _, exists := s.agents[req.InstanceID]; exists {
-			affectedIDs = append(affectedIDs, req.InstanceID)
+		agent, exists := s.agents[req.InstanceID]
+		if !exists {
+			s.agentsMu.Unlock()
+			http.Error(w, "Unknown instance_id", http.StatusNotFound)
+			return
 		}
+		// Targeted update: queue it for that agent only. It must not replace the fleet-wide config.
+		s.configMu.Lock()
+		s.pendingConfigs[req.InstanceID] = cfg
+		s.configMu.Unlock()
+		resetDelivery(agent)
+		affectedIDs = append(affectedIDs, req.InstanceID)
 	} else {
+		// Fleet update: remembered, so agents that connect or reconnect later get it too.
+		s.configMu.Lock()
+		s.fleetConfig = cfg
+		s.pendingConfigs = make(map[string]*remoteConfig) // a fleet config supersedes older targeted ones
+		s.currentConfig = req.Config
+		s.configMu.Unlock()
 		for id, agent := range s.agents {
+			resetDelivery(agent)
 			if agent.Status == "connected" {
 				affectedIDs = append(affectedIDs, id)
 			}
 		}
 	}
-	s.agentsMu.RUnlock()
-
-	s.configMu.Lock()
-	for _, id := range affectedIDs {
-		s.pendingConfigs[id] = req.Config
-		log.Printf("Queued config update for agent %s", id)
-	}
-	s.configMu.Unlock()
+	s.agentsMu.Unlock()
 
 	response := ConfigUpdateResponse{
 		Status:      "pending",
-		Message:     fmt.Sprintf("Config update queued for %d agent(s)", len(affectedIDs)),
+		Message:     fmt.Sprintf("Config update queued for %d connected agent(s); other agents get it when they connect", len(affectedIDs)),
 		AffectedIDs: affectedIDs,
+		ConfigHash:  cfg.hash,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -461,7 +548,7 @@ func (s *OpAMPServer) routes() *http.ServeMux {
 		case http.MethodGet:
 			s.handleGetConfig(w, r)
 		case http.MethodPost, http.MethodPut:
-			s.handleUpdateConfig(w, r)
+			s.requireToken(s.handleUpdateConfig)(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -522,7 +609,12 @@ func initTelemetry(ctx context.Context) (func(context.Context) error, error) {
 }
 
 func main() {
-	ctx := context.Background()
+	os.Exit(run())
+}
+
+func run() int {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	// Initialize OpenTelemetry
 	shutdown, err := initTelemetry(ctx)
@@ -551,6 +643,8 @@ func main() {
 	// Create OpAMP server
 	s.opampServer = server.New(nil) // nil logger uses default
 
+	errCh := make(chan error, 2)
+
 	// Start OpAMP server in goroutine
 	go func() {
 		settings := server.StartSettings{
@@ -564,7 +658,7 @@ func main() {
 
 		log.Printf("Starting OpAMP WebSocket server on port %s", opampPort)
 		if err := s.opampServer.Start(settings); err != nil {
-			log.Fatalf("Failed to start OpAMP server: %v", err)
+			errCh <- fmt.Errorf("failed to start OpAMP server: %w", err)
 		}
 	}()
 
@@ -588,7 +682,49 @@ func main() {
 	log.Printf("  GET  /config - Get current collector config")
 	log.Printf("  POST /config - Update collector config")
 
-	if err := httpServer.ListenAndServe(); err != nil {
-		log.Fatalf("Failed to start HTTP server: %v", err)
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- fmt.Errorf("failed to start HTTP server: %w", err)
+		}
+	}()
+
+	code := 0
+	select {
+	case <-ctx.Done():
+		log.Printf("Shutting down...")
+	case err := <-errCh:
+		log.Printf("Fatal: %v", err)
+		code = 1
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		log.Printf("HTTP shutdown: %v", err)
+	}
+	if err := s.opampServer.Stop(shutdownCtx); err != nil {
+		log.Printf("OpAMP shutdown: %v", err)
+	}
+	return code // deferred telemetry shutdown runs now (log.Fatalf used to skip it)
+}
+
+// resetDelivery lets a (re-)POSTed config be sent again even if an identical one failed or was sent before.
+func resetDelivery(agent *AgentState) {
+	agent.sentHash, agent.failedHash = "", ""
+	agent.ConfigStatus, agent.ConfigError = "pending", ""
+}
+
+// requireToken protects the write endpoints with OPAMP_API_TOKEN when it is set (unset = open, as before:
+// the API is only meant to be reachable by the TinyOlly UI on the private network).
+func (s *OpAMPServer) requireToken(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if s.apiToken != "" {
+			got := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+			if subtle.ConstantTimeCompare([]byte(got), []byte(s.apiToken)) != 1 {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+		next(w, r)
 	}
 }

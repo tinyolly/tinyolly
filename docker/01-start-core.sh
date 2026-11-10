@@ -1,4 +1,8 @@
 #!/bin/bash
+# Always use the Colima docker daemon (not Docker Desktop / the default colima VM)
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 set +e  # Don't exit on errors
 
 echo "Starting TinyOlly Core (No Demo App)"

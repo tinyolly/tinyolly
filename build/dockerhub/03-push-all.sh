@@ -2,11 +2,11 @@
 set -e
 
 # Push ALL TinyOlly images to Docker Hub
-# Usage: ./push-all.sh [version]
-# Example: ./push-all.sh v2.1.0
+# Usage: ./03-push-all.sh [version]
+# Example: ./03-push-all.sh v2.1.0
 #
 # This pushes: core, demo, ebpf-demo, and ai-demo images
-# Run ./build-all.sh first to build the images
+# Run ./02-build-all.sh first to build the images
 
 VERSION=${1:-"latest"}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,25 +21,25 @@ echo ""
 echo ""
 echo ">>> Pushing Core Images..."
 echo ""
-"$SCRIPT_DIR/push-core.sh" "$VERSION"
+"$SCRIPT_DIR/03-push-core.sh" "$VERSION"
 
 # Push demo images
 echo ""
 echo ">>> Pushing Demo Images..."
 echo ""
-"$SCRIPT_DIR/push-demo.sh" "$VERSION"
+"$SCRIPT_DIR/03-push-demo.sh" "$VERSION"
 
 # Push eBPF demo images
 echo ""
 echo ">>> Pushing eBPF Demo Images..."
 echo ""
-"$SCRIPT_DIR/push-ebpf-demo.sh" "$VERSION"
+"$SCRIPT_DIR/03-push-ebpf-demo.sh" "$VERSION"
 
 # Push AI demo image
 echo ""
 echo ">>> Pushing AI Demo Image..."
 echo ""
-"$SCRIPT_DIR/push-ai-demo.sh" "$VERSION"
+"$SCRIPT_DIR/03-push-ai-demo.sh" "$VERSION"
 
 echo ""
 echo "=========================================="

@@ -12,6 +12,7 @@ cd "$SCRIPT_DIR/../../docker"
 
 # Always use the Colima docker daemon for pushing
 unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 
 VERSION=${1:-"latest"}
 DOCKER_HUB_ORG=${DOCKER_HUB_ORG:-"tinyolly"}
@@ -26,8 +27,8 @@ echo ""
 # Verify key dependencies are present in the images before pushing
 echo "Verifying images before push..."
 for MODULE in aiosqlite zstandard msgpack; do
-  if ! docker run --rm $DOCKER_HUB_ORG/ui:latest python3 -c "import $MODULE" 2>/dev/null; then
-    echo "✗ Verification failed: '$MODULE' not found in $DOCKER_HUB_ORG/ui:latest"
+  if ! docker run --rm "$DOCKER_HUB_ORG/ui:$VERSION" python3 -c "import $MODULE" 2>/dev/null; then
+    echo "✗ Verification failed: '$MODULE' not found in $DOCKER_HUB_ORG/ui:$VERSION"
     echo "  Run ./02-build-core.sh $VERSION first, then retry."
     exit 1
   fi
@@ -46,9 +47,9 @@ IMAGES=(
 
 for IMAGE in "${IMAGES[@]}"; do
   echo "Pushing $DOCKER_HUB_ORG/$IMAGE:$VERSION..."
-  docker push $DOCKER_HUB_ORG/$IMAGE:$VERSION
+  docker push "$DOCKER_HUB_ORG/$IMAGE:$VERSION"
   if [ "$VERSION" != "latest" ]; then
-    docker push $DOCKER_HUB_ORG/$IMAGE:latest
+    docker push "$DOCKER_HUB_ORG/$IMAGE:latest"
   fi
   echo "✓ Pushed $DOCKER_HUB_ORG/$IMAGE:$VERSION"
   echo ""

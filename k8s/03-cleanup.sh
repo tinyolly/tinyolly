@@ -1,4 +1,7 @@
 #!/bin/bash
+# Always use the Colima docker daemon (not Docker Desktop / the default colima VM)
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 
 # Safety: only operate on the local kind cluster (see scripts/lib/kubectx.sh)
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts/lib" && pwd)/kubectx.sh" && require_kind_context || { return 1 2>/dev/null || exit 1; }
@@ -135,13 +138,13 @@ else
 fi
 
 # Offer to clean up Docker images if using kind
-if command -v kind &> /dev/null && [ "$CONTEXT" = "kind-tinyolly" ]; then
+if command -v kind &> /dev/null && [ "$CONTEXT" = "kind-${KIND_CLUSTER:-tinyolly}" ]; then
     echo ""
     read -p "$(echo -e ${YELLOW}Do you want to remove TinyOlly Docker images from kind node? [y/N]:${NC} )" -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${BLUE}Removing Docker images from kind node...${NC}"
-        docker exec tinyolly-control-plane sh -c 'crictl images | grep tinyolly | awk "{print \$1\":\"\$2}" | xargs -r crictl rmi' || true
+        docker exec "${KIND_CLUSTER:-tinyolly}-control-plane" sh -c 'crictl images | grep tinyolly | awk "{print \$1\":\"\$2}" | xargs -r crictl rmi' || true
         echo -e "${GREEN}✓ Docker images removed${NC}"
     fi
 fi

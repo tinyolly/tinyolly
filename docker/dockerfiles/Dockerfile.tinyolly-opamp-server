@@ -22,14 +22,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /tinyolly-opamp-server .
 # Runtime stage
 FROM alpine:3.22
 
-# Install bash for better shell experience (bash-completion not readily available in Alpine)
-RUN apk add --no-cache \
-    ca-certificates \
-    bash \
-    coreutils
-
-# Set bash as default shell
-SHELL ["/bin/bash", "-c"]
+RUN apk add --no-cache ca-certificates \
+    && adduser -D -H -u 10001 opamp
 
 COPY --from=builder /tinyolly-opamp-server /tinyolly-opamp-server
 
@@ -37,5 +31,10 @@ COPY --from=builder /tinyolly-opamp-server /tinyolly-opamp-server
 EXPOSE 4320
 # HTTP REST API port
 EXPOSE 4321
+
+USER opamp
+
+HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -q -O /dev/null "http://127.0.0.1:${HTTP_PORT:-4321}/health" || exit 1
 
 CMD ["/tinyolly-opamp-server"]

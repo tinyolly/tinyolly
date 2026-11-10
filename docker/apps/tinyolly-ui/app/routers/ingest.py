@@ -75,18 +75,22 @@ async def ingest_traces(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f'Invalid request body: {str(e)}') from e
 
-    spans_to_store = []
-    
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail='Expected a JSON object')
+
     if 'resourceSpans' in data:
-        for resource_span in data['resourceSpans']:
-            for scope_span in resource_span.get('scopeSpans', []):
-                for span in scope_span.get('spans', []):
-                    spans_to_store.append(span)
+        if not isinstance(data['resourceSpans'], list):
+            raise HTTPException(status_code=400, detail="'resourceSpans' must be a list")
+        # Full OTLP: use the shared parser so resource attributes / serviceName are kept and ids are
+        # normalized to hex (it was storing raw spans: no service name, base64 ids).
+        spans_to_store = storage.parse_otlp_traces(data)
     elif 'spans' in data:
-        spans_to_store = data['spans']
+        if not isinstance(data['spans'], list):
+            raise HTTPException(status_code=400, detail="'spans' must be a list")
+        spans_to_store = [sp for sp in data['spans'] if isinstance(sp, dict)]
     else:
         spans_to_store = [data]
-    
+
     if spans_to_store:
         await storage.store_spans(spans_to_store)
 
@@ -146,11 +150,16 @@ async def ingest_logs(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f'Invalid request body: {str(e)}') from e
 
-    # Handle array or single log
-    logs = data if isinstance(data, list) else [data]
-    
-    # Filter valid logs
-    valid_logs = [log for log in logs if isinstance(log, dict)]
+    if isinstance(data, dict) and 'resourceLogs' in data:
+        # Full OTLP logs payload (previously ignored: it was treated as one malformed log entry)
+        if not isinstance(data['resourceLogs'], list):
+            raise HTTPException(status_code=400, detail="'resourceLogs' must be a list")
+        valid_logs = storage.parse_otlp_logs(data)
+    elif isinstance(data, (dict, list)):
+        logs = data if isinstance(data, list) else [data]
+        valid_logs = [log for log in logs if isinstance(log, dict)]
+    else:
+        raise HTTPException(status_code=400, detail='Expected a JSON object or array')
 
     if valid_logs:
         await storage.store_logs(valid_logs)
@@ -210,8 +219,13 @@ async def ingest_metrics(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f'Invalid request body: {str(e)}') from e
 
+    if not isinstance(data, (dict, list)):
+        raise HTTPException(status_code=400, detail='Expected a JSON object or array')
+
     # Check if this is OTLP format
     if isinstance(data, dict) and 'resourceMetrics' in data:
+        if not isinstance(data['resourceMetrics'], list):
+            raise HTTPException(status_code=400, detail="'resourceMetrics' must be a list")
         # OTLP format - store directly
         await storage.store_metrics(data)
 

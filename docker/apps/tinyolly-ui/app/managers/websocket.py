@@ -48,7 +48,8 @@ class ConnectionManager:
             return
 
         disconnected = set()
-        for connection in self.active_connections:
+        # Iterate a snapshot: connect()/disconnect() run in other tasks while we await each send.
+        for connection in list(self.active_connections):
             try:
                 await connection.send_json(message)
             except Exception as e:

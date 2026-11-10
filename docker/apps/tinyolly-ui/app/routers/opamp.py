@@ -209,7 +209,10 @@ async def _validate_config_text(config_text: str) -> dict:
         503: {"description": "OpAMP server unavailable"}
     }
 )
-async def opamp_update_config(request: ConfigUpdateRequest):
+async def opamp_update_config(
+    request: ConfigUpdateRequest,
+    wait: float = Query(default=0, ge=0, le=120, description="Seconds to wait for the targeted agents to report applied/failed (0 = return immediately)"),
+):
     """
     Push a new configuration to the OTel Collector via OpAMP.
 
@@ -244,19 +247,51 @@ async def opamp_update_config(request: ConfigUpdateRequest):
             async with session.post(
                 f"{settings.opamp_server_url}/config",
                 json=payload,
-                timeout=aiohttp.ClientTimeout(total=5)
+                timeout=aiohttp.ClientTimeout(total=5),
+                **({"headers": {"Authorization": f"Bearer {settings.opamp_api_token}"}} if settings.opamp_api_token else {}),
             ) as response:
                 if response.status == 200:
-                    return await response.json()
+                    result = await response.json()
                 else:
                     error_text = await response.text()
                     raise HTTPException(
                         status_code=response.status,
                         detail=f"OpAMP server error: {error_text}"
                     )
+            if wait:
+                result["agents"] = await _wait_for_agents(session, result, wait)
+            return result
     except (aiohttp.ClientError, asyncio.TimeoutError) as e:
         logger.warning("OpAMP server request failed: %s", e)
         raise HTTPException(status_code=503, detail="OpAMP server unavailable") from e
+
+
+async def _wait_for_agents(session: aiohttp.ClientSession, result: dict, wait: float) -> dict:
+    """Poll the OpAMP server until every targeted agent reports applied/failed for this config, or `wait` expires.
+
+    Returns {instance_id: {config_status, config_error, applied}}; `config_status` stays "pending"/"applying"
+    for agents that did not finish in time. Lets automated tests (and scripts) apply a config and know when
+    it is live instead of sleeping.
+    """
+    ids = result.get("affected_instance_ids") or []
+    want = result.get("config_hash")
+    deadline = asyncio.get_running_loop().time() + wait
+    out: dict = {}
+    while True:
+        async with session.get(f"{settings.opamp_server_url}/status", timeout=aiohttp.ClientTimeout(total=5)) as r:
+            agents = (await r.json()).get("agents", {})
+        out = {}
+        for i in ids:
+            a = agents.get(i, {})
+            out[i] = {
+                "config_status": a.get("config_status", ""),
+                "config_error": a.get("config_error", ""),
+                "applied": a.get("applied_config_hash") == want,
+            }
+        done = all(v["applied"] or v["config_status"] == "failed" for v in out.values())
+        if done or asyncio.get_running_loop().time() >= deadline:
+            return out
+        await asyncio.sleep(0.5)
 
 
 @router.get(

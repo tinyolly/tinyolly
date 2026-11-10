@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Always use the Colima docker daemon
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
+
 # Build TinyOlly AI Agent demo image locally (multi-arch)
 # Usage: ./build-ai-demo.sh [version]
 # Example: ./build-ai-demo.sh v2.1.0
@@ -33,8 +37,7 @@ echo ""
 
 # Ensure buildx builder exists
 echo "Setting up Docker Buildx..."
-docker buildx create --name tinyolly-builder --use 2>/dev/null || docker buildx use tinyolly-builder
-docker buildx inspect --bootstrap
+docker buildx use "$DOCKER_CONTEXT"   # built-in builder for the Colima context (a stale Docker Desktop builder broke this)
 echo ""
 
 # Build ai-agent-demo

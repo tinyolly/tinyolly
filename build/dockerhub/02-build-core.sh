@@ -13,6 +13,7 @@ cd "$SCRIPT_DIR/../../docker"
 
 # Always use the Colima docker daemon
 unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 
 VERSION=${1:-"latest"}
 DOCKER_HUB_ORG=${DOCKER_HUB_ORG:-"tinyolly"}
@@ -36,8 +37,7 @@ echo ""
 
 # Ensure buildx builder exists and is active
 echo "Setting up Docker Buildx..."
-docker buildx create --name tinyolly-builder --use 2>/dev/null || docker buildx use tinyolly-builder
-docker buildx inspect --bootstrap
+docker buildx use "$DOCKER_CONTEXT"   # built-in builder for the Colima context (a stale Docker Desktop builder broke this)
 echo ""
 
 echo "Building images in dependency order..."

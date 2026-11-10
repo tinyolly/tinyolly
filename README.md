@@ -96,6 +96,8 @@ echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.do
 
 Override VM sizing with `COLIMA_CPU`, `COLIMA_MEMORY` (GiB) and `COLIMA_DISK` (GiB). On an 8 GB Mac keep the default; on larger machines `COLIMA_MEMORY=8` is more comfortable when running demos. Only one of the Docker stack or the kind cluster should run at a time, since both bind host ports 4317/4318/5005.
 
+**Docker contexts:** Colima creates one Docker context per profile: `colima` (the default VM) and `colima-tinyolly` (this project's VM). All TinyOlly scripts pin themselves to `colima-tinyolly` (override with `COLIMA_PROFILE`), so they work whichever context your shell has active. For your own `docker` commands against the TinyOlly stack, use `docker --context colima-tinyolly ...` or `export DOCKER_CONTEXT=colima-tinyolly`; a plain `docker` uses your active context (`docker context show`), which may be the other VM.
+
 ## Docker Deployment
 
 ### 1. Deploy TinyOlly Core (Required)
@@ -180,14 +182,36 @@ View AI traces in the **AI Agents** tab - see prompts, responses, token usage (i
 
 ### 6. OpenTelemetry Demo / Astronomy Shop (Optional)
 
-A 16-service subset of the upstream [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) wired to TinyOlly (~1.6 GB of VM memory, fits an 8 GB Mac), with failure-injection flags. Start TinyOlly core first:
+A 16-service subset of the upstream [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo) wired to TinyOlly (~1.6 GB of VM memory, fits an 8 GB Mac), with failure-injection flags. Copy-paste to run it end to end:
 
 ```bash
+# 1. One-time prerequisites (macOS)
+brew install colima docker docker-compose docker-buildx git
+mkdir -p ~/.docker && echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json   # merge into an existing file if you have one
+
+# 2. Get TinyOlly and start its Colima VM
+git clone https://github.com/tinyolly/tinyolly.git && cd tinyolly
+./scripts/colima-up.sh                  # VM 'tinyolly' (Docker context: colima-tinyolly); COLIMA_MEMORY=6 ./scripts/colima-up.sh for more headroom
+
+# 3. Start TinyOlly core (UI :5005, OTLP :4317/:4318)
+(cd docker && ./01-start-core.sh)       # use ./01-start-core-local.sh to build from this checkout instead
+
+# 4. Start the OpenTelemetry Demo (first run pulls ~16 images)
 cd docker-otel-demo
-./01-start-otel-demo.sh                  # shop: http://localhost:8080
-./03-set-flag.sh paymentFailure 50%      # inject failures; see docs/otel-demo.md
-./02-stop-otel-demo.sh
+./01-start-otel-demo.sh                 # clones opentelemetry-demo into .demo/ and starts a 16-service subset
+
+# 5. Use it
+open http://localhost:8080              # the shop
+open http://localhost:5005              # TinyOlly
+./03-set-flag.sh                        # list failure-injection flags
+./03-set-flag.sh paymentFailure 50%     # inject failures
+./03-set-flag.sh --reset                # turn all flags off
+
+# 6. Stop
+./02-stop-otel-demo.sh                  # demo only; add --purge to delete the .demo/ clone
 ```
+
+**No config edits are needed.** The script clones the demo at the version pinned in `versions.env`, points every service at TinyOlly's collector (`host.docker.internal:4317`) and skips the demo's own collector, Jaeger, Grafana, Prometheus, OpenSearch and Kafka. Options: `LOADGEN=0` (no load generator), `LOCUST_USERS=3`, `SERVICES="..."` (custom service list). Use plain `docker` commands with `--context colima-tinyolly`.
 
 ---
 
@@ -360,28 +384,15 @@ openapi-generator-cli generate -i openapi.json -g python -o ./tinyolly-client
 
 All responses return OpenTelemetry-native JSON with full trace/span context.
 
-## Technical Details
-
-### Stack
-- **Backend**: FastAPI (async), SQLite with ZSTD compression + msgpack
-- **Frontend**: Vanilla JavaScript, HTML, CSS
-- **Ingestion**: OTLP/gRPC and OTLP/HTTP
-- **Storage**: 30-minute TTL, sorted sets indexed by timestamp
-- **Correlation**: Native trace/span/log linking
-
-### OTLP Support
-- Full OpenTelemetry Protocol compliance
-- ResourceSpans, ResourceLogs, ResourceMetrics
-- Spanmetrics integration for RED metrics
-- OpAMP protocol support for remote collector configuration management
-- No vendor lock-in
-
----
-
-### Admin Endpoints
+## Admin Endpoints
 - `GET /admin/stats` - SQLite database size, cardinality, uptime
 - `GET/POST/DELETE /admin/alerts` - Alert management
 - `GET /health` - Connectivity status
+
+## More
+
+- [Development and testing](docs/development.md)
+- [Technical details](docs/development.md#technical-details)
 
 ## Licensing
 
@@ -398,12 +409,3 @@ All responses return OpenTelemetry-native JSON with full trace/span context.
     <a href="https://github.com/tinyolly/tinyolly/issues">Issues</a>
   </p>
 </div>
-## Development notes
-
-- Python dependencies are locked: edit `requirements.in` in a service directory, then regenerate with
-  `uv pip compile requirements.in --universal --python-version 3.13 -o requirements.txt`.
-- Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in `versions.env`; the Dockerfiles carry matching `ARG` defaults. Update both together.
-- Lint: `pip install ruff==0.17.4 && ruff check docker/apps/` (rules are in `ruff.toml`; keep the ruff version pinned, its defaults change between releases). There is no CI; run the checks locally.
-- Tests: `cd docker/apps/tinyolly-common && pip install -r requirements-test.txt . && pytest tests`.
-- Go (OpAMP server): `./scripts/test-go.sh` (gofmt, vet, `go test -race` in the pinned golang image). UI tests: `cd docker/apps/tinyolly-ui && pytest tests`. k8s safety guard: `./scripts/test-kubectx-guard.sh`.
-- Collector configs: `./scripts/test-collector-configs.sh` (validate + start every preset); after editing them run `./scripts/sync-k8s-configs.sh`.

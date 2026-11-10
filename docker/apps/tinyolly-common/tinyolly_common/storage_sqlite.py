@@ -20,7 +20,14 @@ import orjson
 import zstandard as zstd
 from async_lru import alru_cache
 
-from .otlp_utils import extract_resource_attributes, get_attr_value, is_error_status, parse_attributes
+from .otlp_utils import (
+    exponential_to_explicit,
+    extract_resource_attributes,
+    get_attr_value,
+    is_error_status,
+    normalize_id,
+    parse_attributes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -72,12 +79,14 @@ class StorageSQLite:
         # auto_vacuum only takes effect on a database that has no tables yet, and journal_mode=WAL creates the
         # file header, so it must be set BEFORE journal_mode. Existing databases are converted in
         # _ensure_initialized (one-time VACUUM).
+        # busy_timeout FIRST: the UI and the OTLP receiver are separate processes opening the same file, and
+        # switching to WAL needs a lock; without a timeout the second opener failed instantly with "database is locked".
+        await conn.execute("PRAGMA busy_timeout=5000")
         await conn.execute("PRAGMA auto_vacuum=INCREMENTAL")
         await conn.execute("PRAGMA journal_mode=WAL")
         await conn.execute("PRAGMA synchronous=NORMAL")
         await conn.execute("PRAGMA temp_store=MEMORY")
         await conn.execute("PRAGMA cache_size=-64000")
-        await conn.execute("PRAGMA busy_timeout=5000")
         await conn.execute(f"PRAGMA max_page_count={MAX_PAGE_COUNT}")
         return conn
 
@@ -347,6 +356,7 @@ class StorageSQLite:
                         "kv",
                     ):
                         await conn.execute(f"DELETE FROM {table} WHERE expires_at <= ?", (now,))
+                    await self._delete_orphans(conn)
                     await conn.commit()
 
                     # Trim oldest data when DB approaches size limit
@@ -361,6 +371,69 @@ class StorageSQLite:
                     await asyncio.sleep(0.1 * (attempt + 1))
                 finally:
                     await conn.close()
+
+    async def _delete_orphans(self, conn: aiosqlite.Connection) -> None:
+        """Remove index rows whose spans are gone (trimmed by size or expired independently) and
+        per-metric rows whose series are gone, so lists never point at data that no longer exists."""
+        await conn.execute("DELETE FROM span_index WHERE span_id NOT IN (SELECT span_id FROM spans)")
+        await conn.execute("DELETE FROM trace_spans WHERE span_id NOT IN (SELECT span_id FROM spans)")
+        await conn.execute("DELETE FROM trace_index WHERE trace_id NOT IN (SELECT trace_id FROM trace_spans)")
+        for table in ("metrics_meta", "metrics_resources", "metrics_attributes", "metrics_names"):
+            await conn.execute(f"DELETE FROM {table} WHERE name NOT IN (SELECT DISTINCT name FROM metrics_series)")
+
+    async def _retry_locked(self, op, attempts: int = 6):
+        """Run a write transaction, retrying with backoff on "database is locked".
+
+        The UI and the OTLP receiver are separate processes writing the same SQLite file, so a writer can be
+        refused the lock (busy timeout exhausted, or an instant SQLITE_BUSY when WAL is being set up or a read
+        transaction cannot upgrade). Dropping the batch on that error lost telemetry (e.g. a whole metrics
+        export); retrying is safe because each attempt is one complete transaction.
+        """
+        for attempt in range(attempts):
+            try:
+                return await op()
+            except (aiosqlite.OperationalError, sqlite3.OperationalError) as e:
+                if not self._is_db_locked_error(e) or attempt == attempts - 1:
+                    raise
+                await asyncio.sleep(0.05 * 2 ** attempt)
+
+    async def clear_all(self) -> Dict[str, int]:
+        return await self._retry_locked(self._clear_all_once)
+
+    async def _clear_all_once(self) -> Dict[str, int]:
+        """Delete ALL stored telemetry (traces, spans, logs, metrics, caches). Testing/demo hook: gives
+        automated runs and demos a clean slate without restarting the stack. Returns rows removed per table."""
+        await self._ensure_initialized()
+        removed: Dict[str, int] = {}
+        async with self._write_lock:
+            conn = await self._connect()
+            try:
+                await conn.execute("BEGIN IMMEDIATE")
+                for table in ("trace_logs", "logs", "trace_spans", "spans", "span_index", "trace_index", "traces",
+                              "metrics_exemplars", "metrics_series", "metrics_resources", "metrics_attributes",
+                              "metrics_meta", "metrics_names", "kv", "cardinality_meta"):
+                    cur = await conn.execute(f"DELETE FROM {table}")
+                    removed[table] = max(cur.rowcount or 0, 0)
+                await conn.commit()
+                await conn.execute("PRAGMA incremental_vacuum")
+            except Exception:
+                await conn.rollback()
+                raise
+            finally:
+                await conn.close()
+        self.get_metric_names.cache_clear()
+        return removed
+
+    async def close(self) -> None:
+        """Stop the background cleanup task (call on application shutdown)."""
+        task = self._cleanup_task
+        self._cleanup_task = None
+        if task and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
     async def _get_db_size(self, conn: aiosqlite.Connection) -> int:
         """Bytes of live data: pages in use, excluding free pages left behind by deletes.
@@ -466,16 +539,13 @@ class StorageSQLite:
                 scope = scope_spans.get("scope", {})
 
                 for span_data in scope_spans.get("spans", []):
-                    trace_id_b64 = span_data.get("traceId", "")
-                    span_id_b64 = span_data.get("spanId", "")
-                    parent_span_id_b64 = span_data.get("parentSpanId", "")
+                    trace_id = normalize_id(span_data.get("traceId"), 16)
+                    span_id = normalize_id(span_data.get("spanId"), 8)
+                    parent_span_id = normalize_id(span_data.get("parentSpanId"), 8)
 
-                    if not trace_id_b64 or not span_id_b64:
+                    # A span without valid ids cannot be stored or linked; skip it, not the whole batch.
+                    if not trace_id or not span_id:
                         continue
-
-                    trace_id = base64.b64decode(trace_id_b64).hex() if trace_id_b64 else ""
-                    span_id = base64.b64decode(span_id_b64).hex() if span_id_b64 else ""
-                    parent_span_id = base64.b64decode(parent_span_id_b64).hex() if parent_span_id_b64 else ""
 
                     span_record = {
                         "traceId": trace_id,
@@ -508,6 +578,9 @@ class StorageSQLite:
         await self.store_spans([span])
 
     async def store_spans(self, spans: List[Dict[str, Any]]) -> None:
+        await self._retry_locked(lambda: self._store_spans_once(spans))
+
+    async def _store_spans_once(self, spans: List[Dict[str, Any]]) -> None:
         if not spans:
             return
 
@@ -518,7 +591,7 @@ class StorageSQLite:
         async with self._write_lock:
             conn = await self._connect()
             try:
-                await conn.execute("BEGIN")
+                await conn.execute("BEGIN IMMEDIATE")
                 for span in spans:
                     trace_id = span.get("traceId") or span.get("trace_id")
                     span_id = span.get("spanId") or span.get("span_id")
@@ -556,13 +629,7 @@ class StorageSQLite:
                         """,
                         (trace_id, now, expires_at),
                     )
-                    await conn.execute(
-                        """
-                        INSERT OR REPLACE INTO traces(trace_id, ts, expires_at, data)
-                        VALUES (?, ?, ?, ?)
-                        """,
-                        (trace_id, now, expires_at, packed_data),
-                    )
+                    # (the legacy `traces` table duplicated every span blob and was never read; no longer written)
 
                 await conn.commit()
             except Exception:
@@ -682,53 +749,70 @@ class StorageSQLite:
             if not row:
                 return None
 
-            span = self._decompress_if_needed(row[0])
-            method = get_attr_value(span, ["http.method", "http.request.method"])
-            route = get_attr_value(span, ["http.route", "http.target", "url.path"])
-            status_code = get_attr_value(span, ["http.status_code", "http.response.status_code"])
-            server_name = get_attr_value(span, ["http.server_name", "net.host.name"])
-            scheme = get_attr_value(span, ["http.scheme", "url.scheme"])
-            host = get_attr_value(span, ["http.host", "net.host.name"])
-            target = get_attr_value(span, ["http.target", "url.path"])
-            url = get_attr_value(span, ["http.url", "url.full"])
-
-            start_time = int(span.get("startTimeUnixNano", span.get("start_time", 0)))
-            end_time = int(span.get("endTimeUnixNano", span.get("end_time", 0)))
-            duration_ns = end_time - start_time if end_time > start_time else 0
-
-            return {
-                "span_id": span_id,
-                "trace_id": span.get("traceId") or span.get("trace_id"),
-                "name": span.get("name", "unknown"),
-                "start_time": start_time,
-                "duration_ms": duration_ns / 1_000_000,
-                "method": method,
-                "route": route,
-                "status_code": status_code,
-                "status": span.get("status", {}),
-                "server_name": server_name,
-                "scheme": scheme,
-                "host": host,
-                "target": target,
-                "url": url,
-                "service_name": span.get("serviceName", "unknown"),
-            }
+            return self._span_to_details(span_id, self._decompress_if_needed(row[0]))
         except Exception as e:
             logger.error(f"Error getting span details: {e}", exc_info=True)
             return None
         finally:
             await conn.close()
 
+    def _span_to_details(self, span_id: str, span: Dict[str, Any]) -> Dict[str, Any]:
+        method = get_attr_value(span, ["http.method", "http.request.method"])
+        route = get_attr_value(span, ["http.route", "http.target", "url.path"])
+        status_code = get_attr_value(span, ["http.status_code", "http.response.status_code"])
+        server_name = get_attr_value(span, ["http.server_name", "net.host.name"])
+        scheme = get_attr_value(span, ["http.scheme", "url.scheme"])
+        host = get_attr_value(span, ["http.host", "net.host.name"])
+        target = get_attr_value(span, ["http.target", "url.path"])
+        url = get_attr_value(span, ["http.url", "url.full"])
+
+        start_time = int(span.get("startTimeUnixNano", span.get("start_time", 0)))
+        end_time = int(span.get("endTimeUnixNano", span.get("end_time", 0)))
+        duration_ns = end_time - start_time if end_time > start_time else 0
+
+        return {
+            "span_id": span_id,
+            "trace_id": span.get("traceId") or span.get("trace_id"),
+            "name": span.get("name", "unknown"),
+            "start_time": start_time,
+            "duration_ms": duration_ns / 1_000_000,
+            "method": method,
+            "route": route,
+            "status_code": status_code,
+            "status": span.get("status", {}),
+            "server_name": server_name,
+            "scheme": scheme,
+            "host": host,
+            "target": target,
+            "url": url,
+            "service_name": span.get("serviceName", "unknown"),
+        }
+
     async def get_spans_details_batch(self, span_ids: List[str]) -> List[Dict[str, Any]]:
         results: List[Dict[str, Any]] = []
         if not span_ids:
             return results
 
-        for span_id in span_ids:
-            span = await self.get_span_details(span_id)
-            if span:
-                results.append(span)
-        return results
+        await self._ensure_initialized()
+        now = time.time()
+        conn = await self._connect()          # one connection for the whole batch (was one per span id)
+        try:
+            by_id: Dict[str, Dict[str, Any]] = {}
+            for i in range(0, len(span_ids), 500):
+                chunk = span_ids[i:i + 500]
+                placeholders = ",".join("?" for _ in chunk)
+                async with conn.execute(
+                    f"SELECT span_id, data FROM spans WHERE expires_at > ? AND span_id IN ({placeholders})",
+                    [now, *chunk],
+                ) as cur:
+                    for row in await cur.fetchall():
+                        try:
+                            by_id[row[0]] = self._span_to_details(row[0], self._decompress_if_needed(row[1]))
+                        except Exception as e:
+                            logger.error(f"Error building span details for {row[0]}: {e}")
+            return [by_id[sid] for sid in span_ids if sid in by_id]     # keep the requested order
+        finally:
+            await conn.close()
 
     async def get_trace_spans(self, trace_id: str) -> List[Dict[str, Any]]:
         await self._ensure_initialized()
@@ -755,7 +839,19 @@ class StorageSQLite:
             await conn.close()
 
     async def get_trace_summary(self, trace_id: str) -> Optional[Dict[str, Any]]:
-        spans = await self.get_trace_spans(trace_id)
+        return self._summarize_spans(trace_id, await self.get_trace_spans(trace_id))
+
+    async def get_trace_summaries(self, trace_ids: List[str]) -> List[Dict[str, Any]]:
+        """Summaries for many traces with a few batched queries (get_trace_summary per id opened one connection each)."""
+        spans_by_trace = await self._get_trace_spans_batch(trace_ids)
+        out = []
+        for tid in trace_ids:
+            summary = self._summarize_spans(tid, spans_by_trace.get(tid, []))
+            if summary:
+                out.append(summary)
+        return out
+
+    def _summarize_spans(self, trace_id: str, spans: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         if not spans:
             return None
 
@@ -817,10 +913,8 @@ class StorageSQLite:
                         time_unix_nano = int(time_unix_nano)
                     timestamp = time_unix_nano / 1_000_000_000 if time_unix_nano else time.time()
 
-                    trace_id_b64 = log_record.get("traceId", "")
-                    span_id_b64 = log_record.get("spanId", "")
-                    trace_id = base64.b64decode(trace_id_b64).hex() if trace_id_b64 else ""
-                    span_id = base64.b64decode(span_id_b64).hex() if span_id_b64 else ""
+                    trace_id = normalize_id(log_record.get("traceId"), 16)
+                    span_id = normalize_id(log_record.get("spanId"), 8)
 
                     body = log_record.get("body", {})
                     message = body.get("stringValue", "") if isinstance(body, dict) else str(body)
@@ -854,6 +948,9 @@ class StorageSQLite:
         await self.store_logs([log])
 
     async def store_logs(self, logs: List[Dict[str, Any]]) -> None:
+        await self._retry_locked(lambda: self._store_logs_once(logs))
+
+    async def _store_logs_once(self, logs: List[Dict[str, Any]]) -> None:
         if not logs:
             return
 
@@ -861,7 +958,7 @@ class StorageSQLite:
         async with self._write_lock:
             conn = await self._connect()
             try:
-                await conn.execute("BEGIN")
+                await conn.execute("BEGIN IMMEDIATE")
                 now = time.time()
                 expires_at = now + self.ttl
 
@@ -972,6 +1069,13 @@ class StorageSQLite:
                     elif "summary" in metric:
                         metric_type = "summary"
                         metric_datapoints = metric["summary"].get("dataPoints", [])
+                    elif "exponentialHistogram" in metric:
+                        # Stored as an explicit-bucket histogram (see exponential_to_explicit) so every existing
+                        # reader/chart works; these used to be silently dropped (nothing stored, nothing shown).
+                        metric_type = "histogram"
+                        exp = metric["exponentialHistogram"]
+                        metric_datapoints = exp.get("dataPoints", [])
+                        temporality = exp.get("aggregationTemporality", "CUMULATIVE")
 
                     for dp in metric_datapoints:
                         dp_attrs = parse_attributes(dp.get("attributes", []))
@@ -990,6 +1094,9 @@ class StorageSQLite:
                                 value = dp["asInt"]
                             elif "asDouble" in dp:
                                 value = dp["asDouble"]
+                        elif metric_type == "histogram" and ("scale" in dp or "positive" in dp or "zeroCount" in dp) and "explicitBounds" not in dp:
+                            value = dp.get("sum", 0)
+                            histogram_data = exponential_to_explicit(dp)
                         elif metric_type == "histogram":
                             value = dp.get("sum", 0)
                             histogram_data = {
@@ -1019,12 +1126,9 @@ class StorageSQLite:
                             elif "asDouble" in ex:
                                 ex_value = ex["asDouble"]
 
-                            trace_id = ex.get("traceId", "")
-                            span_id = ex.get("spanId", "")
-                            if isinstance(trace_id, bytes):
-                                trace_id = trace_id.hex()
-                            if isinstance(span_id, bytes):
-                                span_id = span_id.hex()
+                            # same hex form as spans so exemplar -> trace links resolve
+                            trace_id = normalize_id(ex.get("traceId"), 16)
+                            span_id = normalize_id(ex.get("spanId"), 8)
 
                             exemplars.append(
                                 {
@@ -1070,6 +1174,23 @@ class StorageSQLite:
         summary: Optional[Dict[str, Any]] = None,
         exemplars: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
+        await self._write_datapoints([{
+            "name": name, "type": metric_type, "unit": unit, "description": description,
+            "temporality": temporality, "resource": resource, "attributes": attributes, "value": value,
+            "timestamp": timestamp, "histogram": histogram, "summary": summary, "exemplars": exemplars,
+        }])
+
+    async def _write_datapoints(self, datapoints: List[Dict[str, Any]]) -> None:
+        await self._retry_locked(lambda: self._write_datapoints_once(datapoints))
+
+    async def _write_datapoints_once(self, datapoints: List[Dict[str, Any]]) -> None:
+        """Write many datapoints on ONE connection in ONE transaction (was a connection + transaction per point).
+
+        Cardinality protection: a metric name that is not yet stored is dropped once `max_cardinality`
+        distinct live names exist; drops are counted in cardinality_meta (shown as metrics_dropped).
+        """
+        if not datapoints:
+            return
         await self._ensure_initialized()
         now = time.time()
         expires_at = now + self.ttl
@@ -1077,85 +1198,107 @@ class StorageSQLite:
         async with self._write_lock:
             conn = await self._connect()
             try:
-                await conn.execute("BEGIN")
-                resource_hash = self._hash_dict(resource)
-                attr_hash = self._hash_dict(attributes)
+                await conn.execute("BEGIN IMMEDIATE")
+                async with conn.execute("SELECT name FROM metrics_names WHERE expires_at > ?", (now,)) as cur:
+                    known = {row[0] for row in await cur.fetchall()}
+                dropped = 0
+                dropped_names: List[str] = []
 
-                await conn.execute(
-                    "INSERT OR REPLACE INTO metrics_names(name, expires_at) VALUES (?, ?)",
-                    (name, expires_at),
-                )
+                for dp in datapoints:
+                    name = dp["name"]
+                    if name not in known:
+                        if len(known) >= self.max_cardinality:
+                            dropped += 1
+                            if name not in dropped_names:
+                                dropped_names.append(name)
+                            continue
+                        known.add(name)
+                    await self._write_one_datapoint(conn, dp, expires_at)
 
-                meta_data = {
-                    "type": metric_type,
-                    "unit": unit,
-                    "description": description,
-                    "temporality": temporality or "N/A",
-                }
-                await conn.execute(
-                    "INSERT OR REPLACE INTO metrics_meta(name, data, expires_at) VALUES (?, ?, ?)",
-                    (name, orjson.dumps(meta_data), expires_at),
-                )
-
-                await conn.execute(
-                    """
-                    INSERT INTO metrics_resources(name, resource_json, expires_at)
-                    VALUES (?, ?, ?)
-                    ON CONFLICT(name, resource_json) DO UPDATE SET expires_at=excluded.expires_at
-                    """,
-                    (name, orjson.dumps(resource).decode("utf-8"), expires_at),
-                )
-
-                if attributes:
-                    await conn.execute(
-                        """
-                        INSERT INTO metrics_attributes(name, attr_json, expires_at)
-                        VALUES (?, ?, ?)
-                        ON CONFLICT(name, attr_json) DO UPDATE SET expires_at=excluded.expires_at
-                        """,
-                        (name, orjson.dumps(attributes, option=orjson.OPT_SORT_KEYS).decode("utf-8"), expires_at),
-                    )
-
-                datapoint_data = {
-                    "resource": resource,
-                    "attributes": attributes,
-                    "value": value,
-                    "timestamp": timestamp,
-                    "histogram": histogram,
-                    "summary": summary,
-                }
-
-                await conn.execute(
-                    """
-                    INSERT INTO metrics_series(name, resource_hash, attr_hash, ts, expires_at, data)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (name, resource_hash, attr_hash, timestamp, expires_at, self._compress_for_storage(datapoint_data)),
-                )
-
-                if exemplars:
-                    for ex in exemplars:
-                        await conn.execute(
-                            """
-                            INSERT INTO metrics_exemplars(name, resource_hash, attr_hash, ts, expires_at, data)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                            """,
-                            (
-                                name,
-                                resource_hash,
-                                attr_hash,
-                                float(ex.get("timestamp", timestamp)),
-                                expires_at,
-                                self._compress_for_storage(ex),
-                            ),
-                        )
-
+                if dropped:
+                    await self._record_dropped(conn, dropped, dropped_names)
                 await conn.commit()
             except Exception:
                 await conn.rollback()
                 raise
             finally:
                 await conn.close()
+
+    async def _record_dropped(self, conn: aiosqlite.Connection, count: int, names: List[str]) -> None:
+        async with conn.execute("SELECT value FROM cardinality_meta WHERE key='metric_dropped_count'") as cur:
+            row = await cur.fetchone()
+        total = (int(row[0]) if row and row[0] else 0) + count
+        async with conn.execute("SELECT value FROM cardinality_meta WHERE key='metric_dropped_names'") as cur:
+            row = await cur.fetchone()
+        try:
+            existing = json.loads(row[0]) if row and row[0] else []
+        except Exception:
+            existing = []
+        merged = (existing + [n for n in names if n not in existing])[-50:]
+        await conn.execute("INSERT OR REPLACE INTO cardinality_meta(key, value) VALUES ('metric_dropped_count', ?)", (str(total),))
+        await conn.execute("INSERT OR REPLACE INTO cardinality_meta(key, value) VALUES ('metric_dropped_names', ?)", (json.dumps(merged),))
+        logger.warning(f"Metric cardinality limit ({self.max_cardinality}) reached: dropped {count} datapoint(s) for new names {names[:5]}")
+
+    async def _write_one_datapoint(self, conn: aiosqlite.Connection, dp: Dict[str, Any], expires_at: float) -> None:
+        name = dp["name"]
+        resource = dp.get("resource") or {}
+        attributes = dp.get("attributes") or {}
+        timestamp = dp["timestamp"]
+        exemplars = dp.get("exemplars")
+        resource_hash = self._hash_dict(resource)
+        attr_hash = self._hash_dict(attributes)
+
+        await conn.execute("INSERT OR REPLACE INTO metrics_names(name, expires_at) VALUES (?, ?)", (name, expires_at))
+        meta_data = {
+            "type": dp.get("type", "unknown"),
+            "unit": dp.get("unit", ""),
+            "description": dp.get("description", ""),
+            "temporality": dp.get("temporality") or "N/A",
+        }
+        await conn.execute(
+            "INSERT OR REPLACE INTO metrics_meta(name, data, expires_at) VALUES (?, ?, ?)",
+            (name, orjson.dumps(meta_data), expires_at),
+        )
+        await conn.execute(
+            """
+            INSERT INTO metrics_resources(name, resource_json, expires_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(name, resource_json) DO UPDATE SET expires_at=excluded.expires_at
+            """,
+            (name, orjson.dumps(resource).decode("utf-8"), expires_at),
+        )
+        if attributes:
+            await conn.execute(
+                """
+                INSERT INTO metrics_attributes(name, attr_json, expires_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(name, attr_json) DO UPDATE SET expires_at=excluded.expires_at
+                """,
+                (name, orjson.dumps(attributes, option=orjson.OPT_SORT_KEYS).decode("utf-8"), expires_at),
+            )
+        datapoint_data = {
+            "resource": resource,
+            "attributes": attributes,
+            "value": dp.get("value"),
+            "timestamp": timestamp,
+            "histogram": dp.get("histogram"),
+            "summary": dp.get("summary"),
+        }
+        await conn.execute(
+            """
+            INSERT INTO metrics_series(name, resource_hash, attr_hash, ts, expires_at, data)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (name, resource_hash, attr_hash, timestamp, expires_at, self._compress_for_storage(datapoint_data)),
+        )
+        for ex in exemplars or []:
+            await conn.execute(
+                """
+                INSERT INTO metrics_exemplars(name, resource_hash, attr_hash, ts, expires_at, data)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (name, resource_hash, attr_hash, float(ex.get("timestamp", timestamp)), expires_at, self._compress_for_storage(ex)),
+            )
 
     async def store_metric(self, metric: Dict[str, Any]) -> None:
         await self.store_metrics([metric])
@@ -1165,44 +1308,30 @@ class StorageSQLite:
             return
 
         if isinstance(metrics, dict) and ("resourceMetrics" in metrics or "resource_metrics" in metrics):
-            datapoints = self.parse_otlp_metrics(metrics)
-            for dp in datapoints:
-                await self.store_metric_datapoint(
-                    name=dp["name"],
-                    metric_type=dp["type"],
-                    unit=dp["unit"],
-                    description=dp["description"],
-                    temporality=dp["temporality"],
-                    resource=dp["resource"],
-                    attributes=dp["attributes"],
-                    value=dp["value"],
-                    timestamp=dp["timestamp"],
-                    histogram=dp["histogram"],
-                    summary=dp["summary"],
-                    exemplars=dp["exemplars"],
-                )
+            await self._write_datapoints(self.parse_otlp_metrics(metrics))
             return
 
         legacy_metrics = metrics if isinstance(metrics, list) else [metrics]
+        batch = []
         for metric in legacy_metrics:
             name = metric.get("name")
             if not name:
                 continue
-
-            await self.store_metric_datapoint(
-                name=name,
-                metric_type=metric.get("type", "unknown"),
-                unit=metric.get("unit", ""),
-                description=metric.get("description", ""),
-                temporality=metric.get("temporality", "N/A"),
-                resource=metric.get("resource", {}),
-                attributes=metric.get("attributes", {}),
-                value=metric.get("value"),
-                timestamp=float(metric.get("timestamp", time.time())),
-                histogram=metric.get("histogram"),
-                summary=metric.get("summary"),
-                exemplars=metric.get("exemplars", []),
-            )
+            batch.append({
+                "name": name,
+                "type": metric.get("type", "unknown"),
+                "unit": metric.get("unit", ""),
+                "description": metric.get("description", ""),
+                "temporality": metric.get("temporality", "N/A"),
+                "resource": metric.get("resource", {}),
+                "attributes": metric.get("attributes", {}),
+                "value": metric.get("value"),
+                "timestamp": float(metric.get("timestamp", time.time())),
+                "histogram": metric.get("histogram"),
+                "summary": metric.get("summary"),
+                "exemplars": metric.get("exemplars", []),
+            })
+        await self._write_datapoints(batch)
 
     @alru_cache(maxsize=1, ttl=10)
     async def get_metric_names(self, limit: Optional[int] = None) -> List[str]:
@@ -1624,15 +1753,16 @@ class StorageSQLite:
         cache_key = self._service_cache_key("catalog")
         snapshot_key = self._service_snapshot_key("catalog")
         reset_at = await self._get_service_reset_ts("catalog")
-        spans = await self._get_recent_spans_data(10000, since_ts=reset_at)
 
-        if not spans:
-            snapshot = await self._cache_get_json(snapshot_key)
-            return snapshot or []
-
+        # Check the short-lived cache BEFORE decoding up to 10,000 span blobs.
         cached_catalog = await self._cache_get_json(cache_key)
         if cached_catalog:
             return cached_catalog
+
+        spans = await self._get_recent_spans_data(10000, since_ts=reset_at)
+        if not spans:
+            snapshot = await self._cache_get_json(snapshot_key)
+            return snapshot or []
 
         services: Dict[str, Dict[str, Any]] = {}
 

@@ -3,6 +3,52 @@
  */
 import { formatTime, formatDuration, loadChartJs, escapeHtml, attachHoverEffects, renderEmptyState, sortItems, getSortIndicator, destroyChart, closeAllExpandedItems, formatCount, renderActionButton } from './utils.js';
 
+// How per-service actions (Traces/Spans/Logs/Metrics/Map) are shown:
+//   'menu'    - click the service name to open a popover menu (current)
+//   'buttons' - original layout: a row of buttons on every service row
+// To revert, change this to 'buttons' (both layouts are kept; see docs/development.md "Service catalog actions").
+const ACTIONS_STYLE = 'menu';
+
+const SERVICE_ACTIONS = [
+    ['Service map', 'viewServiceMap'],
+    ['Traces', 'viewServiceTraces'],
+    ['Spans', 'viewServiceSpans'],
+    ['Logs', 'viewServiceLogs'],
+    ['Metrics', 'viewMetricsForService'],
+];
+
+function closeServiceMenu() {
+    const m = document.getElementById('service-action-menu');
+    if (m) m.remove();
+}
+
+function openServiceMenu(anchor, serviceName) {
+    closeServiceMenu();
+    const menu = document.createElement('div');
+    menu.id = 'service-action-menu';
+    menu.style.cssText = 'position: fixed; z-index: 1000; min-width: 160px; background: var(--bg-card, #fff); border: 1px solid var(--border, #e2e8f0); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 4px 0; font-size: 13px;';
+    const head = document.createElement('div');
+    head.textContent = serviceName;
+    head.style.cssText = 'padding: 4px 12px 6px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border, #e2e8f0); margin-bottom: 4px;';
+    menu.appendChild(head);
+    SERVICE_ACTIONS.forEach(([label, fn]) => {
+        const item = document.createElement('div');
+        item.textContent = label;
+        item.style.cssText = 'padding: 6px 12px; cursor: pointer; color: var(--text-main);';
+        item.onmouseenter = () => { item.style.background = 'var(--bg-hover)'; };
+        item.onmouseleave = () => { item.style.background = ''; };
+        item.onclick = (e) => { e.stopPropagation(); closeServiceMenu(); if (window[fn]) window[fn](serviceName); };
+        menu.appendChild(item);
+    });
+    document.body.appendChild(menu);
+    const r = anchor.getBoundingClientRect();
+    menu.style.left = `${r.left}px`;
+    menu.style.top = `${Math.min(r.bottom + 2, window.innerHeight - menu.offsetHeight - 8)}px`;
+}
+
+document.addEventListener('click', closeServiceMenu);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeServiceMenu(); });
+
 const chartInstances = {};
 const openCharts = new Map(); // Track which charts are open: serviceName -> {metricType, metricName, metricTypeLabel}
 let currentSort = { column: 'name', direction: 'asc' }; // Track current sort
@@ -32,7 +78,7 @@ export function renderServiceCatalog(services) {
             <div data-sort="trace_count" style="flex: 0 0 80px; text-align: right;" class="cursor-pointer" title="Click to sort">Traces ${getSortIndicator('trace_count', currentSort)}</div>
             <div data-sort="first_seen" style="flex: 0 0 100px;" class="cursor-pointer" title="Click to sort">First Seen ${getSortIndicator('first_seen', currentSort)}</div>
             <div data-sort="last_seen" style="flex: 0 0 100px;" class="cursor-pointer" title="Click to sort">Last Seen ${getSortIndicator('last_seen', currentSort)}</div>
-            <div style="flex: 1;">Actions</div>
+            <div style="flex: 1;">${ACTIONS_STYLE === 'buttons' ? 'Actions' : ''}</div>
         </div>
     `;
 
@@ -58,7 +104,9 @@ export function renderServiceCatalog(services) {
         return `
             <div class="catalog-service-row" data-service-id="${serviceId}">
                 <div class="catalog-item data-table-row">
-                    <div class="text-main font-semibold" style="flex: 0 0 200px; font-size: 13px;">${escapeHtml(service.name)}</div>
+                    ${ACTIONS_STYLE === 'menu'
+                        ? `<div class="text-primary font-semibold cursor-pointer service-name-menu" data-service-menu="${escapeHtml(service.name)}" style="flex: 0 0 200px; font-size: 13px;" title="Click for Service map, Traces, Spans, Logs, Metrics">${escapeHtml(service.name)} <span style="font-size: 9px; opacity: 0.6;">&#9662;</span></div>`
+                        : `<div class="text-main font-semibold" style="flex: 0 0 200px; font-size: 13px;">${escapeHtml(service.name)}</div>`}
                     <div data-metric="calls" data-service="${escapeHtml(service.name)}" class="text-primary text-mono font-semibold cursor-pointer" style="flex: 0 0 80px; text-align: right; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${rate}</div>
                     <div data-metric="calls" data-service="${escapeHtml(service.name)}" class="text-mono font-semibold cursor-pointer" style="flex: 0 0 70px; text-align: right; color: ${errorColor}; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${errorRate}</div>
                     <div data-metric="duration" data-service="${escapeHtml(service.name)}" class="text-main text-mono cursor-pointer" style="flex: 0 0 70px; text-align: right; text-decoration: underline; text-decoration-style: dotted;" title="Click to view metric">${p50}</div>
@@ -67,12 +115,15 @@ export function renderServiceCatalog(services) {
                     <div class="text-muted text-mono" style="flex: 0 0 80px; text-align: right;">${formatCount(service.trace_count)}</div>
                     <div class="text-muted text-mono" style="flex: 0 0 100px; font-size: 10px;">${firstSeen}</div>
                     <div class="text-muted text-mono" style="flex: 0 0 100px; font-size: 10px;">${lastSeen}</div>
+                    ${ACTIONS_STYLE === 'buttons' ? `
                     <div style="flex: 1; display: flex; gap: 8px;">
                         ${renderActionButton(`view-traces-${serviceId}`, 'Traces', 'primary')}
                         ${renderActionButton(`view-spans-${serviceId}`, 'Spans', 'primary')}
                         ${renderActionButton(`view-logs-${serviceId}`, 'Logs', 'primary')}
                         ${renderActionButton(`view-metrics-${serviceId}`, 'Metrics', 'primary')}
+                        ${renderActionButton(`view-map-${serviceId}`, 'Map', 'primary')}
                     </div>
+                    ` : ''}
                 </div>
                 <div class="catalog-chart-container" style="display: none; padding: 20px; background: var(--bg-secondary); border-bottom: 1px solid var(--border);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -92,6 +143,14 @@ export function renderServiceCatalog(services) {
     // Add hover effect and click handlers
     const items = container.querySelectorAll('.catalog-item');
     attachHoverEffects(items);
+
+    // Service-name action menu
+    container.querySelectorAll('[data-service-menu]').forEach(el => {
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openServiceMenu(el, el.getAttribute('data-service-menu'));
+        });
+    });
 
     // Add click handlers for RED metric values
     const metricCells = container.querySelectorAll('[data-metric]');
@@ -240,6 +299,14 @@ export function renderServiceCatalog(services) {
             logsBtn.onclick = (e) => {
                 e.stopPropagation();
                 if (window.viewServiceLogs) window.viewServiceLogs(service.name);
+            };
+        }
+
+        const mapBtn = document.getElementById(`view-map-${serviceId}`);
+        if (mapBtn) {
+            mapBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (window.viewServiceMap) window.viewServiceMap(service.name);
             };
         }
 
@@ -641,6 +708,38 @@ window.viewServiceTraces = function (serviceName) {
     }
 
     setTimeout(() => { if (window.filterTraces) window.filterTraces(); }, 500);
+};
+
+// Jump to a service in the APM Service Catalog, as if its rate had been clicked there
+window.viewServiceCatalog = function (serviceName) {
+    if (window.switchTab) window.switchTab('catalog');
+
+    let tries = 0;
+    const timer = setInterval(() => {
+        const cell = [...document.querySelectorAll('#catalog-container [data-metric="calls"]')]
+            .find(c => c.getAttribute('data-service') === serviceName);
+        if (cell) {
+            clearInterval(timer);
+            const row = cell.closest('.catalog-service-row');
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const chart = row.querySelector('.catalog-chart-container');
+            if (chart && chart.style.display === 'none') cell.click();   // open its chart like a manual click
+            const item = row.querySelector('.catalog-item');
+            if (item) {
+                item.style.transition = 'background 1.5s';
+                item.style.background = 'var(--bg-hover)';
+                setTimeout(() => { item.style.background = ''; }, 1500);
+            }
+        } else if (++tries > 40) {
+            clearInterval(timer);   // service not in catalog (yet)
+        }
+    }, 150);
+};
+
+// Jump to a service on the APM Service Map and open its details, as if the node had been clicked
+window.viewServiceMap = function (serviceName) {
+    if (window.selectServiceNodeWhenReady) window.selectServiceNodeWhenReady(serviceName);
+    if (window.switchTab) window.switchTab('map');
 };
 
 window.viewServiceSpans = function (serviceName) {

@@ -1,6 +1,7 @@
-# Connectors (routing): routing sends error spans to a dedicated pipeline; failover falls back to a backup exporter
-# DEMO: error traces take a separate 'traces/errors' pipeline (extra attribute, never sampled); if the primary
-# exporter fails, failover switches to the backup. Components: routing, failover, attributes
+# Connectors (routing): routing sends error spans down their own pipeline; failover falls back to a local file if TinyOlly is unreachable
+# DEMO: spans with error status get collector.route=errors in a dedicated 'traces/errors' pipeline (both pipelines still
+# export to TinyOlly, so traces stay complete there). If the primary exporter fails, failover switches to a file exporter
+# (/var/lib/otelcol/failover-traces.jsonl), so nothing is lost during an outage. Components: routing, failover, attributes, file
 # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
 # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
 
@@ -72,6 +73,24 @@ exporters:
     endpoint: "tinyolly-otlp-receiver:4343"
     tls:
       insecure: true
+  # Failover only switches when the primary exporter returns an error to the pipeline. The default exporter queue
+  # and retries accept data and retry in the background, so the failover exporter must not queue or retry.
+  otlp/primary:
+    endpoint: "tinyolly-otlp-receiver:4343"
+    tls:
+      insecure: true
+    timeout: 2s
+    sending_queue:
+      enabled: false
+    retry_on_failure:
+      enabled: false
+  # Backup: keep the spans on disk instead of discarding them while the primary is down.
+  file/backup:
+    path: /var/lib/otelcol/failover-traces.jsonl
+    format: json
+    rotation:
+      max_megabytes: 20
+      max_backups: 2
 
 service:
   extensions: [opamp]
@@ -90,10 +109,10 @@ service:
       exporters: [failover]
     traces/primary:
       receivers: [failover]
-      exporters: [otlp]
+      exporters: [otlp/primary]
     traces/backup:
       receivers: [failover]
-      exporters: [debug]
+      exporters: [file/backup]
     metrics:
       receivers: [otlp, spanmetrics]
       processors: [memory_limiter, resourcedetection, batch]

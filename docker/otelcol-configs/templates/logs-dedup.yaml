@@ -1,5 +1,7 @@
 # Logs: logdedup collapses repeated identical logs into one record with a count; transform normalizes severity
-# DEMO: a log spam burst becomes one record with log_count; WARN/Warning/CRITICAL etc. map to canonical severities.
+# DEMO: a log spam burst becomes one record with dedup_count; WARN/Warning/CRITICAL etc. map to canonical severities.
+# Only INFO/DEBUG logs WITHOUT a trace id are deduplicated: ERROR/FATAL logs and logs correlated to a trace pass through
+# untouched, because folding them would lose per-occurrence data and break log-to-trace links.
 # Components: memory_limiter, resourcedetection, transform, logdedup (filelog receiver can be added for file sources)
 # NOTE: the supervisor MERGES remote config into the base config.yaml (pipelines are merged by name), so every preset
 # defines its main pipelines as 'traces', 'metrics' and 'logs' to override the base ones; extra pipelines use suffixes.
@@ -44,6 +46,9 @@ processors:
     interval: 10s
     log_count_attribute: dedup_count
     timezone: UTC
+    # Records that match NONE of these conditions are passed through unchanged.
+    conditions:
+      - 'severity_number < SEVERITY_NUMBER_ERROR and trace_id == TraceID(0x00000000000000000000000000000000)'
 
 connectors:
   spanmetrics:

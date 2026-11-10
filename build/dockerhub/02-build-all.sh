@@ -2,8 +2,8 @@
 set -e
 
 # Build ALL TinyOlly images locally (multi-arch)
-# Usage: ./build-all.sh [version]
-# Example: ./build-all.sh v2.1.0
+# Usage: ./02-build-all.sh [version]
+# Example: ./02-build-all.sh v2.1.0
 #
 # This builds: core, demo, ebpf-demo, and ai-demo images
 # To push after building, run: ./03-push-all.sh [version]
@@ -21,25 +21,25 @@ echo ""
 echo ""
 echo ">>> Building Core Images..."
 echo ""
-"$SCRIPT_DIR/build-core.sh" "$VERSION"
+"$SCRIPT_DIR/02-build-core.sh" "$VERSION"
 
 # Build demo images
 echo ""
 echo ">>> Building Demo Images..."
 echo ""
-"$SCRIPT_DIR/build-demo.sh" "$VERSION"
+"$SCRIPT_DIR/02-build-demo.sh" "$VERSION"
 
 # Build eBPF demo images
 echo ""
 echo ">>> Building eBPF Demo Images..."
 echo ""
-"$SCRIPT_DIR/build-ebpf-demo.sh" "$VERSION"
+"$SCRIPT_DIR/02-build-ebpf-demo.sh" "$VERSION"
 
 # Build AI demo image
 echo ""
 echo ">>> Building AI Demo Image..."
 echo ""
-"$SCRIPT_DIR/build-ai-demo.sh" "$VERSION"
+"$SCRIPT_DIR/02-build-ai-demo.sh" "$VERSION"
 
 echo ""
 echo "=========================================="

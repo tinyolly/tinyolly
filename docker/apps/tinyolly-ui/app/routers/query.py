@@ -38,13 +38,7 @@ async def get_traces(
     # Get recent trace IDs from index
     trace_ids = await storage.get_recent_traces(limit)
     
-    traces = []
-    for trace_id in trace_ids:
-        trace_data = await storage.get_trace_summary(trace_id)
-        if trace_data:
-            traces.append(trace_data)
-    
-    return traces
+    return await storage.get_trace_summaries(trace_ids)
 
 
 @router.get(
