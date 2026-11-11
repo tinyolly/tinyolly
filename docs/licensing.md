@@ -1,3 +1,8 @@
+---
+title: "Licensing"
+description: "BSD 3-Clause license terms and contact"
+---
+
 # Licensing
 
 TinyOlly is released under the **BSD 3-Clause License**.  

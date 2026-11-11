@@ -1,3 +1,8 @@
+---
+title: "REST API & OpenAPI"
+description: "REST endpoints for traces, spans, logs, metrics, service catalog and map, with cURL and Python examples, limits"
+---
+
 # REST API & OpenAPI
 
 <div align="center">

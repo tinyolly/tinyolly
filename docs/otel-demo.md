@@ -1,3 +1,8 @@
+---
+title: "OpenTelemetry Demo (Astronomy Shop)"
+description: "Run the upstream OpenTelemetry Demo against TinyOlly, copyable setup block, feature flags for failure injection"
+---
+
 # OpenTelemetry Demo (Astronomy Shop) with TinyOlly
 
 TinyOlly's realistic demo is the upstream [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo)

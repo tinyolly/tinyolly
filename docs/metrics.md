@@ -1,3 +1,8 @@
+---
+title: "Metrics & Cardinality explorer"
+description: "Metrics tab, cardinality explorer, exporting series, cardinality protection"
+---
+
 # Metrics & Cardinality explorer
 
 TinyOlly provides a powerful interface for analyzing OpenTelemetry metrics, with specific tools designed to help you understand the shape and cardinality of your telemetry data.

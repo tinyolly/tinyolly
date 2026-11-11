@@ -1,3 +1,8 @@
+---
+title: "Docker Deployment"
+description: "Start TinyOlly with Docker (core, demo apps, AI agent demo, OTel demo, your own apps, core-only) and configure OpAMP"
+---
+
 # Docker Deployment
 
 Get TinyOlly running on Docker in minutes!

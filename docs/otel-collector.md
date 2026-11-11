@@ -1,3 +1,8 @@
+---
+title: "OpenTelemetry Collector"
+description: "The bundled collector, its config files, applying changes in Docker and Kubernetes, bringing your own collector, OpAMP setup"
+---
+
 # OpenTelemetry Collector
 
 <div align="center">

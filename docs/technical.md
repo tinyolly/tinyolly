@@ -1,3 +1,8 @@
+---
+title: "Technical Details"
+description: "Architecture, storage and retention, OTLP compatibility, UI features, MCP server, testing"
+---
+
 # Technical Details
 
 ## Architecture
@@ -48,7 +53,7 @@ TinyOlly is **fully OpenTelemetry-native**:
 
 ## MCP Server
 
-`docker/apps/tinyolly-mcp` is a read-only MCP server over the REST API (traces, spans, logs, metrics, service catalog/map). Every response is size-bounded; large traces are summarized and paged. See the [MCP guide](mcp.md).
+`docker/apps/tinyolly-mcp` is a read-only MCP server over the REST API (traces, spans, logs, metrics, service catalog/map) that also serves these docs (`list_docs`, `search_docs`, `read_doc`) renders pretty tables, a trace waterfall and PNG charts (metrics, single-service map), and ships investigation skills (`skills/`) that it serves as MCP tools, prompts and resources. Every response is size-bounded; large traces are summarized and paged. See the [MCP guide](mcp.md).
 
 ---
 

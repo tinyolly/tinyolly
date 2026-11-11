@@ -1,3 +1,8 @@
+---
+title: "Quick Start"
+description: "Run TinyOlly core and the demo apps with Docker on Colima in about 5 minutes, then tour the UI"
+---
+
 # Quick Start
 
 Get TinyOlly running in under 5 minutes!

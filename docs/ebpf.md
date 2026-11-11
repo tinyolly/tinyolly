@@ -1,3 +1,8 @@
+---
+title: "eBPF Zero-Code Tracing Demo"
+description: "OpenTelemetry eBPF instrumentation (OBI) demo: what it captures versus SDK tracing, Docker and Kubernetes setup, troubleshooting"
+---
+
 # eBPF Zero-Code Tracing Demo
 
 This demo showcases **OpenTelemetry eBPF Instrumentation (OBI)** - automatic trace capture at the kernel level without any code changes to your application.

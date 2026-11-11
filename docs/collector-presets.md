@@ -1,3 +1,8 @@
+---
+title: "Collector presets"
+description: "The collector presets (sampling, PII redaction, transforms, enrichment, metrics shaping, dedup, connectors, routing, remote write) and how configs are merged and applied"
+---
+
 # Collector presets
 
 TinyOlly ships a baseline collector config plus **presets** you can apply from the *OpenTelemetry Collector + OpAMP Config* tab

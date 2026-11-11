@@ -1,3 +1,8 @@
+---
+title: "Kubernetes Deployment"
+description: "Run TinyOlly on kind (Kubernetes on Colima): core, demo apps, OTel demo, core-only, testing"
+---
+
 # Kubernetes Deployment
 
 Deploy TinyOlly on Kubernetes (kind on Colima) for local development!

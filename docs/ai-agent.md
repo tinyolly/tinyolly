@@ -1,3 +1,8 @@
+---
+title: "AI Agent Demo"
+description: "GenAI observability with an Ollama-based agent and zero-code instrumentation; what the AI Agents tab shows"
+---
+
 # AI Agent Demo
 
 This demo showcases **GenAI observability** with OpenTelemetry - automatic instrumentation of LLM calls using the `opentelemetry-instrumentation-ollama` package.

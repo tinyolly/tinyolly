@@ -1,3 +1,8 @@
+---
+title: "Cardinality Protection"
+description: "Limit on unique metric names, environment variables, Docker and Kubernetes configuration"
+---
+
 # Cardinality Protection
 
 <div align="center">

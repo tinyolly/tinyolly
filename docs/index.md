@@ -1,3 +1,8 @@
+---
+title: "TinyOlly overview"
+description: "What TinyOlly is, key features, supported platforms and screenshots"
+---
+
 <div align="center">
   <img src="images/tinyollytitle.png" alt="TinyOlly" width="500"><br>
   <b>The World's First Desktop Observability Platform</b>
