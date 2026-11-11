@@ -388,6 +388,7 @@ All responses return OpenTelemetry-native JSON with full trace/span context.
 
 ## More
 
+- [MCP server for AI agents](docs/mcp.md): let Claude Code or Zed query your telemetry (read-only)
 - [Development and testing](docs/development.md)
 - [Technical details](docs/development.md#technical-details)
 

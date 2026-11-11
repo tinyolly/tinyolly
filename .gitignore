@@ -68,3 +68,4 @@ docker-otel-demo/.demo/
 .preset-test-*/
 .cfgtest-data.*/
 .kubectx-test.*/
+.venv-tests/

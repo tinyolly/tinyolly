@@ -68,6 +68,7 @@ nav:
       - AI Agent with Ollama: ai-agent.md
   - API Reference:
       - REST API & Examples: api.md
+      - MCP Server (AI agents): mcp.md
   - Advanced:
       - Architecture: technical.md
       - Cardinality Protection: CARDINALITY-PROTECTION.md

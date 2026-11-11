@@ -4,6 +4,7 @@
   `uv pip compile requirements.in --universal --python-version 3.13 -o requirements.txt`.
 - Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in `versions.env`; the Dockerfiles carry matching `ARG` defaults. Update both together.
 - Lint: `pip install ruff==0.17.4 && ruff check docker/apps/` (rules are in `ruff.toml`; keep the ruff version pinned, its defaults change between releases). There is no CI; run the checks locally.
+- **All local tests:** `./scripts/test-all.sh` (fast suites; `--stack` adds the e2e run against the running stack, `--kind` adds the kind smoke test, which briefly stops the compose stack). Nothing runs in CI. Suites: common, UI/API, receiver, MCP server, frontend JS (`node --test`), Go, collector configs, kubectl guard. Individually:
 - Tests: `cd docker/apps/tinyolly-common && pip install -r requirements-test.txt . && pytest tests`.
 - Go (OpAMP server): `./scripts/test-go.sh` (gofmt, vet, `go test -race` in the pinned golang image). UI tests: `cd docker/apps/tinyolly-ui && pytest tests`. k8s safety guard: `./scripts/test-kubectx-guard.sh`.
 - End-to-end (needs the stack up, ~8 min): `python3 scripts/e2e.py` (`--up` starts it, `--only a,b` picks scenarios, `--list`). Drives OTLP through the collector, applies every preset via OpAMP, and checks results through the UI API. Test hooks: `POST /admin/reset`, `POST /api/opamp/config?wait=N`.

@@ -7,7 +7,7 @@ Everything needed to continue on another computer. Read this first, then `plans/
 * **Branch flow:** `v3-integration` was merged into `main` on 2026-11-10 (PRs #8–#13) and deleted. All work is on `main`; there are no open PRs or side branches (besides `gh-pages`). For new work, branch from `main` and open PRs into `main`.
 * The phase branches were stacked and are no longer needed (they were local-only except `modernize/phase-4-otel-demo`, which is merged). For reference, the phase boundaries were: phase 0 `bef08a0`, phase 1 `4ba7eab`, phase 2 `d90f300`, phase 3 `3327ed2`, phase 4 `cc524eb`+.
 * Commit author used throughout: `Steve Lerner <stevelerner@gmail.com>` (no git identity was configured on the original machine; set your own with `git config user.name/email` before committing).
-* Plans: `plans/2026-11-modernization-plan.md` (main), `plans/2026-11-trace-accuracy-plan.md` (next work), `plans/supplemental/` (OTel Demo leftovers, Android app; not started).
+* Plans: `plans/2026-11-modernization-plan.md` (main), `plans/2026-11-trace-accuracy-plan.md` (next work), `plans/supplemental/` (OTel Demo leftovers, Android app, removing security hardening; none started).
 
 ## Current state (2026-11-10)
 
