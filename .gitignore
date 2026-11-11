@@ -69,3 +69,6 @@ docker-otel-demo/.demo/
 .cfgtest-data.*/
 .kubectx-test.*/
 .venv-tests/
+
+### Python package builds ###
+docker/apps/*/build/
