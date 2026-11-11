@@ -72,6 +72,7 @@ nav:
   - Advanced:
       - Architecture: technical.md
       - Cardinality Protection: CARDINALITY-PROTECTION.md
+      - Development & Testing: development.md
   - Licensing: licensing.md
 
 extra:

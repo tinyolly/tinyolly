@@ -27,7 +27,7 @@ Visualize and correlate logs, metrics, and traces without sending data to the cl
 - Click-to-copy trace/span IDs and "Copy Link" buttons for shareable URLs
 - Cross-tab log correlation and navigation
 - Smart auto-refresh that pauses when search filters are active
-- Space-based data retention (keeps data until storage limit; no fixed TTL)
+- Bounded retention (30-minute TTL by default, 256 MB database cap; both configurable)
 - Works with any OTel Collector distro
 - Collector presets applied from the UI via OpAMP: tail sampling, PII redaction, OTTL transforms, enrichment, metrics shaping, log dedup, derived-metric and routing connectors ([docs](docs/collector-presets.md))
 - Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags ([docs](docs/otel-demo.md))

@@ -24,17 +24,20 @@ TinyOlly is a **lightweight OpenTelemetry-native observability platform** built 
 - **Development-focused** - Perfect your app's telemetry locally before production
 - **Full OpenTelemetry support** - Native OTLP ingestion (gRPC & HTTP)
 - **Pre-built Docker images** - Deploy in ~30 seconds from Docker Hub
-- **Multi-architecture** - Supports linux/amd64 and linux/arm64 (Apple Silicon)
+- **Runs on Colima** - Docker and kind (Kubernetes) on Apple Silicon Macs, no Docker Desktop required
 - **Trace correlation** - Link logs, metrics, and traces automatically
 - **Click-to-copy IDs** - Copy trace/span IDs with a single click anywhere in the UI
 - **Deep linking** - Shareable URLs that open directly to a specific trace (`?tab=traces&traceId=...`)
 - **Trace map** - Per-trace service dependency visualization with inferred external client detection
 - **Correlated log navigation** - Jump from trace detail to filtered logs and vice versa
 - **Smart auto-refresh** - Auto-refresh pauses when search filters are active, no more losing results
-- **Space-based retention** - Data stays until storage fills up (default 256 MB); no fixed TTL
+- **Bounded retention** - Data expires after 30 minutes by default (`SQLITE_TTL_SECONDS`) and the database is capped at 256 MB (`MAX_DB_SIZE_MB`), oldest first
 - **Metrics Explorer** - Analyze cardinality, labels, and raw series data
-- **Service catalog** - RED metrics (Rate, Errors, Duration) for all services
-- **Interactive service map** - Visualize dependencies and call graphs
+- **Service catalog** - RED metrics (Rate, Errors, Duration) for all services; click a service name to jump to its map node, traces, spans, logs or metrics
+- **Interactive service map** - Dependency graph that always fits the window: shape shows service type (server, client, external, database, messaging, isolated), color shows health
+- **MCP server** - Let Claude Code, Zed or any MCP client query your telemetry, including very large traces ([MCP guide](mcp.md))
+- **Collector presets** - Sampling, PII redaction, enrichment, metrics shaping and more, applied from the UI via OpAMP
+- **OpenTelemetry Demo** - Run the upstream Astronomy Shop against TinyOlly with one script
 - **OpenTelemetry Collector management** - Remote configuration management via OpAMP protocol
 - **REST API** - Programmatic access with OpenAPI documentation
 - **Zero vendor lock-in** - Works with any OTel Collector distribution

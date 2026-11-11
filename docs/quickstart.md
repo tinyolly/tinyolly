@@ -13,7 +13,7 @@ Get TinyOlly running in under 5 minutes!
 
 ## Prerequisites
 
-- Colima + docker CLI installed and running (`brew install colima docker docker-compose`, then `./scripts/colima-up.sh`)
+- Colima + docker CLI installed and running (`brew install colima docker docker-compose docker-buildx docker-credential-helper`, then `./scripts/colima-up.sh`). The scripts use the `colima-tinyolly` Docker context, so they work even if another Docker context or VM is active
 - Git (to clone the repository)
 - 5 minutes of your time
 

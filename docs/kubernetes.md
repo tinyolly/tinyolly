@@ -19,7 +19,7 @@ git clone https://github.com/tinyolly/tinyolly
 - [Colima](https://github.com/abiosoft/colima), `docker`, [kind](https://kind.sigs.k8s.io/), [kubectl](https://kubernetes.io/docs/tasks/tools/)
 
 ```bash
-brew install colima docker docker-compose kubectl kind helm
+brew install colima docker docker-compose docker-buildx docker-credential-helper kubectl kind helm
 ```
 
 ## 1. Deploy TinyOlly Core

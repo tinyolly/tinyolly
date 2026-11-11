@@ -126,7 +126,7 @@ cd build/local
 
 - **Build scripts**: Use `--no-cache` for fresh builds, `--load` to keep locally
 - **Push scripts**: Push both `:version` and `:latest` tags
-- **Multi-arch**: All images built for `linux/amd64` and `linux/arm64`
+- **Native arch**: images are built for the host architecture (arm64 on Apple Silicon), always on the Colima daemon (`colima-tinyolly` context)
 
 ## Environment Variables
 

@@ -33,7 +33,9 @@ The REST API provides endpoints for:
 | `/api/traces/{trace_id}` | GET | Get detailed trace with all spans |
 | `/api/spans` | GET | List recent spans with filtering |
 | `/api/logs` | GET | Retrieve logs with trace correlation |
-| `/api/metrics` | GET | Query time-series metrics |
+| `/api/metrics` | GET | List metrics with type, unit, description and cardinality |
+| `/api/metrics/query` | GET | Time series for one metric, with `resource.*` / `attribute.*` filters and `start`/`end` |
+| `/api/metrics/{name}` | GET | Time series for one metric (no filters) |
 | `/api/service-map` | GET | Get service dependency graph |
 | `/api/service-catalog` | GET | List services with RED metrics |
 | `/api/stats` | GET | System stats and cardinality info |
@@ -195,54 +197,53 @@ Correlate logs with a trace using trace_id:
 
 ### 4. Query Metrics
 
-Retrieve metrics data:
+List the available metrics (metadata only), then fetch one metric's time series:
 
 === "cURL"
     ```bash
-    curl http://localhost:5005/api/metrics
+    # What metrics exist?
+    curl "http://localhost:5005/api/metrics?limit=100"
+
+    # Time series for one metric, last 10 minutes by default (start/end are Unix seconds)
+    curl "http://localhost:5005/api/metrics/query?name=http.server.duration"
+
+    # Filter by resource and metric attributes
+    curl "http://localhost:5005/api/metrics/query?name=http.server.duration&resource.service.name=demo-frontend&attribute.http.method=GET"
     ```
 
 === "Python"
     ```python
     import requests
 
-    response = requests.get('http://localhost:5005/api/metrics')
-    metrics = response.json()
+    base = 'http://localhost:5005'
+    for m in requests.get(f'{base}/api/metrics', params={'limit': 100}).json():
+        print(f"{m['name']} ({m['type']}, {m['unit']}) services={m['services']}")
 
-    for metric in metrics:
-        print(f"{metric['name']} ({metric['type']})")
-        for series in metric.get('series', []):
-            labels = ', '.join(f"{k}={v}" for k, v in series.get('attributes', {}).items())
-            print(f"  [{labels}] = {series.get('value', 'N/A')}")
+    d = requests.get(f'{base}/api/metrics/query',
+                     params={'name': 'http.server.duration', 'resource.service.name': 'demo-frontend'}).json()
+    for s in d['series']:
+        print(s['attributes'], [(p['timestamp'], p['value']) for p in s['datapoints'][-3:]])
     ```
 
-**Response Format:**
+**`/api/metrics` response** (one entry per metric):
 ```json
-[
-  {
-    "name": "http.server.duration",
-    "type": "histogram",
-    "description": "HTTP request duration",
-    "unit": "ms",
-    "series": [
-      {
-        "attributes": {
-          "http.method": "GET",
-          "http.route": "/products",
-          "service.name": "demo-frontend"
-        },
-        "data_points": [
-          {
-            "timestamp": 1701234567890000000,
-            "count": 42,
-            "sum": 5250.5,
-            "bucket_counts": [10, 20, 10, 2]
-          }
-        ]
-      }
-    ]
-  }
-]
+[{"name": "http.server.duration", "type": "histogram", "unit": "ms", "description": "HTTP request duration",
+  "resource_count": 3, "attribute_combinations": 12, "label_count": 4, "services": ["demo-frontend"]}]
+```
+
+**`/api/metrics/query` response:**
+```json
+{
+  "name": "http.server.duration", "type": "histogram", "unit": "ms", "description": "HTTP request duration",
+  "series": [
+    {
+      "resource": {"service.name": "demo-frontend"},
+      "attributes": {"http.method": "GET", "http.route": "/products"},
+      "datapoints": [{"timestamp": 1701234567.89, "value": 42.0, "histogram": null, "summary": null}],
+      "exemplars": []
+    }
+  ]
+}
 ```
 
 ---
@@ -440,19 +441,20 @@ openapi-generator-cli generate \
 
 ---
 
-## Rate Limits
+## Limits
 
-TinyOlly is designed for local development and has no rate limits. However:
+TinyOlly is designed for local development:
 
-- **Storage limits** apply based on SQLite database size (default: 256 MB, configurable via `MAX_DB_SIZE_MB`)
-- **Cardinality protection** limits unique metric names to 1000 (configurable)
-- **TTL**: All data expires after 30 minutes
+- **Retention**: records expire after 30 minutes by default (`SQLITE_TTL_SECONDS`), and the SQLite database is capped at 256 MB (`MAX_DB_SIZE_MB`); the oldest records are evicted first when it fills.
+- **Cardinality protection** limits unique metric names to 1000 (`MAX_METRIC_CARDINALITY`).
+- **Request size**: OTLP ingest bodies and gRPC messages are size-capped so a runaway exporter cannot fill the database; very large single batches may need the caps raised (see the receiver's `GRPC_MAX_MESSAGE_BYTES`).
+- **List endpoints** accept `limit` (max 5000).
 
 ---
 
 ## Authentication
 
-TinyOlly is designed for local development and does **not** include authentication. Do not expose TinyOlly to the internet without adding authentication via a reverse proxy.
+TinyOlly is a local-only tool and has no authentication, CORS restrictions or origin checks. Do not expose it beyond your machine.
 
 ---
 
@@ -461,3 +463,4 @@ TinyOlly is designed for local development and does **not** include authenticati
 - [View interactive examples in Swagger UI](http://localhost:5005/docs)
 - [Open an issue on GitHub](https://github.com/tinyolly/tinyolly/issues)
 - [Read the technical architecture](technical.md)
+- [Query telemetry from an AI agent (MCP)](mcp.md)
