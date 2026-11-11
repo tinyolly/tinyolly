@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="BYOL (Bring Your Own Laptop) Observability Platform for OpenTelemetry">
+        <meta name="description" content="Architecture, storage and retention, OTLP compatibility, UI features, MCP server, testing">
       
       
         <meta name="author" content="TinyOlly">
@@ -15,10 +15,10 @@
         <link rel="canonical" href="https://tinyolly.github.io/tinyolly/technical/">
       
       
-        <link rel="prev" href="../api/">
+        <link rel="prev" href="../mcp/">
       
       
-        <link rel="next" href="../CARDINALITY-PROTECTION/">
+        <link rel="next" href="../metrics/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Architecture - TinyOlly Documentation</title>
+        <title>Technical Details - TinyOlly Documentation</title>
       
     
     
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Architecture
+              Technical Details
             
           </span>
         </div>
@@ -449,6 +449,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collector-presets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Collector Presets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -509,6 +537,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Demo (Astronomy Shop)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -642,6 +698,34 @@
     
   
     REST API & Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server (AI agents)
   
 
     
@@ -826,10 +910,60 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#mcp-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -870,14 +1004,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../redis-archive/" class="md-nav__link">
+      <a href="../development/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Redis Storage (Archive)
+    Development & Testing
   
 
     
@@ -995,6 +1129,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#mcp-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1027,10 +1183,10 @@
 <li><strong>Format</strong>: Full OpenTelemetry (OTEL) format for traces, logs, and metrics  </li>
 <li><strong>SQLite</strong>: All telemetry stored in an embedded SQLite database (compressed with ZSTD + msgpack)  </li>
 <li><strong>WAL Mode</strong>: Write-Ahead Logging for concurrent reads during writes  </li>
-<li><strong>Space-Based Retention</strong>: Data is retained until the database reaches its size limit (default 256 MB), then oldest records are evicted automatically. No fixed TTL — data stays as long as there's room  </li>
+<li><strong>Retention</strong>: Records expire after 30 minutes by default (<code>SQLITE_TTL_SECONDS</code>), and the database is also capped at 256 MB (<code>MAX_DB_SIZE_MB</code>); when full, the oldest records are evicted first  </li>
 <li><strong>Correlation</strong>: Native trace-metric-log correlation via trace/span IDs  </li>
 <li><strong>Cardinality Protection</strong>: Prevents metric explosion  </li>
-<li><strong>Ephemeral by Design</strong>: Designed for local development — data persists across restarts but is evicted when storage fills up  </li>
+<li><strong>Ephemeral by Design</strong>: Designed for local development — data persists across restarts until it expires or storage fills up  </li>
 </ul>
 <hr />
 <h2 id="otlp-compatibility">OTLP Compatibility</h2>
@@ -1049,16 +1205,26 @@
 <li><strong>Click-to-Copy IDs</strong>: Trace and span IDs are copyable with a single click throughout the UI  </li>
 <li><strong>Correlated Logs</strong>: Trace detail view shows correlated logs inline — click any log row to navigate to the Logs tab filtered by trace ID  </li>
 <li><strong>Cross-Tab Navigation</strong>: Click trace/span IDs in logs to jump to the corresponding trace or span view  </li>
-<li><strong>Service Catalog</strong>: RED metrics with action buttons to navigate to Traces, Spans, Logs, or Metrics filtered by service name  </li>
+<li><strong>Service Catalog</strong>: RED metrics; clicking a service name opens a menu (Service map, Traces, Spans, Logs, Metrics) filtered to that service  </li>
+<li><strong>Service Map</strong>: Cytoscape.js dependency graph laid out left-to-right (dagre), sized to always fit the window. Shape = service type (server, client, external, database, messaging, isolated), color = health (blue healthy, amber some errors, red &gt;5% errors). Isolated services sit in a grid to the right; an option hides TinyOlly's own services. Selecting a node shows P50/P95/P99 latency and rate with a link back to the catalog  </li>
 <li><strong>Smart Auto-Refresh</strong>: 5-second polling pauses automatically when a search filter is active, preventing result disruption  </li>
-<li><strong>Scrollable Lists</strong>: Trace, span, and log lists support scrolling with sticky headers for large datasets  </li>
+<li><strong>Scrollable Lists</strong>: Trace, span, and log lists support scrolling with sticky headers for large datasets</li>
 </ul>
+<hr />
+<h2 id="mcp-server">MCP Server</h2>
+<p><code>docker/apps/tinyolly-mcp</code> is a read-only MCP server over the REST API (traces, spans, logs, metrics, service catalog/map) that also serves these docs (<code>list_docs</code>, <code>search_docs</code>, <code>read_doc</code>) renders pretty tables, a trace waterfall and PNG charts (metrics, single-service map), and ships investigation skills (<code>skills/</code>) that it serves as MCP tools, prompts and resources. Every response is size-bounded; large traces are summarized and paged. See the <a href="../mcp/">MCP guide</a>.</p>
+<hr />
+<h2 id="testing">Testing</h2>
+<p>Everything runs locally (no CI): <code>./scripts/test-all.sh</code> runs the unit suites (storage library, UI/API, OTLP receiver, MCP server, frontend JS, OpAMP Go server, collector configs, kubectl-context guard). <code>--stack</code> adds an end-to-end run against the live stack (88 checks including every collector preset) and <code>--kind</code> adds a Kubernetes smoke test on kind. See the <a href="../development/">development notes</a>.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

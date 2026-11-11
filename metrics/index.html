@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="BYOL (Bring Your Own Laptop) Observability Platform for OpenTelemetry">
+        <meta name="description" content="Metrics tab, cardinality explorer, exporting series, cardinality protection">
       
       
         <meta name="author" content="TinyOlly">
@@ -15,6 +15,10 @@
         <link rel="canonical" href="https://tinyolly.github.io/tinyolly/metrics/">
       
       
+        <link rel="prev" href="../technical/">
+      
+      
+        <link rel="next" href="../CARDINALITY-PROTECTION/">
       
       
         
@@ -113,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Metrics &amp; Cardinality explorer
+              Metrics & Cardinality explorer
             
           </span>
         </div>
@@ -445,6 +449,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collector-presets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Collector Presets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -505,6 +537,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Demo (Astronomy Shop)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -651,6 +711,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server (AI agents)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -662,8 +750,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -674,13 +764,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
@@ -701,7 +789,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -744,6 +832,181 @@
                 
   
   
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics Explorer
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics Table
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics Table">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Columns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cardinality-explorer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cardinality Explorer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cardinality Explorer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-header-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Header Stats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-label-analysis-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Label Analysis Table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-raw-active-series" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Raw Active Series
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Export Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cardinality-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cardinality Protection
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
   
   
     <li class="md-nav__item">
@@ -775,14 +1038,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../redis-archive/" class="md-nav__link">
+      <a href="../development/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Redis Storage (Archive)
+    Development & Testing
   
 
     
@@ -1025,12 +1288,8 @@
 <h2 id="cardinality-protection">Cardinality Protection</h2>
 <p>TinyOlly includes built-in protection against cardinality explosions to prevent memory exhaustion during local development.</p>
 <ul>
-<li><strong>Hard Limit</strong>: 1000 unique metric names (configurable).</li>
-<li><strong>Visual Warnings</strong>: <ul>
-<li>⚠️ <strong>Yellow</strong>: &gt; 70% capacity</li>
-<li>🔴 <strong>Red</strong>: &gt; 90% capacity</li>
-</ul>
-</li>
+<li><strong>Hard Limit</strong>: 1000 unique metric names (<code>MAX_METRIC_CARDINALITY</code>).</li>
+<li><strong>Visual Warning</strong>: the Metrics tab shows <code>count/1000</code>, which turns red with a ⚠️ at 80% of the limit (the display assumes the default 1000).</li>
 <li><strong>Behavior</strong>: Metrics exceeding the limit are dropped, and a system alert is triggered.</li>
 </ul>
 <p>See <a href="../CARDINALITY-PROTECTION/">Cardinality Protection</a> for more details.</p>
@@ -1040,6 +1299,9 @@
 
 
 
+
+  
+  
 
 
 

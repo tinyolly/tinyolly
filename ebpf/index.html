@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="BYOL (Bring Your Own Laptop) Observability Platform for OpenTelemetry">
+        <meta name="description" content="OpenTelemetry eBPF instrumentation (OBI) demo: what it captures versus SDK tracing, Docker and Kubernetes setup, troubleshooting">
       
       
         <meta name="author" content="TinyOlly">
@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://tinyolly.github.io/tinyolly/ebpf/">
       
       
-        <link rel="prev" href="../otel-collector/">
+        <link rel="prev" href="../otel-demo/">
       
       
         <link rel="next" href="../ai-agent/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>eBPF Zero-Code Tracing - TinyOlly Documentation</title>
+        <title>eBPF Zero-Code Tracing Demo - TinyOlly Documentation</title>
       
     
     
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              eBPF Zero-Code Tracing
+              eBPF Zero-Code Tracing Demo
             
           </span>
         </div>
@@ -449,6 +449,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collector-presets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Collector Presets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -509,6 +537,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Demo (Astronomy Shop)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -946,6 +1002,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server (AI agents)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1042,6 +1126,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../CARDINALITY-PROTECTION/" class="md-nav__link">
         
   
@@ -1070,14 +1182,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../redis-archive/" class="md-nav__link">
+      <a href="../development/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Redis Storage (Archive)
+    Development & Testing
   
 
     
@@ -1436,14 +1548,14 @@
 <p>Access the UI at <code>http://localhost:5005</code></p>
 <h3 id="kubernetes">Kubernetes</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Start TinyOlly core first</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>minikube<span class="w"> </span>start
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./scripts/colima-up.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./scripts/kind-up.sh
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>./k8s/02-deploy-tinyolly.sh
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Deploy eBPF demo (pulls pre-built images from Docker Hub)</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nb">cd</span><span class="w"> </span>k8s-demo-ebpf
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>./02-deploy.sh
 </code></pre></div>
-<p>Run <code>minikube tunnel</code> in a separate terminal, then access the UI at <code>http://localhost:5002</code></p>
+<p>Access the UI at <code>http://localhost:5005</code> (kind port mapping)</p>
 <h3 id="docker-hub-images">Docker Hub Images</h3>
 <p>The eBPF demo uses pre-built images from Docker Hub:
 - <code>tinyolly/ebpf-frontend:latest</code> - Frontend with OTel SDK for metrics/logs
@@ -1560,7 +1672,7 @@
 <h3 id="docker_1">Docker</h3>
 <p>The eBPF agent is configured via environment variables in <code>docker-compose.yml</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">otel-ebpf-agent</span><span class="p">:</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker.io/otel/ebpf-instrument:main</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker.io/otel/ebpf-instrument:v1.0.0</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">pid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host</span>
 <a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">environment</span><span class="p">:</span>
@@ -1581,7 +1693,7 @@
 <a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">      </span><span class="nt">hostPID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 <a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ebpf-agent</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker.io/otel/ebpf-instrument:main</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker.io/otel/ebpf-instrument:v1.0.0</span>
 <a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">        </span><span class="nt">securityContext</span><span class="p">:</span>
 <a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">          </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">        </span><span class="nt">env</span><span class="p">:</span>
@@ -1606,15 +1718,15 @@
 <h2 id="troubleshooting">Troubleshooting</h2>
 <p><strong>No traces appearing?</strong>
 - Ensure TinyOlly core is running (<code>docker ps | grep otel-collector</code>)
-- Check eBPF agent logs: <code>docker logs otel-ebpf-instrumentation</code>
+- Check eBPF agent logs: <code>docker logs otel-ebpf-instrumentation</code> (run against the <code>colima-tinyolly</code> context: <code>DOCKER_CONTEXT=colima-tinyolly docker logs ...</code>)
 - Verify the agent can access <code>/sys/kernel/debug</code></p>
 <p><strong>Traces have wrong service name?</strong>
 - OBI discovers service names from process info
 - Set <code>OTEL_EBPF_SERVICE_NAME</code> for explicit naming</p>
 <p><strong>eBPF agent won't start?</strong>
 - Requires Linux kernel 4.4+ with eBPF support
-- On macOS, runs inside Docker's Linux VM (should work)
-- Check Docker has sufficient privileges</p>
+- On macOS it runs inside the Colima Linux VM. This demo has not been verified on Colima's default <code>vz</code> VM type; if the agent fails to start, check its logs and whether the VM kernel exposes <code>/sys/kernel/debug</code>
+- The agent runs privileged with the host PID namespace (required for eBPF)</p>
 <h2 id="learn-more">Learn More</h2>
 <ul>
 <li><a href="https://opentelemetry.io/docs/zero-code/obi/">OpenTelemetry eBPF Instrumentation Docs</a></li>
@@ -1627,6 +1739,9 @@
 
 
 
+
+  
+  
 
 
 

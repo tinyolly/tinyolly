@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="BYOL (Bring Your Own Laptop) Observability Platform for OpenTelemetry">
+        <meta name="description" content="Run TinyOlly core and the demo apps with Docker on Colima in about 5 minutes, then tour the UI">
       
       
         <meta name="author" content="TinyOlly">
@@ -728,6 +728,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collector-presets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Collector Presets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -788,6 +816,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Demo (Astronomy Shop)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -934,6 +990,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server (AI agents)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1030,6 +1114,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../CARDINALITY-PROTECTION/" class="md-nav__link">
         
   
@@ -1058,14 +1170,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../redis-archive/" class="md-nav__link">
+      <a href="../development/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Redis Storage (Archive)
+    Development & Testing
   
 
     
@@ -1403,7 +1515,7 @@
 <hr />
 <h2 id="prerequisites">Prerequisites</h2>
 <ul>
-<li>Docker Desktop installed and running</li>
+<li>Colima + docker CLI installed and running (<code>brew install colima docker docker-compose docker-buildx docker-credential-helper</code>, then <code>./scripts/colima-up.sh</code>). The scripts use the <code>colima-tinyolly</code> Docker context, so they work even if another Docker context or VM is active</li>
 <li>Git (to clone the repository)</li>
 <li>5 minutes of your time</li>
 </ul>
@@ -1487,14 +1599,14 @@
 </div>
 
 <h3 id="service-catalog">Service Catalog</h3>
-<p>View all services with RED metrics (Rate, Errors, Duration).</p>
+<p>View all services with RED metrics (Rate, Errors, Duration). Click a service name for a menu that jumps to its map node, traces, spans, logs or metrics.</p>
 <div align="center">
   <img src="../images/servicecatalog.png" alt="Service Catalog" width="700">
   <p><em>Service catalog with RED metrics for all services</em></p>
 </div>
 
 <h3 id="service-map">Service Map</h3>
-<p>Visualize service dependencies with an interactive graph.</p>
+<p>Visualize service dependencies with an interactive graph. Shape shows the service type and color shows health (see the legend above the map); click a node for latency and a link to the Service Catalog, and use the checkbox to hide TinyOlly's own services.</p>
 <div align="center">
   <img src="../images/servicemap.png" alt="Service Map" width="700">
   <p><em>Interactive service dependency map with latency information</em></p>
@@ -1511,7 +1623,7 @@
 <ul>
 <li><strong>View current configuration</strong> from connected collectors</li>
 <li><strong>Apply configuration changes</strong> with validation and diff preview</li>
-<li><strong>Use configuration templates</strong> for common scenarios (default, prometheus-remote-write, etc.)</li>
+<li><strong>Use collector presets</strong> for common scenarios (sampling, PII redaction, transforms, connectors, prometheus-remote-write...); see <a href="../collector-presets/">Collector presets</a></li>
 <li><strong>Check OpAMP server status</strong> and see connected collector agents</li>
 <li><strong>Validate configurations</strong> before applying to catch errors early</li>
 </ul>
@@ -1549,7 +1661,7 @@
 <h3 id="ui-shows-no-traceslogsmetrics">UI shows "No traces/logs/metrics"</h3>
 <ul>
 <li>Wait 30 seconds after starting demo apps</li>
-<li>Check containers are running: <code>docker ps</code></li>
+<li>Check containers are running in the TinyOlly VM: <code>docker --context colima-tinyolly ps</code> (plain <code>docker ps</code> shows whichever context is active, possibly another Colima VM)</li>
 <li>Check demo app logs: <code>docker compose -f docker-demo/docker-compose-demo.yml logs</code></li>
 </ul>
 <h3 id="port-conflicts">Port conflicts</h3>
@@ -1569,6 +1681,9 @@
 
 
 
+
+  
+  
 
 
 

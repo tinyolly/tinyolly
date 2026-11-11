@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="BYOL (Bring Your Own Laptop) Observability Platform for OpenTelemetry">
+        <meta name="description" content="What TinyOlly is, key features, supported platforms and screenshots">
       
       
         <meta name="author" content="TinyOlly">
@@ -27,7 +27,7 @@
     
     
       
-        <title>TinyOlly Documentation</title>
+        <title>TinyOlly overview - TinyOlly Documentation</title>
       
     
     
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              TinyOlly overview
             
           </span>
         </div>
@@ -562,6 +562,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="collector-presets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Collector Presets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -622,6 +650,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="otel-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Demo (Astronomy Shop)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -768,6 +824,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server (AI agents)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -864,6 +948,34 @@
   
   
     <li class="md-nav__item">
+      <a href="metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="CARDINALITY-PROTECTION/" class="md-nav__link">
         
   
@@ -892,14 +1004,14 @@
   
   
     <li class="md-nav__item">
-      <a href="redis-archive/" class="md-nav__link">
+      <a href="development/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Redis Storage (Archive)
+    Development & Testing
   
 
     
@@ -1083,17 +1195,20 @@
 <li><strong>Development-focused</strong> - Perfect your app's telemetry locally before production</li>
 <li><strong>Full OpenTelemetry support</strong> - Native OTLP ingestion (gRPC &amp; HTTP)</li>
 <li><strong>Pre-built Docker images</strong> - Deploy in ~30 seconds from Docker Hub</li>
-<li><strong>Multi-architecture</strong> - Supports linux/amd64 and linux/arm64 (Apple Silicon)</li>
+<li><strong>Runs on Colima</strong> - Docker and kind (Kubernetes) on Apple Silicon Macs, no Docker Desktop required</li>
 <li><strong>Trace correlation</strong> - Link logs, metrics, and traces automatically</li>
 <li><strong>Click-to-copy IDs</strong> - Copy trace/span IDs with a single click anywhere in the UI</li>
 <li><strong>Deep linking</strong> - Shareable URLs that open directly to a specific trace (<code>?tab=traces&amp;traceId=...</code>)</li>
 <li><strong>Trace map</strong> - Per-trace service dependency visualization with inferred external client detection</li>
 <li><strong>Correlated log navigation</strong> - Jump from trace detail to filtered logs and vice versa</li>
 <li><strong>Smart auto-refresh</strong> - Auto-refresh pauses when search filters are active, no more losing results</li>
-<li><strong>Space-based retention</strong> - Data stays until storage fills up (default 256 MB); no fixed TTL</li>
+<li><strong>Bounded retention</strong> - Data expires after 30 minutes by default (<code>SQLITE_TTL_SECONDS</code>) and the database is capped at 256 MB (<code>MAX_DB_SIZE_MB</code>), oldest first</li>
 <li><strong>Metrics Explorer</strong> - Analyze cardinality, labels, and raw series data</li>
-<li><strong>Service catalog</strong> - RED metrics (Rate, Errors, Duration) for all services</li>
-<li><strong>Interactive service map</strong> - Visualize dependencies and call graphs</li>
+<li><strong>Service catalog</strong> - RED metrics (Rate, Errors, Duration) for all services; click a service name to jump to its map node, traces, spans, logs or metrics</li>
+<li><strong>Interactive service map</strong> - Dependency graph that always fits the window: shape shows service type (server, client, external, database, messaging, isolated), color shows health</li>
+<li><strong>MCP server</strong> - Let Claude Code, Zed or any MCP client query your telemetry, including very large traces (<a href="mcp/">MCP guide</a>)</li>
+<li><strong>Collector presets</strong> - Sampling, PII redaction, enrichment, metrics shaping and more, applied from the UI via OpAMP</li>
+<li><strong>OpenTelemetry Demo</strong> - Run the upstream Astronomy Shop against TinyOlly with one script</li>
 <li><strong>OpenTelemetry Collector management</strong> - Remote configuration management via OpAMP protocol</li>
 <li><strong>REST API</strong> - Programmatic access with OpenAPI documentation</li>
 <li><strong>Zero vendor lock-in</strong> - Works with any OTel Collector distribution</li>
@@ -1105,8 +1220,8 @@
 <h3 id="platform-support">Platform Support</h3>
 <p>Tested on:</p>
 <ul>
-<li>Docker Desktop (macOS Apple Silicon)</li>
-<li>Minikube Kubernetes (macOS Apple Silicon)</li>
+<li>Docker via Colima (macOS Apple Silicon)</li>
+<li>kind on Colima (macOS Apple Silicon)</li>
 <li>May work on other platforms</li>
 </ul>
 <h3 id="quick-start">Quick Start</h3>
@@ -1160,6 +1275,9 @@
 
 
 
+
+  
+  
 
 
 

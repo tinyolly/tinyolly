@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="BYOL (Bring Your Own Laptop) Observability Platform for OpenTelemetry">
+        <meta name="description" content="Developer notes: pinned versions, lint, local test suites, Docker contexts, service catalog action layout, revert instructions">
       
       
         <meta name="author" content="TinyOlly">
       
       
-        <link rel="canonical" href="https://tinyolly.github.io/tinyolly/redis-archive/">
+        <link rel="canonical" href="https://tinyolly.github.io/tinyolly/development/">
       
       
         <link rel="prev" href="../CARDINALITY-PROTECTION/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Redis Storage (Archive) - TinyOlly Documentation</title>
+        <title>Development and testing - TinyOlly Documentation</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#redis-storage-archive" class="md-skip">
+        <a href="#development-and-testing" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Redis Storage (Archive)
+              Development and testing
             
           </span>
         </div>
@@ -449,6 +449,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collector-presets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Collector Presets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -509,6 +537,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Demo (Astronomy Shop)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -655,6 +711,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server (AI agents)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -751,6 +835,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../CARDINALITY-PROTECTION/" class="md-nav__link">
         
   
@@ -795,7 +907,7 @@
   <span class="md-ellipsis">
     
   
-    Redis Storage (Archive)
+    Development & Testing
   
 
     
@@ -813,7 +925,7 @@
   <span class="md-ellipsis">
     
   
-    Redis Storage (Archive)
+    Development & Testing
   
 
     
@@ -839,44 +951,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#technical-details" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Technical details
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-we-migrated-to-sqlite" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why We Migrated to SQLite
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#legacy-architecture-redis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Legacy Architecture (Redis)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Legacy Architecture (Redis)">
+    <nav class="md-nav" aria-label="Technical details">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#key-environment-variables-redis-era" class="md-nav__link">
+  <a href="#stack" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Key environment variables (Redis era)
+        Stack
       
     </span>
   </a>
@@ -884,21 +974,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#redis-index-keys-legacy" class="md-nav__link">
+  <a href="#otlp-support" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Redis index keys (legacy)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kubernetes-resources-redis-era" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kubernetes resources (Redis era)
+        OTLP Support
       
     </span>
   </a>
@@ -911,38 +990,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#current-storage-sqlite" class="md-nav__link">
+  <a href="#docker-contexts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Current Storage (SQLite)
+        Docker contexts
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Current Storage (SQLite)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#current-environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Current environment variables
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#source-files" class="md-nav__link">
+  <a href="#service-catalog-actions-ui-layout-easy-revert" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Source Files
+        Service catalog actions (UI layout, easy revert)
       
     </span>
   </a>
@@ -1019,44 +1081,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#technical-details" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Technical details
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-we-migrated-to-sqlite" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why We Migrated to SQLite
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#legacy-architecture-redis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Legacy Architecture (Redis)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Legacy Architecture (Redis)">
+    <nav class="md-nav" aria-label="Technical details">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#key-environment-variables-redis-era" class="md-nav__link">
+  <a href="#stack" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Key environment variables (Redis era)
+        Stack
       
     </span>
   </a>
@@ -1064,21 +1104,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#redis-index-keys-legacy" class="md-nav__link">
+  <a href="#otlp-support" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Redis index keys (legacy)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kubernetes-resources-redis-era" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kubernetes resources (Redis era)
+        OTLP Support
       
     </span>
   </a>
@@ -1091,38 +1120,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#current-storage-sqlite" class="md-nav__link">
+  <a href="#docker-contexts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Current Storage (SQLite)
+        Docker contexts
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Current Storage (SQLite)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#current-environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Current environment variables
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#source-files" class="md-nav__link">
+  <a href="#service-catalog-actions-ui-layout-easy-revert" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Source Files
+        Service catalog actions (UI layout, easy revert)
       
     </span>
   </a>
@@ -1149,291 +1161,52 @@
   
 
 
-<h1 id="redis-storage-archive">Redis Storage — Archive</h1>
-<div class="admonition note">
-<p class="admonition-title">Archived</p>
-<p>Redis was the original storage backend for TinyOlly. As of v3.0, <strong>SQLite is the default and only actively maintained backend</strong>. The Redis code (<code>storage.py</code>) is preserved in the repository for reference but is no longer used by default.</p>
-</div>
-<hr />
-<h2 id="overview">Overview</h2>
-<p>TinyOlly originally used <strong>Redis</strong> as its storage backend for all OpenTelemetry telemetry data (traces, spans, logs, metrics). Redis was chosen for its:</p>
+<h1 id="development-and-testing">Development and testing</h1>
 <ul>
-<li>In-memory speed with native TTL support</li>
-<li>Sorted Sets for time-series indexing</li>
-<li>Simple key/value model that mapped well to ephemeral telemetry</li>
+<li>Python dependencies are locked: edit <code>requirements.in</code> in a service directory, then regenerate with
+  <code>uv pip compile requirements.in --universal --python-version 3.13 -o requirements.txt</code>.</li>
+<li>Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in <code>versions.env</code>; the Dockerfiles carry matching <code>ARG</code> defaults. Update both together.</li>
+<li>Lint: <code>pip install ruff==0.17.4 &amp;&amp; ruff check docker/apps/</code> (rules are in <code>ruff.toml</code>; keep the ruff version pinned, its defaults change between releases). There is no CI; run the checks locally.</li>
+<li><strong>All local tests:</strong> <code>./scripts/test-all.sh</code> (fast suites; <code>--stack</code> adds the e2e run against the running stack, <code>--kind</code> adds the kind smoke test, which briefly stops the compose stack). Nothing runs in CI. Docs pages need <code>title</code>/<code>description</code> front matter (the MCP server lists them). Suites: common, UI/API, receiver, MCP server, frontend JS (<code>node --test</code>), Go, collector configs, kubectl guard. Individually:</li>
+<li>Tests: <code>cd docker/apps/tinyolly-common &amp;&amp; pip install -r requirements-test.txt . &amp;&amp; pytest tests</code>.</li>
+<li>Go (OpAMP server): <code>./scripts/test-go.sh</code> (gofmt, vet, <code>go test -race</code> in the pinned golang image). UI tests: <code>cd docker/apps/tinyolly-ui &amp;&amp; pytest tests</code>. k8s safety guard: <code>./scripts/test-kubectx-guard.sh</code>.</li>
+<li>End-to-end (needs the stack up, ~8 min): <code>python3 scripts/e2e.py</code> (<code>--up</code> starts it, <code>--only a,b</code> picks scenarios, <code>--list</code>). Drives OTLP through the collector, applies every preset via OpAMP, and checks results through the UI API. Test hooks: <code>POST /admin/reset</code>, <code>POST /api/opamp/config?wait=N</code>.</li>
+<li>Collector configs: <code>./scripts/test-collector-configs.sh</code> (validate + start every preset); after editing them run <code>./scripts/sync-k8s-configs.sh</code>.</li>
 </ul>
-<hr />
-<h2 id="why-we-migrated-to-sqlite">Why We Migrated to SQLite</h2>
-<table>
-<thead>
-<tr>
-<th>Concern</th>
-<th>Redis</th>
-<th>SQLite</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>External process required</td>
-<td>✅ Yes (separate container/pod)</td>
-<td>❌ No (embedded)</td>
-</tr>
-<tr>
-<td>Deployment complexity</td>
-<td>Higher (extra service, port, auth)</td>
-<td>Lower (single file)</td>
-</tr>
-<tr>
-<td>Resource usage</td>
-<td>~128 MB baseline RAM</td>
-<td>Near-zero at idle</td>
-</tr>
-<tr>
-<td>Data size limit</td>
-<td><code>maxmemory</code> cap (eviction risk)</td>
-<td>Configurable file size cap</td>
-</tr>
-<tr>
-<td>WAL concurrent reads</td>
-<td>No</td>
-<td>✅ Yes</td>
-</tr>
-<tr>
-<td>Cold-start persistence</td>
-<td>❌ Volatile by default</td>
-<td>✅ File-based (TTL cleanup still applies)</td>
-</tr>
-<tr>
-<td>Kubernetes footprint</td>
-<td>Extra pod + Service</td>
-<td>Shared PVC volume</td>
-</tr>
-</tbody>
-</table>
-<p>The primary driver was <strong>deployment simplicity</strong> — eliminating the Redis sidecar reduced the number of containers in every deployment (Docker and Kubernetes) and removed the external network dependency between services.</p>
-<hr />
-<h2 id="legacy-architecture-redis">Legacy Architecture (Redis)</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>OTLP Receiver ──► Redis :6579
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                      ▲
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>TinyOlly UI   ──────►─┘
-</code></pre></div>
+<h2 id="technical-details">Technical details</h2>
+<h3 id="stack">Stack</h3>
 <ul>
-<li><strong>Data serialization</strong>: msgpack + optional ZSTD compression (above 512-byte threshold)</li>
-<li><strong>Index structures</strong>: Redis Sorted Sets keyed by timestamp for traces, spans, logs, and metric series</li>
-<li><strong>TTL</strong>: Managed via Redis <code>EXPIRE</code> on individual keys (default 1800 s / 30 min)</li>
-<li><strong>Cardinality protection</strong>: Enforced in application code by checking set cardinality before writes</li>
+<li><strong>Backend</strong>: FastAPI (async), SQLite with ZSTD compression + msgpack</li>
+<li><strong>Frontend</strong>: Vanilla JavaScript, HTML, CSS</li>
+<li><strong>Ingestion</strong>: OTLP/gRPC and OTLP/HTTP</li>
+<li><strong>Storage</strong>: 30-minute TTL, sorted sets indexed by timestamp</li>
+<li><strong>Correlation</strong>: Native trace/span/log linking</li>
 </ul>
-<h3 id="key-environment-variables-redis-era">Key environment variables (Redis era)</h3>
-<table>
-<thead>
-<tr>
-<th>Variable</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>REDIS_HOST</code></td>
-<td><code>localhost</code></td>
-<td>Redis hostname</td>
-</tr>
-<tr>
-<td><code>REDIS_PORT_NUMBER</code></td>
-<td><code>6579</code></td>
-<td>Redis port</td>
-</tr>
-<tr>
-<td><code>REDIS_TTL</code></td>
-<td><code>1800</code></td>
-<td>Key TTL in seconds</td>
-</tr>
-<tr>
-<td><code>MAX_METRIC_CARDINALITY</code></td>
-<td><code>1000</code></td>
-<td>Max unique metric names</td>
-</tr>
-<tr>
-<td><code>COMPRESSION_THRESHOLD_BYTES</code></td>
-<td><code>512</code></td>
-<td>Compress payloads above this size</td>
-</tr>
-</tbody>
-</table>
-<h3 id="redis-index-keys-legacy">Redis index keys (legacy)</h3>
-<table>
-<thead>
-<tr>
-<th>Key pattern</th>
-<th>Type</th>
-<th>Used for</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>trace_index</code></td>
-<td>Sorted Set</td>
-<td>Trace IDs indexed by start time</td>
-</tr>
-<tr>
-<td><code>span_index</code></td>
-<td>Sorted Set</td>
-<td>Span IDs indexed by start time</td>
-</tr>
-<tr>
-<td><code>log_index</code></td>
-<td>Sorted Set</td>
-<td>Log record IDs indexed by timestamp</td>
-</tr>
-<tr>
-<td><code>trace:{id}</code></td>
-<td>Hash</td>
-<td>Trace metadata</td>
-</tr>
-<tr>
-<td><code>spans:{trace_id}</code></td>
-<td>List</td>
-<td>Span IDs belonging to a trace</td>
-</tr>
-<tr>
-<td><code>span:{id}</code></td>
-<td>Hash (compressed)</td>
-<td>Full span data</td>
-</tr>
-<tr>
-<td><code>log:{id}</code></td>
-<td>Hash (compressed)</td>
-<td>Full log record</td>
-</tr>
-<tr>
-<td><code>metric_series</code></td>
-<td>Set</td>
-<td>All known metric series</td>
-</tr>
-</tbody>
-</table>
-<h3 id="kubernetes-resources-redis-era">Kubernetes resources (Redis era)</h3>
-<p>The file <code>k8s/redis.yaml</code> (and <code>k8s-core-only/redis.yaml</code>) deployed Redis as a Kubernetes Deployment + Service:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># redis:7-alpine</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># Port: 6579</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># maxmemory: 256mb</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># maxmemory-policy: allkeys-lru</span>
-</code></pre></div>
-<p>These files are retained in the repository for historical reference but are <strong>not applied</strong> by the current deploy scripts.</p>
-<hr />
-<h2 id="current-storage-sqlite">Current Storage (SQLite)</h2>
-<p>The equivalent concepts in the SQLite backend (<code>storage_sqlite.py</code>):</p>
-<table>
-<thead>
-<tr>
-<th>Redis concept</th>
-<th>SQLite equivalent</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Sorted Set (time index)</td>
-<td><code>ORDER BY timestamp</code> on indexed column</td>
-</tr>
-<tr>
-<td>Key TTL (<code>EXPIRE</code>)</td>
-<td>Periodic background cleanup task</td>
-</tr>
-<tr>
-<td><code>maxmemory</code> cap</td>
-<td><code>MAX_PAGE_COUNT</code> PRAGMA (from <code>MAX_DB_SIZE_MB</code>)</td>
-</tr>
-<tr>
-<td>Connection pooling</td>
-<td><code>aiosqlite</code> with WAL mode</td>
-</tr>
-<tr>
-<td>Binary compression</td>
-<td>Same: ZSTD + msgpack, same threshold</td>
-</tr>
-</tbody>
-</table>
-<h3 id="current-environment-variables">Current environment variables</h3>
-<table>
-<thead>
-<tr>
-<th>Variable</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>STORAGE_BACKEND</code></td>
-<td><code>sqlite</code></td>
-<td>Storage backend selector</td>
-</tr>
-<tr>
-<td><code>SQLITE_DB_PATH</code></td>
-<td><code>/data/tinyolly.db</code></td>
-<td>Path to SQLite database file</td>
-</tr>
-<tr>
-<td><code>SQLITE_TTL_SECONDS</code></td>
-<td><code>1800</code></td>
-<td>Data retention in seconds (alias: <code>REDIS_TTL</code>)</td>
-</tr>
-<tr>
-<td><code>MAX_DB_SIZE_MB</code></td>
-<td><code>256</code></td>
-<td>Maximum SQLite file size</td>
-</tr>
-<tr>
-<td><code>MAX_METRIC_CARDINALITY</code></td>
-<td><code>1000</code></td>
-<td>Max unique metric names</td>
-</tr>
-<tr>
-<td><code>COMPRESSION_THRESHOLD_BYTES</code></td>
-<td><code>512</code></td>
-<td>Compress payloads above this size</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="source-files">Source Files</h2>
-<table>
-<thead>
-<tr>
-<th>File</th>
-<th>Status</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>docker/apps/tinyolly-common/tinyolly_common/storage.py</code></td>
-<td><strong>Archived</strong></td>
-<td>Original Redis async client</td>
-</tr>
-<tr>
-<td><code>docker/apps/tinyolly-common/tinyolly_common/storage_sqlite.py</code></td>
-<td><strong>Active</strong></td>
-<td>Current SQLite backend</td>
-</tr>
-<tr>
-<td><code>k8s/redis.yaml</code></td>
-<td><strong>Archived</strong></td>
-<td>Kubernetes Redis Deployment + Service</td>
-</tr>
-<tr>
-<td><code>k8s-core-only/redis.yaml</code></td>
-<td><strong>Archived</strong></td>
-<td>Core-only variant</td>
-</tr>
-</tbody>
-</table>
+<h3 id="otlp-support">OTLP Support</h3>
+<ul>
+<li>Full OpenTelemetry Protocol compliance</li>
+<li>ResourceSpans, ResourceLogs, ResourceMetrics</li>
+<li>Spanmetrics integration for RED metrics</li>
+<li>OpAMP protocol support for remote collector configuration management</li>
+<li>No vendor lock-in</li>
+</ul>
+<h2 id="docker-contexts">Docker contexts</h2>
+<p>Two Colima VMs can coexist: <code>colima</code> (default) and <code>colima-tinyolly</code> (this project). Every script pins <code>DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}</code> at the top; new scripts that call <code>docker</code> must do the same (copy the 3-line block from any <code>0N-*.sh</code>). For ad hoc commands use <code>docker --context colima-tinyolly ...</code>.</p>
+<h2 id="service-catalog-actions-ui-layout-easy-revert">Service catalog actions (UI layout, easy revert)</h2>
+<p>In the APM Service Catalog, per-service actions (Traces, Spans, Logs, Metrics, Service map) are a popover menu opened by clicking the service name. The original layout, a row of buttons on every service, is still in the code.</p>
+<p>To revert, set <code>ACTIONS_STYLE = 'buttons'</code> at the top of <code>docker/apps/tinyolly-ui/static/serviceCatalog.js</code> and rebuild the UI image
+(<code>cd docker &amp;&amp; DOCKER_CONTEXT=colima-tinyolly docker compose -f docker-compose-tinyolly-core-local.yml up -d --build --no-deps tinyolly-ui</code>).
+To remove the menu code entirely, delete <code>SERVICE_ACTIONS</code>, <code>openServiceMenu</code>, <code>closeServiceMenu</code>, the <code>data-service-menu</code> click handler and the two <code>document.addEventListener</code> lines.
+Map and Service Catalog cross-links (<code>window.viewServiceMap</code>, <code>window.viewServiceCatalog</code>) are independent of this setting.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

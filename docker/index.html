@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="BYOL (Bring Your Own Laptop) Observability Platform for OpenTelemetry">
+        <meta name="description" content="Start TinyOlly with Docker (core, demo apps, AI agent demo, OTel demo, your own apps, core-only) and configure OpAMP">
       
       
         <meta name="author" content="TinyOlly">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Docker - TinyOlly Documentation</title>
+        <title>Docker Deployment - TinyOlly Documentation</title>
       
     
     
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Docker
+              Docker Deployment
             
           </span>
         </div>
@@ -465,10 +465,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-opentelemetry-demo-20-services-optional" class="md-nav__link">
+  <a href="#4-opentelemetry-demo-astronomy-shop-optional" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. OpenTelemetry Demo (~20 Services - Optional)
+        4. OpenTelemetry Demo (Astronomy Shop - Optional)
       
     </span>
   </a>
@@ -584,6 +584,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collector-presets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Collector Presets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -644,6 +672,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Demo (Astronomy Shop)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -790,6 +846,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server (AI agents)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -886,6 +970,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../CARDINALITY-PROTECTION/" class="md-nav__link">
         
   
@@ -914,14 +1026,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../redis-archive/" class="md-nav__link">
+      <a href="../development/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Redis Storage (Archive)
+    Development & Testing
   
 
     
@@ -1029,10 +1141,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-opentelemetry-demo-20-services-optional" class="md-nav__link">
+  <a href="#4-opentelemetry-demo-astronomy-shop-optional" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. OpenTelemetry Demo (~20 Services - Optional)
+        4. OpenTelemetry Demo (Astronomy Shop - Optional)
       
     </span>
   </a>
@@ -1124,8 +1236,12 @@
 - <strong>OpAMP Server</strong>: <code>ws://localhost:4320/v1/opamp</code> (WebSocket), <code>localhost:4321</code> (HTTP REST API)<br />
 - <strong>TinyOlly UI</strong>: <code>http://localhost:5005</code><br />
 - <strong>TinyOlly OTLP Receiver and its SQLite storage</strong>: OTLP observability back end and storage<br />
-- Rebuilds images if code changes are detected  </p>
+- Pulls images from Docker Hub (use <code>./01-start-core-local.sh</code> to build from your checkout instead)  </p>
 <p><strong>Open the UI:</strong> <code>http://localhost:5005</code> (empty until you send data)</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>01-start-core.sh</code> starts from a clean slate: it removes the SQLite data volume and the supervisor's cached collector config on every run. Use <code>docker compose -f docker-compose-tinyolly-core.yml restart</code> to keep data.</p>
+</div>
 <p><strong>OpenTelemetry Collector + OpAMP Config Page:</strong> Navigate to the "OpenTelemetry Collector + OpAMP Config" tab in the UI to view and manage collector configurations remotely. See the <a href="#opamp-configuration-optional">OpAMP Configuration</a> section below for setup instructions.</p>
 <p><strong>Stop core services:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./02-stop-core.sh
@@ -1165,7 +1281,7 @@
 <li>Click any row to expand the full span JSON</li>
 </ul>
 <p><strong>Watch agent logs:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker-compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>ai-agent
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>ai-agent
 </code></pre></div></p>
 <p><strong>Stop AI demo:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./02-stop-ai-demo.sh
@@ -1174,40 +1290,14 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>./03-cleanup-ai-demo.sh
 </code></pre></div></p>
 <hr />
-<h2 id="4-opentelemetry-demo-20-services-optional">4. OpenTelemetry Demo (~20 Services - Optional)</h2>
-<p><strong>Prerequisites:</strong> Clone the OpenTelemetry Demo first:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/open-telemetry/opentelemetry-demo
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nb">cd</span><span class="w"> </span>opentelemetry-demo
-</code></pre></div></p>
-<p><strong>Configure:</strong> Edit <code>src/otel-collector/otelcol-config-extras.yml</code>:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">exporters</span><span class="p">:</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">otlphttp/tinyolly</span><span class="p">:</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://otel-collector:4318</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="nt">service</span><span class="p">:</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span><span class="nt">pipelines</span><span class="p">:</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="nt">traces</span><span class="p">:</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">      </span><span class="nt">exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">spanmetrics</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">otlphttp/tinyolly</span><span class="p p-Indicator">]</span>
-</code></pre></div></p>
-<p><strong>Deploy:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_COLLECTOR_HOST</span><span class="o">=</span>host.docker.internal
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>--scale<span class="w"> </span>otel-collector<span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span>--scale<span class="w"> </span><span class="nv">prometheus</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span>--scale<span class="w"> </span><span class="nv">grafana</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span>--scale<span class="w"> </span><span class="nv">jaeger</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">  </span>--scale<span class="w"> </span><span class="nv">opensearch</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">  </span>--force-recreate<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">  </span>--remove-orphans<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">  </span>--detach
-</code></pre></div></p>
-<p><strong>Stop:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>down
-</code></pre></div></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This disables the demo's built-in collector, Jaeger, OpenSearch, Grafana, and Prometheus. All telemetry routes to Otel Collector -&gt; TinyOlly.</p>
-</div>
+<h2 id="4-opentelemetry-demo-astronomy-shop-optional">4. OpenTelemetry Demo (Astronomy Shop - Optional)</h2>
+<p>A 16-service subset of the upstream demo, pointed at TinyOlly's collector, with failure-injection feature flags.
+Runs in ~1.6 GB of VM memory. See <a href="../otel-demo/">OpenTelemetry Demo</a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd</span><span class="w"> </span>docker-otel-demo
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>./01-start-otel-demo.sh<span class="w">        </span><span class="c1"># shop at http://localhost:8080</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>./03-set-flag.sh<span class="w"> </span>paymentFailure<span class="w"> </span><span class="m">50</span>%
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>./02-stop-otel-demo.sh
+</code></pre></div>
 <hr />
 <h2 id="5-use-tinyolly-with-your-own-apps">5. Use TinyOlly with Your Own Apps</h2>
 <p>After deploying TinyOlly core (step 1 above), instrument your application to send telemetry:</p>
@@ -1216,17 +1306,17 @@ Point your OpenTelemetry exporter to:<br />
 - <strong>gRPC</strong>: <code>http://otel-collector:4317</code><br />
 - <strong>HTTP</strong>: <code>http://otel-collector:4318</code>  </p>
 <p><strong>For apps running on your host machine (outside Docker):</strong><br />
-Docker Desktop automatically exposes container ports to <code>localhost</code>. Point your OpenTelemetry exporter to:<br />
+Colima forwards container ports to <code>localhost</code>. Point your OpenTelemetry exporter to:<br />
 - <strong>gRPC</strong>: <code>http://localhost:4317</code><br />
 - <strong>HTTP</strong>: <code>http://localhost:4318</code>  </p>
 <p><strong>Example environment variables:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://localhost:4318
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://localhost:4318
 </code></pre></div></p>
 <p>The Otel Collector will forward everything to TinyOlly's OTLP receiver, which processes telemetry and stores it in SQLite in OTEL format for the backend and UI to access.</p>
 <h2 id="6-tinyolly-core-only-deployment-use-your-own-docker-opentelemetry-collector">6. TinyOlly <strong>Core-Only</strong> Deployment: Use Your Own Docker OpenTelemetry Collector</h2>
 <p>If you already have an OpenTelemetry Collector or want to send telemetry directly to the TinyOlly Receiver, you can deploy the core components without the bundled OTel Collector.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">cd</span><span class="w"> </span>docker-core-only
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>./01-start-core.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">cd</span><span class="w"> </span>docker-core-only
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>./01-start-core.sh
 </code></pre></div>
 <p>This starts:
 - <strong>TinyOlly OTLP Receiver</strong>: Listening on <code>localhost:4343</code> (gRPC only)
@@ -1235,47 +1325,47 @@ Docker Desktop automatically exposes container ports to <code>localhost</code>. 
 <p>Swap out the included Otel Collector for any distro of Otel Collector.</p>
 <p><strong>Point your OpenTelemetry exporters to tinyolly-otlp-receiver:4343:</strong>
 i.e.<br />
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">exporters</span><span class="p">:</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">debug</span><span class="p">:</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="nt">verbosity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">detailed</span>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span><span class="nt">otlp</span><span class="p">:</span>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tinyolly-otlp-receiver:4343&quot;</span>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">    </span><span class="nt">tls</span><span class="p">:</span>
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="w">      </span><span class="nt">insecure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>
-<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="nt">service</span><span class="p">:</span>
-<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="w">  </span><span class="nt">pipelines</span><span class="p">:</span>
-<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="w">    </span><span class="nt">traces</span><span class="p">:</span>
-<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="w">      </span><span class="nt">receivers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">otlp</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="w">      </span><span class="nt">processors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">batch</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="w">      </span><span class="nt">exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">debug</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">otlp</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">spanmetrics</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>
-<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a><span class="w">    </span><span class="nt">metrics</span><span class="p">:</span>
-<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a><span class="w">      </span><span class="nt">receivers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">otlp</span><span class="p p-Indicator">,</span><span class="nv">spanmetrics</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a><span class="w">      </span><span class="nt">processors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">batch</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a><span class="w">      </span><span class="nt">exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">debug</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">otlp</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>
-<a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a><span class="w">    </span><span class="nt">logs</span><span class="p">:</span>
-<a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a><span class="w">      </span><span class="nt">receivers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">otlp</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a><span class="w">      </span><span class="nt">processors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">batch</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a><span class="w">      </span><span class="nt">exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">debug</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">otlp</span><span class="p p-Indicator">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">exporters</span><span class="p">:</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">debug</span><span class="p">:</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="nt">verbosity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">detailed</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span><span class="nt">otlp</span><span class="p">:</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tinyolly-otlp-receiver:4343&quot;</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="nt">tls</span><span class="p">:</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">      </span><span class="nt">insecure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="nt">service</span><span class="p">:</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">  </span><span class="nt">pipelines</span><span class="p">:</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">    </span><span class="nt">traces</span><span class="p">:</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="w">      </span><span class="nt">receivers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">otlp</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="w">      </span><span class="nt">processors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">batch</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="w">      </span><span class="nt">exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">debug</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">otlp</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">spanmetrics</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="w">    </span><span class="nt">metrics</span><span class="p">:</span>
+<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a><span class="w">      </span><span class="nt">receivers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">otlp</span><span class="p p-Indicator">,</span><span class="nv">spanmetrics</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a><span class="w">      </span><span class="nt">processors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">batch</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a><span class="w">      </span><span class="nt">exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">debug</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">otlp</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a>
+<a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a><span class="w">    </span><span class="nt">logs</span><span class="p">:</span>
+<a id="__codelineno-13-23" name="__codelineno-13-23" href="#__codelineno-13-23"></a><span class="w">      </span><span class="nt">receivers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">otlp</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-13-24" name="__codelineno-13-24" href="#__codelineno-13-24"></a><span class="w">      </span><span class="nt">processors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">batch</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a><span class="w">      </span><span class="nt">exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">debug</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">otlp</span><span class="p p-Indicator">]</span>
 </code></pre></div></p>
 <p>The Otel Collector will forward everything to TinyOlly's OTLP receiver, which processes telemetry and stores it in SQLite in OTEL format for the backend and UI to access.</p>
 <h2 id="opamp-configuration-optional">OpAMP Configuration (Optional)</h2>
 <p>The <strong>OpenTelemetry Collector + OpAMP Config</strong> page in the TinyOlly UI allows you to view and manage collector configurations remotely. To enable this feature, add the OpAMP extension to your collector config:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nt">extensions</span><span class="p">:</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">opamp</span><span class="p">:</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="nt">server</span><span class="p">:</span>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">      </span><span class="nt">ws</span><span class="p">:</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">        </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ws://localhost:4320/v1/opamp</span>
-<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
-<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="nt">service</span><span class="p">:</span>
-<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">  </span><span class="nt">extensions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">opamp</span><span class="p p-Indicator">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">extensions</span><span class="p">:</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">opamp</span><span class="p">:</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="nt">server</span><span class="p">:</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">      </span><span class="nt">ws</span><span class="p">:</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">        </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ws://localhost:4320/v1/opamp</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="nt">service</span><span class="p">:</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">  </span><span class="nt">extensions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">opamp</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <p>The default configuration template (located at <code>docker/otelcol-configs/config.yaml</code>) shows a complete example with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.</p>
 <p><strong>Stop core-only services:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>./02-stop-core.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>./02-stop-core.sh
 </code></pre></div></p>
 <hr />
 <h2 id="building-images">Building Images</h2>
@@ -1286,6 +1376,9 @@ i.e.<br />
 
 
 
+
+  
+  
 
 
 

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="BYOL (Bring Your Own Laptop) Observability Platform for OpenTelemetry">
+        <meta name="description" content="GenAI observability with an Ollama-based agent and zero-code instrumentation; what the AI Agents tab shows">
       
       
         <meta name="author" content="TinyOlly">
@@ -29,7 +29,7 @@
     
     
       
-        <title>AI Agent with Ollama - TinyOlly Documentation</title>
+        <title>AI Agent Demo - TinyOlly Documentation</title>
       
     
     
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              AI Agent with Ollama
+              AI Agent Demo
             
           </span>
         </div>
@@ -449,6 +449,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collector-presets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Collector Presets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -509,6 +537,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry Demo (Astronomy Shop)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -796,6 +852,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server (AI agents)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -892,6 +976,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../CARDINALITY-PROTECTION/" class="md-nav__link">
         
   
@@ -920,14 +1032,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../redis-archive/" class="md-nav__link">
+      <a href="../development/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Redis Storage (Archive)
+    Development & Testing
   
 
     
@@ -1221,12 +1333,13 @@
 <p><strong>No AI traces appearing?</strong></p>
 <ul>
 <li>Ensure TinyOlly core is running</li>
-<li>Check agent logs: <code>docker logs ai-agent-demo</code></li>
-<li>Verify Ollama is ready: <code>docker logs ollama</code></li>
+<li>Check agent logs: <code>cd docker-ai-agent-demo &amp;&amp; docker compose logs ai-agent</code></li>
+<li>Verify Ollama is ready: <code>docker compose logs ollama</code></li>
 </ul>
 <p><strong>Model download taking long?</strong></p>
 <ul>
 <li>TinyLlama is ~600MB, first download may take a few minutes</li>
+<li>The Ollama container is limited to 4 GB of RAM, so the default 4 GB Colima VM is too small: restart it larger, e.g. <code>colima stop -p tinyolly &amp;&amp; COLIMA_MEMORY=8 ./scripts/colima-up.sh</code></li>
 <li>Check Ollama logs for download progress</li>
 </ul>
 <p><strong>Agent errors?</strong></p>
@@ -1240,6 +1353,9 @@
 
 
 
+
+  
+  
 
 
 
