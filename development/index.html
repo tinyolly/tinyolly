@@ -1166,6 +1166,7 @@
 <li>Python dependencies are locked: edit <code>requirements.in</code> in a service directory, then regenerate with
   <code>uv pip compile requirements.in --universal --python-version 3.13 -o requirements.txt</code>.</li>
 <li>Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in <code>versions.env</code>; the Dockerfiles carry matching <code>ARG</code> defaults. Update both together.</li>
+<li>Architecture diagram (<code>docs/images/architecture.png</code>) is generated: edit <code>scripts/make-architecture-diagram.py</code> and run <code>docker/apps/tinyolly-mcp/.venv/bin/python scripts/make-architecture-diagram.py</code> (needs matplotlib and Pillow).</li>
 <li>Lint: <code>pip install ruff==0.17.4 &amp;&amp; ruff check docker/apps/</code> (rules are in <code>ruff.toml</code>; keep the ruff version pinned, its defaults change between releases). There is no CI; run the checks locally.</li>
 <li><strong>All local tests:</strong> <code>./scripts/test-all.sh</code> (fast suites; <code>--stack</code> adds the e2e run against the running stack, <code>--kind</code> adds the kind smoke test, which briefly stops the compose stack). Nothing runs in CI. Docs pages need <code>title</code>/<code>description</code> front matter (the MCP server lists them). Suites: common, UI/API, receiver, MCP server, frontend JS (<code>node --test</code>), Go, collector configs, kubectl guard. Individually:</li>
 <li>Tests: <code>cd docker/apps/tinyolly-common &amp;&amp; pip install -r requirements-test.txt . &amp;&amp; pytest tests</code>.</li>
