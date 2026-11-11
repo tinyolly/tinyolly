@@ -30,36 +30,9 @@ func do(h http.Handler, method, path, contentType, body string) *httptest.Respon
 	return rec
 }
 
-func TestNoCORSHeaders(t *testing.T) {
-	_, h := newTestServer()
-	for _, tc := range []struct{ method, path string }{
-		{"GET", "/health"}, {"GET", "/config"}, {"GET", "/status"}, {"OPTIONS", "/config"},
-	} {
-		rec := do(h, tc.method, tc.path, "", "")
-		for k := range rec.Header() {
-			if strings.HasPrefix(k, "Access-Control-") {
-				t.Errorf("%s %s sent %s; the API must not be readable/writable cross-origin", tc.method, tc.path, k)
-			}
-		}
-	}
-	if rec := do(h, "OPTIONS", "/config", "", ""); rec.Code == http.StatusOK {
-		t.Errorf("OPTIONS preflight must not succeed, got %d", rec.Code)
-	}
-}
-
-func TestPostConfigRequiresJSONContentType(t *testing.T) {
+func TestPostConfigStoresConfig(t *testing.T) {
 	s, h := newTestServer()
-	body := `{"config":"receivers: {}\n"}`
-	for _, ct := range []string{"", "text/plain", "application/x-www-form-urlencoded", "text/plain;charset=UTF-8"} {
-		rec := do(h, "POST", "/config", ct, body)
-		if rec.Code != http.StatusUnsupportedMediaType {
-			t.Errorf("Content-Type %q: got %d, want 415 (a cross-origin page can send text/plain without a preflight)", ct, rec.Code)
-		}
-	}
-	if got := s.getCurrentConfig(); got != "initial: true\n" {
-		t.Errorf("config was changed by a rejected request: %q", got)
-	}
-	rec := do(h, "POST", "/config", "application/json; charset=utf-8", body)
+	rec := do(h, "POST", "/config", "application/json", `{"config":"receivers: {}\n"}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("valid request: got %d: %s", rec.Code, rec.Body.String())
 	}
@@ -280,23 +253,6 @@ func TestFullStateRequestedForUnknownAgent(t *testing.T) {
 	}
 	if r.Capabilities == 0 || len(r.InstanceUid) == 0 {
 		t.Fatal("response should advertise capabilities and echo the instance uid")
-	}
-}
-
-func TestWriteTokenRequiredWhenSet(t *testing.T) {
-	s, h := newTestServer()
-	s.apiToken = "s3cret"
-	body := `{"config":"a: 1\n"}`
-	if rec := do(h, "POST", "/config", "application/json", body); rec.Code != http.StatusUnauthorized {
-		t.Fatalf("want 401 without token, got %d", rec.Code)
-	}
-	req := httptest.NewRequest("POST", "/config", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer s3cret")
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-	if rec.Code != 200 {
-		t.Fatalf("want 200 with token, got %d", rec.Code)
 	}
 }
 

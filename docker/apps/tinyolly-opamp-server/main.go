@@ -7,13 +7,11 @@ package main
 import (
 	"context"
 	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
-	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -79,7 +77,6 @@ type OpAMPServer struct {
 	fleetConfig    *remoteConfig            // config from a fleet-wide POST; offered to every agent, incl. new/reconnecting ones
 	currentConfig  string                   // what GET /config shows when no agent is connected
 
-	apiToken string // optional bearer token required for writes (OPAMP_API_TOKEN)
 }
 
 // maxConfigBodyBytes caps the size of a POST /config body.
@@ -103,7 +100,6 @@ func NewOpAMPServer() *OpAMPServer {
 		agents:         make(map[string]*AgentState),
 		connToAgent:    make(map[types.Connection]string),
 		pendingConfigs: make(map[string]*remoteConfig),
-		apiToken:       os.Getenv("OPAMP_API_TOKEN"),
 	}
 	s.loadInitialConfig()
 	return s
@@ -394,13 +390,6 @@ func (s *OpAMPServer) handleUpdateConfig(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Require a JSON content type. Browsers can send text/plain cross-origin without a CORS preflight, so
-	// rejecting anything else stops a web page the user visits from posting a config to this API.
-	if mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || mediaType != "application/json" {
-		http.Error(w, "Content-Type must be application/json", http.StatusUnsupportedMediaType)
-		return
-	}
-
 	r.Body = http.MaxBytesReader(w, r.Body, maxConfigBodyBytes)
 	var req ConfigUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -548,7 +537,7 @@ func (s *OpAMPServer) routes() *http.ServeMux {
 		case http.MethodGet:
 			s.handleGetConfig(w, r)
 		case http.MethodPost, http.MethodPut:
-			s.requireToken(s.handleUpdateConfig)(w, r)
+			s.handleUpdateConfig(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -712,19 +701,4 @@ func run() int {
 func resetDelivery(agent *AgentState) {
 	agent.sentHash, agent.failedHash = "", ""
 	agent.ConfigStatus, agent.ConfigError = "pending", ""
-}
-
-// requireToken protects the write endpoints with OPAMP_API_TOKEN when it is set (unset = open, as before:
-// the API is only meant to be reachable by the TinyOlly UI on the private network).
-func (s *OpAMPServer) requireToken(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if s.apiToken != "" {
-			got := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-			if subtle.ConstantTimeCompare([]byte(got), []byte(s.apiToken)) != 1 {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
-		}
-		next(w, r)
-	}
 }

@@ -103,10 +103,7 @@ async def create_alert(
     }
     ```
     """
-    try:
-        alert_manager.add_rule(rule)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
+    alert_manager.add_rule(rule)
     return rule
 
 

@@ -1,13 +1,11 @@
 """Alert manager for handling alert rules and notifications"""
 
 import asyncio
-import ipaddress
 import json
 import logging
 import os
 import time
 from typing import Dict, List, Set
-from urllib.parse import urlsplit
 
 import aiohttp
 from models import AlertRule
@@ -19,27 +17,6 @@ logger = logging.getLogger(__name__)
 
 WEBHOOK_COOLDOWN_SECONDS = float(os.getenv("ALERT_COOLDOWN_SECONDS", "60"))
 WEBHOOK_MAX_CONCURRENCY = int(os.getenv("ALERT_MAX_CONCURRENCY", "5"))
-
-
-def validate_webhook_url(url: str) -> str:
-    """Return the URL if it is an http(s) URL that does not target a link-local / metadata address, else raise ValueError.
-
-    Alert rules can be created through the unauthenticated API, so a webhook URL is attacker-influenced input.
-    Loopback and private ranges stay allowed (local webhook sinks and docker/k8s service names are the normal use
-    in a local dev tool); link-local (169.254.0.0/16 incl. cloud metadata, fe80::/10) and non-http schemes are not.
-    """
-    parts = urlsplit(url or "")
-    if parts.scheme not in ("http", "https") or not parts.hostname:
-        raise ValueError("webhook_url must be an http(s) URL")
-    try:
-        ip = ipaddress.ip_address(parts.hostname)
-    except ValueError:
-        if parts.hostname.lower() in ("metadata.google.internal", "metadata"):
-            raise ValueError("webhook_url must not target a metadata service") from None
-        return url
-    if ip.is_link_local or ip.is_multicast or ip.is_unspecified:
-        raise ValueError("webhook_url must not target a link-local, multicast or unspecified address")
-    return url
 
 
 class AlertManager:
@@ -67,7 +44,6 @@ class AlertManager:
             rules_data = json.loads(rules_json)
             for rule_data in rules_data:
                 rule = AlertRule(**rule_data)
-                validate_webhook_url(rule.webhook_url)
                 self.rules.append(rule)
             if self.rules:
                 logger.info(f"Loaded {len(self.rules)} alert rules from environment")
@@ -80,7 +56,6 @@ class AlertManager:
         Args:
             rule (AlertRule): Alert rule to add
         """
-        validate_webhook_url(rule.webhook_url)   # raises ValueError; the API turns that into a 422/400
         self.rules.append(rule)
         logger.info(f"Added alert rule: {rule.name}")
 
@@ -189,7 +164,6 @@ class AlertManager:
                         json=payload,
                         headers={"Content-Type": "application/json"},
                         timeout=aiohttp.ClientTimeout(total=5),
-                        allow_redirects=False,   # a redirect could point at an address validate_webhook_url refuses
                     ) as response:
                         if response.status >= 400:
                             logger.error(f"Webhook failed: {response.status} for rule {rule.name}")

@@ -104,14 +104,14 @@ def to_otlp_dict(request):
 
 
 def _fail(context, what, error):
-    """Log the real error server-side; return a generic status (raw exception text can leak internals)."""
+    """Log the error and return it to the exporter (local tool: the real message helps debugging)."""
     logger.error(f"Error processing {what}: {error!r}", exc_info=True)
     if isinstance(error, concurrent.futures.TimeoutError):
         context.set_code(grpc.StatusCode.DEADLINE_EXCEEDED)
         context.set_details(f"timed out storing {what}")
     else:
         context.set_code(grpc.StatusCode.INTERNAL)
-        context.set_details(f"failed to process {what}")
+        context.set_details(f"failed to process {what}: {error}")
 
 class TraceService(trace_service_pb2_grpc.TraceServiceServicer):
     """gRPC service for receiving traces"""

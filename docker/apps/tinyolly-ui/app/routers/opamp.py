@@ -248,7 +248,6 @@ async def opamp_update_config(
                 f"{settings.opamp_server_url}/config",
                 json=payload,
                 timeout=aiohttp.ClientTimeout(total=5),
-                **({"headers": {"Authorization": f"Bearer {settings.opamp_api_token}"}} if settings.opamp_api_token else {}),
             ) as response:
                 if response.status == 200:
                     result = await response.json()

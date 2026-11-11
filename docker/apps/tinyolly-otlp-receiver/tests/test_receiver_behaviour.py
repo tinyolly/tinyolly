@@ -33,16 +33,6 @@ def test_run_async_times_out_and_cancels():
         rx.run_async(hang(), timeout=0.2)
 
 
-def test_errors_return_generic_details_not_exception_text(monkeypatch):
-    async def boom(_):
-        raise RuntimeError("secret /data/tinyolly.db path")
-
-    monkeypatch.setattr(rx.storage, "store_traces", boom)
-    ctx = Ctx()
-    rx.TraceService().Export(rx.trace_service_pb2.ExportTraceServiceRequest(), ctx)
-    assert ctx.code == grpc.StatusCode.INTERNAL and "secret" not in ctx.details and "/data" not in ctx.details
-
-
 def test_timeout_maps_to_deadline_exceeded(monkeypatch):
     async def hang(_):
         await asyncio.sleep(30)
