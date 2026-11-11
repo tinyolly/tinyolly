@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Always use the Colima docker daemon (profile: COLIMA_PROFILE, default tinyolly)
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 # Helper script to login to Docker Hub
 # Run this before building and pushing images
 
@@ -20,6 +24,9 @@ echo ""
 #   brew install docker-credential-helper
 #   ~/.docker/config.json must contain  "credsStore": "osxkeychain"  (not "desktop")
 command -v docker-credential-osxkeychain >/dev/null || { echo "Missing helper: brew install docker-credential-helper"; exit 1; }
+
+grep -q '"credsStore": *"osxkeychain"' ~/.docker/config.json 2>/dev/null || { echo 'Set "credsStore": "osxkeychain" in ~/.docker/config.json (not "desktop")'; exit 1; }
+docker context inspect "$DOCKER_CONTEXT" >/dev/null 2>&1 || { echo "Docker context $DOCKER_CONTEXT missing: run scripts/colima-up.sh"; exit 1; }
 
 docker login
 

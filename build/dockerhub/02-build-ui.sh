@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Build TinyOlly UI image only (multi-arch)
+# Build TinyOlly UI image only (native arch)
 # Usage: ./02-build-ui.sh [version]
 # Example: ./02-build-ui.sh v2.1.0
 #

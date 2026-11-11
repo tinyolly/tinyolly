@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Build TinyOlly core images locally (multi-arch)
+# Build TinyOlly core images locally (native arch)
 # Usage: ./build-core.sh [version]
 # Example: ./build-core.sh v2.1.0
 #

@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Always use the Colima docker daemon (profile: COLIMA_PROFILE, default tinyolly)
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 set -e
 
 # Push ALL TinyOlly images to Docker Hub

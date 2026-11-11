@@ -5,7 +5,7 @@ set -e
 unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
 export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 
-# Build TinyOlly AI Agent demo image locally (multi-arch)
+# Build TinyOlly AI Agent demo image locally (native arch)
 # Usage: ./build-ai-demo.sh [version]
 # Example: ./build-ai-demo.sh v2.1.0
 #

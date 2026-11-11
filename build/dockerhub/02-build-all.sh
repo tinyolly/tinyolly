@@ -1,7 +1,11 @@
 #!/bin/bash
+
+# Always use the Colima docker daemon (profile: COLIMA_PROFILE, default tinyolly)
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 set -e
 
-# Build ALL TinyOlly images locally (multi-arch)
+# Build ALL TinyOlly images locally (native arch)
 # Usage: ./02-build-all.sh [version]
 # Example: ./02-build-all.sh v2.1.0
 #
