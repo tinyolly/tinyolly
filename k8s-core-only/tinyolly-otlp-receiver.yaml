@@ -34,9 +34,9 @@ spec:
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
           value: "http://tinyolly-otlp-receiver:4343"
         - name: OTEL_EXPORTER_OTLP_PROTOCOL
-          value: "http/protobuf"
+          value: "grpc"
         - name: OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
-          value: "http://tinyolly-otlp-receiver:4343/v1/logs"
+          value: "http://tinyolly-otlp-receiver:4343"
         - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
           value: "true"
         resources:

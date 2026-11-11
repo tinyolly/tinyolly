@@ -239,13 +239,17 @@ async def get_metrics(
     """
     names = await storage.get_metric_names(limit=limit)
     
+    # Each storage call opens its own SQLite connection: bound concurrency or hundreds of metrics
+    # exhaust the container's file descriptors ("unable to open database file").
+    sem = asyncio.Semaphore(8)
+
     async def fetch_metric_details(name):
-        # Fetch all details for a single metric in parallel
-        metadata, resources, attributes = await asyncio.gather(
-            storage.get_metric_metadata(name),
-            storage.get_all_resources(name),
-            storage.get_all_attributes(name)
-        )
+        async with sem:
+            metadata, resources, attributes = await asyncio.gather(
+                storage.get_metric_metadata(name),
+                storage.get_all_resources(name),
+                storage.get_all_attributes(name)
+            )
 
         # Extract unique service names from resources
         services = list(set(
@@ -268,50 +272,6 @@ async def get_metrics(
     metrics_list = await asyncio.gather(*(fetch_metric_details(name) for name in names))
     
     return metrics_list
-
-
-@router.get(
-    '/metrics/{name}',
-    response_model=MetricDetail,
-    operation_id="get_metric_detail",
-    summary="Get metric time series",
-    responses={
-        200: {"description": "Metric time series data with all resources and attributes"}
-    }
-)
-async def get_metric_detail(
-    name: str,
-    start: float = Query(default=None, description="Start time (Unix timestamp). Default: 10 minutes ago"),
-    end: float = Query(default=None, description="End time (Unix timestamp). Default: now"),
-    storage: Storage = Depends(get_storage)
-):
-    """
-    Get detailed time series data for a metric.
-    
-    Returns complete time series including resources, attributes, and exemplars for trace 
-    correlation. Each series represents a unique combination of resource attributes and 
-    metric labels.
-    
-    **Time Range:**
-    - Default: Last 10 minutes
-    - Custom: Specify `start` and `end` Unix timestamps
-    """
-    start_time = start if start is not None else time.time() - 3600
-    end_time = end if end is not None else time.time()
-    
-    # Get metadata
-    metadata = await storage.get_metric_metadata(name)
-    
-    # Get all series for this metric
-    series = await storage.get_metric_series(name, None, None, start_time, end_time)
-    
-    return {
-        'name': name,
-        'type': metadata.get('type', 'unknown'),
-        'unit': metadata.get('unit', ''),
-        'description': metadata.get('description', ''),
-        'series': series
-    }
 
 
 @router.get(
@@ -382,6 +342,50 @@ async def query_metrics(
             'resource': resource_filter,
             'attributes': attr_filter
         }
+    }
+
+
+@router.get(
+    '/metrics/{name}',
+    response_model=MetricDetail,
+    operation_id="get_metric_detail",
+    summary="Get metric time series",
+    responses={
+        200: {"description": "Metric time series data with all resources and attributes"}
+    }
+)
+async def get_metric_detail(
+    name: str,
+    start: float = Query(default=None, description="Start time (Unix timestamp). Default: 10 minutes ago"),
+    end: float = Query(default=None, description="End time (Unix timestamp). Default: now"),
+    storage: Storage = Depends(get_storage)
+):
+    """
+    Get detailed time series data for a metric.
+    
+    Returns complete time series including resources, attributes, and exemplars for trace 
+    correlation. Each series represents a unique combination of resource attributes and 
+    metric labels.
+    
+    **Time Range:**
+    - Default: Last 10 minutes
+    - Custom: Specify `start` and `end` Unix timestamps
+    """
+    start_time = start if start is not None else time.time() - 3600
+    end_time = end if end is not None else time.time()
+    
+    # Get metadata
+    metadata = await storage.get_metric_metadata(name)
+    
+    # Get all series for this metric
+    series = await storage.get_metric_series(name, None, None, start_time, end_time)
+    
+    return {
+        'name': name,
+        'type': metadata.get('type', 'unknown'),
+        'unit': metadata.get('unit', ''),
+        'description': metadata.get('description', ''),
+        'series': series
     }
 
 

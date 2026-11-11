@@ -75,19 +75,23 @@ class StorageSQLite:
 
     async def _connect(self) -> aiosqlite.Connection:
         conn = await aiosqlite.connect(self.db_path, isolation_level=None)
-        conn.row_factory = aiosqlite.Row
-        # auto_vacuum only takes effect on a database that has no tables yet, and journal_mode=WAL creates the
-        # file header, so it must be set BEFORE journal_mode. Existing databases are converted in
-        # _ensure_initialized (one-time VACUUM).
-        # busy_timeout FIRST: the UI and the OTLP receiver are separate processes opening the same file, and
-        # switching to WAL needs a lock; without a timeout the second opener failed instantly with "database is locked".
-        await conn.execute("PRAGMA busy_timeout=5000")
-        await conn.execute("PRAGMA auto_vacuum=INCREMENTAL")
-        await conn.execute("PRAGMA journal_mode=WAL")
-        await conn.execute("PRAGMA synchronous=NORMAL")
-        await conn.execute("PRAGMA temp_store=MEMORY")
-        await conn.execute("PRAGMA cache_size=-64000")
-        await conn.execute(f"PRAGMA max_page_count={MAX_PAGE_COUNT}")
+        try:
+            conn.row_factory = aiosqlite.Row
+            # auto_vacuum only takes effect on a database that has no tables yet, and journal_mode=WAL creates the
+            # file header, so it must be set BEFORE journal_mode. Existing databases are converted in
+            # _ensure_initialized (one-time VACUUM).
+            # busy_timeout FIRST: the UI and the OTLP receiver are separate processes opening the same file, and
+            # switching to WAL needs a lock; without a timeout the second opener failed instantly with "database is locked".
+            await conn.execute("PRAGMA busy_timeout=5000")
+            await conn.execute("PRAGMA auto_vacuum=INCREMENTAL")
+            await conn.execute("PRAGMA journal_mode=WAL")
+            await conn.execute("PRAGMA synchronous=NORMAL")
+            await conn.execute("PRAGMA temp_store=MEMORY")
+            await conn.execute("PRAGMA cache_size=-64000")
+            await conn.execute(f"PRAGMA max_page_count={MAX_PAGE_COUNT}")
+        except BaseException:
+            await conn.close()
+            raise
         return conn
 
     async def _migrate_auto_vacuum(self, conn: aiosqlite.Connection) -> None:

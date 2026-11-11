@@ -73,10 +73,8 @@ if [ "$USE_KIND" = true ]; then
 
         # Update manifests to use local images
         echo -e "${CYAN}Updating manifests for local images...${NC}"
-        sed -i.bak 's/imagePullPolicy: Always/imagePullPolicy: Never/' "$SCRIPT_DIR/demo-frontend.yaml"
-        sed -i.bak 's/imagePullPolicy: Always/imagePullPolicy: Never/' "$SCRIPT_DIR/demo-backend.yaml"
-        sed -i.bak 's|image: tinyolly/demo-frontend:latest|image: demo-frontend:latest|' "$SCRIPT_DIR/demo-frontend.yaml"
-        sed -i.bak 's|image: tinyolly/demo-backend:latest|image: demo-backend:latest|' "$SCRIPT_DIR/demo-backend.yaml"
+        sed -i.bak -e 's/imagePullPolicy: Always/imagePullPolicy: Never/' -e 's|image: tinyolly/demo-frontend:latest|image: demo-frontend:latest|' "$SCRIPT_DIR/demo-frontend.yaml"
+        sed -i.bak -e 's/imagePullPolicy: Always/imagePullPolicy: Never/' -e 's|image: tinyolly/demo-backend:latest|image: demo-backend:latest|' "$SCRIPT_DIR/demo-backend.yaml"
 
         # Set cleanup flag
         RESTORE_MANIFESTS=true
