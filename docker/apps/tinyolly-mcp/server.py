@@ -8,7 +8,9 @@ long metric series never blow up the agent's context. Drill down instead:
 
 Run:  python server.py                       (stdio, for Claude Code / Zed)
       python server.py --http [--port 8765]  (streamable HTTP)
-Env:  TINYOLLY_URL (default http://localhost:5005), TINYOLLY_MCP_MAX_CHARS (default 20000)
+Env:  TINYOLLY_URL (default http://localhost:5005), TINYOLLY_MCP_MAX_CHARS (default 20000),
+      TINYOLLY_DOCS_DIR (default <repo>/docs: the docs served by list_docs / search_docs / read_doc),
+      TINYOLLY_SKILLS_DIR (default ./skills: investigation skills served by list_skills / get_skill, MCP prompts and resources)
 """
 
 import argparse
@@ -19,18 +21,27 @@ from collections import defaultdict
 from typing import Any
 
 import httpx
-from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver import Image, MCPServer
+
+import docsindex
+import render
+import skillsindex
 
 BASE_URL = os.environ.get("TINYOLLY_URL", "http://localhost:5005").rstrip("/")
 MAX_CHARS = int(os.environ.get("TINYOLLY_MCP_MAX_CHARS", "20000"))
 ATTR_VALUE_MAX = 200   # truncate individual attribute values / log bodies
+
+DOCS = docsindex.load(docsindex.default_docs_dir())
+SKILLS = skillsindex.load(skillsindex.default_skills_dir())
 
 mcp = MCPServer(
     "tinyolly",
     instructions=(
         "Read-only access to local TinyOlly telemetry (traces, spans, logs, metrics, service "
         "catalog/map). Outputs are bounded. For big traces start with get_trace (summary), then "
-        "get_trace_spans with offset/limit, then get_span for one span's full attributes."
+        "get_trace_spans with offset/limit, then get_span for one span's full attributes. For how to set up, "
+        "configure or use TinyOlly itself, use search_docs / read_doc. For investigations (what is wrong, slow or "
+        "failing, one trace, one service, metrics, a broken stack) call list_skills first and follow get_skill(name)."
     ),
 )
 
@@ -129,9 +140,13 @@ def _span_row(span: dict) -> dict:
 # ---------- services ----------
 
 @mcp.tool()
-def list_services() -> str:
-    """Service catalog with RED metrics (rate, error rate, p50/p95/p99 latency), one row per service."""
+def list_services(format: str = "json") -> str:
+    """Service catalog with RED metrics (rate, error rate, p50/p95/p99 latency), one row per service, worst
+    errors first. format="table" returns a pretty markdown table (with health icons) to show the user."""
     data = _api("/api/service-catalog") or []
+    if format == "table":
+        data = sorted(data, key=lambda s: -(s.get("error_rate") or 0))
+        return render.catalog_table(data[:200]) if data else "No services yet."
     rows = [{
         "service": s["name"], "spans": s.get("span_count"), "traces": s.get("trace_count"),
         "rate": s.get("rate"), "error_rate": s.get("error_rate"),
@@ -155,9 +170,10 @@ def get_service_map() -> str:
 @mcp.tool()
 def search_traces(service: str | None = None, errors_only: bool = False,
                   min_duration_ms: float = 0, name_contains: str | None = None,
-                  limit: int = 20) -> str:
+                  limit: int = 20, format: str = "json") -> str:
     """Find recent traces (newest first). Filters: service, errors_only, min_duration_ms,
-    name_contains (root span name). Returns one-line summaries; use get_trace for details."""
+    name_contains (root span name). Returns one-line summaries; use get_trace for details.
+    format="table" returns a pretty markdown table to show the user."""
     limit = max(1, min(limit, 100))
     rows = _api("/api/traces", limit=5000) or []
     out = []
@@ -177,6 +193,10 @@ def search_traces(service: str | None = None, errors_only: bool = False,
             "start": t.get("start_time"),
         })
     out.sort(key=lambda r: -(r["start"] or 0))
+    if format == "table":
+        wanted = {r["trace_id"] for r in out[:limit]}
+        picked = sorted((t for t in rows if t["trace_id"] in wanted), key=lambda t: -(t.get("start_time") or 0))
+        return (render.traces_table(picked) + f"\n\n{len(out)} matching traces, showing {len(picked)}.") if picked else "No matching traces."
     shown = _fit(out[:limit])
     return _out({"matched": len(out), "showing": len(shown), "traces": shown})
 
@@ -187,13 +207,17 @@ def _fetch_trace(trace_id: str) -> list[dict] | None:
 
 
 @mcp.tool()
-def get_trace(trace_id: str, slowest: int = 10) -> str:
+def get_trace(trace_id: str, slowest: int = 10, format: str = "json", max_rows: int = 60) -> str:
     """Summary of a trace that stays small however large the trace is: duration, span/error
     counts, time and span count per service, the error spans, the slowest spans, and the
-    depth/shape of the tree. Follow up with get_trace_spans (paged) or get_span (full detail)."""
+    depth/shape of the tree. Follow up with get_trace_spans (paged) or get_span (full detail).
+    format="waterfall" returns a text waterfall (indented span tree with timing bars) to show the user; for
+    large traces it keeps all error spans and the slowest ones, up to max_rows (<=150)."""
     spans = _fetch_trace(trace_id)
     if spans is None:
         return _out({"error": f"trace {trace_id} not found"})
+    if format == "waterfall":
+        return render.waterfall(spans, max_rows=max(5, min(max_rows, 150)))
     if not spans:
         return _out({"trace_id": trace_id, "spans": 0})
     starts = [int(s["startTimeUnixNano"]) for s in spans]
@@ -288,9 +312,10 @@ def get_span(trace_id: str, span_id: str) -> str:
 
 @mcp.tool()
 def query_logs(trace_id: str | None = None, service: str | None = None, severity: str | None = None,
-               contains: str | None = None, limit: int = 50) -> str:
+               contains: str | None = None, limit: int = 50, format: str = "json") -> str:
     """Recent logs (newest first), optionally by trace_id, service, severity (e.g. error, warn,
-    info) or substring of the body. Bodies are truncated; max 200 rows."""
+    info) or substring of the body. Bodies are truncated; max 200 rows.
+    format="table" returns a pretty markdown table (severity icons) to show the user."""
     limit = max(1, min(limit, 200))
     logs = _api("/api/logs", trace_id=trace_id, limit=5000) or []
     out = []
@@ -303,6 +328,8 @@ def query_logs(trace_id: str | None = None, service: str | None = None, severity
             continue
         out.append(l)
     out.sort(key=lambda l: -(l.get("timestamp") or 0))
+    if format == "table":
+        return (render.logs_table(out[:limit]) + f"\n\n{len(out)} matching logs, showing {min(limit, len(out))}.") if out else "No matching logs."
     rows = [{"time": l.get("timestamp"), "severity": l.get("severity"), "service": l.get("service_name"),
              "message": _t(l.get("message"), 300), "trace_id": l.get("trace_id") or None,
              "span_id": l.get("span_id") or None} for l in out[:limit]]
@@ -360,6 +387,175 @@ def query_metric(name: str, service: str | None = None, minutes: float = 10,
                  "series_total": len(d["series"]), "series": series})
 
 
+# ---------- spans, visuals ----------
+
+@mcp.tool()
+def search_spans(service: str | None = None, errors_only: bool = False, min_duration_ms: float = 0,
+                 name_contains: str | None = None, limit: int = 30, format: str = "json") -> str:
+    """Recent spans across all traces (newest first), filtered by service, errors_only, min_duration_ms or name.
+    format="table" returns a pretty markdown table to show the user. Use get_span for a span's full attributes."""
+    limit = max(1, min(limit, 200))
+    rows = _api("/api/spans", limit=5000, service=service) or []
+    out = []
+    for s in rows:
+        code = str(s.get("status_code") or "")
+        bad = code.startswith(("4", "5")) or (s.get("status") or {}).get("code") in (2, "STATUS_CODE_ERROR")
+        if errors_only and not bad:
+            continue
+        if (s.get("duration_ms") or 0) < min_duration_ms:
+            continue
+        if name_contains and name_contains.lower() not in (s.get("name") or "").lower():
+            continue
+        out.append(s)
+    out.sort(key=lambda s: -(s.get("start_time") or 0))
+    if format == "table":
+        return (render.spans_table(out[:limit]) + f"\n\n{len(out)} matching spans, showing {min(limit, len(out))}.") if out else "No matching spans."
+    rows = _fit([{"span_id": s["span_id"], "trace_id": s["trace_id"], "service": s.get("service_name"), "name": _t(s.get("name"), 100),
+                  "ms": s.get("duration_ms"), "status": s.get("status_code") or None, "start": s.get("start_time")} for s in out[:limit]])
+    return _out({"matched": len(out), "returned": len(rows), "spans": rows})
+
+
+def _image_result(png: bytes, caption: str):
+    return [Image(data=png, format="png"), caption]
+
+
+@mcp.tool()
+def chart_metric(name: str, service: str | None = None, minutes: float = 15, max_series: int = 6):
+    """Line chart (PNG image) of one metric over the last `minutes`. Gauges and sums plot their value;
+    histograms plot per-datapoint mean and a p95 estimate. `service` filters on service.name; at most
+    max_series lines are drawn (<=12). Use list_metrics to find names."""
+    end = time.time()
+    params = {"name": name, "start": end - minutes * 60, "end": end}
+    if service:
+        params["resource.service.name"] = service
+    d = _api("/api/metrics/query", **params)
+    if not d or not d.get("series"):
+        return f"No data for metric '{name}'" + (f" and service '{service}'" if service else "") + ". Check names with list_metrics."
+    series = [s for s in d["series"] if s.get("datapoints")]
+    shown = max(1, min(max_series, 12))
+    png = render.metric_chart(name, d.get("unit") or "", d.get("type") or "", series, shown)
+    note = f"; showing {shown} of {len(series)}" if len(series) > shown else ""
+    return _image_result(png, f"{name} ({d.get('type')}, {d.get('unit') or 'no unit'}), last {minutes:g} min, {len(series)} series{note}.")
+
+
+@mcp.tool()
+def chart_service_map(service: str, depth: int = 1):
+    """Diagram (PNG image) of one service's dependencies: callers on the left, callees on the right, nodes
+    coloured by health (blue ok, amber some errors, red >5% errors), edges labelled with p95 latency and request
+    rate. depth=2 adds callers/callees of those. Use list_services for names."""
+    graph = _api("/api/service-map", limit=2000) or {}
+    names = {n["id"] for n in graph.get("nodes", [])}
+    if service not in names:
+        return _out({"error": f"service '{service}' not in the service map", "available": sorted(names)[:50]})
+    g = render.ego_graph(graph, service, max(1, min(depth, 2)))
+    png = render.service_map_chart(graph, service, max(1, min(depth, 2)))
+    callers = sum(len(v) for c, v in g["columns"].items() if c < 0)
+    callees = sum(len(v) for c, v in g["columns"].items() if c > 0)
+    return _image_result(png, f"{service}: {callers} callers, {callees} callees (depth {max(1, min(depth, 2))}).")
+
+
+# ---------- documentation ----------
+
+def _no_docs() -> str:
+    return _out({"error": "TinyOlly docs not found. Set TINYOLLY_DOCS_DIR to the repo's docs/ directory."})
+
+
+@mcp.tool()
+def list_docs() -> str:
+    """TinyOlly's documentation pages: name, title, description and section headings. Use read_doc(name)
+    or search_docs(query) to get the content."""
+    if not DOCS:
+        return _no_docs()
+    return _out([{"name": d.name, "title": d.title, "description": d.description,
+                  "sections": [s.slug for s in d.sections if s.level in (2, 3)][:30]} for d in DOCS.values()])
+
+
+@mcp.tool()
+def search_docs(query: str, limit: int = 8) -> str:
+    """Search the docs for words (setup, collector presets, ports, scripts, errors...). Returns the best
+    matching sections with a snippet; pass doc + section to read_doc for the full text."""
+    if not DOCS:
+        return _no_docs()
+    hits = docsindex.search(DOCS, query, max(1, min(limit, 20)))
+    return _out({"query": query, "results": [{k: h[k] for k in ("doc", "section", "heading", "snippet")} for h in hits]})
+
+
+@mcp.tool()
+def read_doc(name: str, section: str | None = None, offset: int = 0) -> str:
+    """Read a docs page (name from list_docs, e.g. "docker", "otel-demo"), optionally only one section
+    (heading text or slug). Long pages are paged: pass the returned next_offset as offset."""
+    if not DOCS:
+        return _no_docs()
+    doc = DOCS.get(name.lower().removesuffix(".md"))
+    if not doc:
+        return _out({"error": f"no doc '{name}'", "available": list(DOCS)})
+    if section:
+        found = docsindex.find_section(doc, section)
+        if not found:
+            return _out({"error": f"no section '{section}' in {doc.name}", "sections": [s.slug for s in doc.sections]})
+        text = "\n\n".join(s.body for s in found)
+    else:
+        text = doc.text
+    budget = MAX_CHARS - 400
+    chunk = text[offset: offset + budget]
+    end = offset + len(chunk)
+    return _out({"doc": doc.name, "title": doc.title, "section": section, "total_chars": len(text), "offset": offset,
+                 "next_offset": end if end < len(text) else None, "markdown": chunk})
+
+
+@mcp.resource("tinyolly-docs://{name}", name="tinyolly-docs", mime_type="text/markdown",
+              description="A TinyOlly documentation page (see list_docs for names)")
+def doc_resource(name: str) -> str:
+    doc = DOCS.get(name.lower().removesuffix(".md"))
+    return doc.text if doc else f"No doc '{name}'. Available: {', '.join(DOCS)}"
+
+
+# ---------- investigation skills: served only through the MCP server (tools, prompts, resources) ----------
+
+@mcp.tool()
+def list_skills() -> str:
+    """Investigation skills for TinyOlly: step-by-step playbooks (triage, trace investigation, service deep dive,
+    metrics exploration, stack troubleshooting, demo failure injection). Read one with get_skill(name)
+    before starting an investigation."""
+    if not SKILLS:
+        return _out({"error": "no skills found (TINYOLLY_SKILLS_DIR)"})
+    return _out([{"name": k.name, "when_to_use": k.description} for k in SKILLS.values()])
+
+
+def _skill(name: str):
+    return SKILLS.get(name) or SKILLS.get(f"tinyolly-{name}")
+
+
+@mcp.tool()
+def get_skill(name: str) -> str:
+    """The full text of one investigation skill (name from list_skills). Follow its steps."""
+    k = _skill(name)
+    if not k:
+        return _out({"error": f"no skill '{name}'", "available": list(SKILLS)})
+    return k.body
+
+
+@mcp.resource("tinyolly-skills://{name}", name="tinyolly-skills", mime_type="text/markdown",
+              description="A TinyOlly investigation skill (see list_skills for names)")
+def skill_resource(name: str) -> str:
+    k = _skill(name)
+    return k.body if k else f"No skill '{name}'. Available: {', '.join(SKILLS)}"
+
+
+def _register_skill_prompts() -> None:
+    """One MCP prompt per skill, so clients with a prompt picker (slash commands) can start an investigation."""
+    for skill in SKILLS.values():
+        def make(sk=skill):
+            def prompt(focus: str = "") -> str:
+                head = f"Investigate with the TinyOlly MCP tools using this skill" + (f". Focus: {focus}" if focus else ".")
+                return f"{head}\n\n{sk.body}"
+            return prompt
+        mcp.prompt(name=skill.name, description=skill.description)(make())
+
+
+_register_skill_prompts()
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="TinyOlly MCP server (read-only telemetry)")
     ap.add_argument("--http", action="store_true", help="serve streamable HTTP instead of stdio")
@@ -367,8 +563,7 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=8765)
     a = ap.parse_args()
     if a.http:
-        mcp.settings.host, mcp.settings.port = a.host, a.port
-        mcp.run(transport="streamable-http")
+        mcp.run(transport="streamable-http", host=a.host, port=a.port)
     else:
         mcp.run()
 
