@@ -24,6 +24,8 @@ export function filterSelfServices(graph) {
     };
 }
 
+const NODE_SIZE = 40;
+
 /** Graph -> Cytoscape elements. Shape = service type, colour = health. */
 export function buildElements(graph) {
     // Calculate node types (Root, Leaf, Intermediate)
@@ -81,6 +83,8 @@ export function buildElements(graph) {
                 id: node.id,
                 label: node.label,
                 shape: shape,
+                w: shape === 'hexagon' ? NODE_SIZE * 1.1547 : NODE_SIZE,   // a regular hexagon is 1.1547x wider than tall;
+                h: NODE_SIZE,                                               // a square box would squash it horizontally
                 type: type,
                 color: color,
                 metrics: metrics

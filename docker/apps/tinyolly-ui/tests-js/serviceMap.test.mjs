@@ -37,6 +37,13 @@ test('shape = type, colour = health', () => {
     assert.equal(n.leaf.color, '#ef4444');     // >5% errors
 });
 
+test('hexagons are drawn wider than tall (regular hexagon), other shapes square', () => {
+    const n = nodesOf(buildElements({ nodes: [node('a'), node('b')], edges: [{ source: 'a', target: 'b' }] }));
+    assert.equal(n.b.shape, 'hexagon');
+    assert.ok(Math.abs(n.b.w / n.b.h - 2 / Math.sqrt(3)) < 0.001);
+    assert.deepEqual([n.a.w, n.a.h], [40, 40]);
+});
+
 test('edges carry formatted p95 labels', () => {
     const els = buildElements({ nodes: [node('a'), node('b')], edges: [{ source: 'a', target: 'b', p95: 1500, value: 3 }] });
     const e = els.find(x => x.group === 'edges');
