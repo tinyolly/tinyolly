@@ -366,6 +366,16 @@ For building and publishing Docker images, see [build/README.md](build/README.md
 
 ---
 
+## MCP server (for AI agents)
+
+A read-only [MCP](https://modelcontextprotocol.io) server lets Claude Code, Zed or any MCP client query your telemetry: services, traces (large traces are summarized and paged), logs and metrics.
+
+```bash
+docker/apps/tinyolly-mcp/install.sh   # prints the `claude mcp add ...` command and the Zed config
+```
+
+Details and the tool list: [docs/mcp.md](docs/mcp.md).
+
 ## REST API & OpenAPI
 
 Full REST API with OpenAPI 3.0 documentation:
