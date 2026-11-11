@@ -55,17 +55,11 @@ brew install colima docker docker-compose docker-buildx docker-credential-helper
 
 4.  **Send Telemetry from Host Apps:**
 
-    To send telemetry from applications running on your host machine (outside Kubernetes), use `kubectl port-forward` to expose the OTel Collector ports:
-
-    Open a **new terminal window** and run:
-
-    ```bash
-    kubectl port-forward service/otel-collector 4317:4317 4318:4318
-    ```
-
-    Keep this terminal open. Now point your application's OpenTelemetry exporter to:  
+    No port-forward is needed: `scripts/kind-config.yaml` maps the collector's NodePorts to your host. Point your application's OpenTelemetry exporter to:  
     - **gRPC**: `http://localhost:4317`  
     - **HTTP**: `http://localhost:4318`  
+
+    (These host ports are shared with the Docker stack, so run one or the other at a time.)
 
     **Example environment variables:**
     ```bash
@@ -95,7 +89,7 @@ brew install colima docker docker-compose docker-buildx docker-credential-helper
 
 ## 2. Demo Applications (Optional)
 
-To see TinyOlly in action with instrumented microservices:
+To see TinyOlly in action with instrumented microservices (deploy the full core from step 1 first; the demo sends to its collector):
 
 ```bash
 cd k8s-demo
@@ -127,6 +121,9 @@ To deploy the full [OpenTelemetry Demo](https://opentelemetry.io/docs/demo/) wit
 cd k8s-otel-demo
 ./01-deploy-otel-demo-helm.sh
 ```
+
+!!! warning
+    The Helm-based OpenTelemetry Demo and the `k8s-demo-ebpf` / `k8s-ai-agent-demo` folders were converted from minikube to kind but have not been run end to end yet. The Docker versions are the tested path. For the OpenTelemetry Demo, prefer the [Docker version](otel-demo.md).
 
 This deploys all OpenTelemetry Demo services configured to send telemetry to TinyOlly's collector via HTTP on port 4318. Built-in observability tools (Jaeger, Grafana, Prometheus) are disabled.
 
@@ -208,6 +205,12 @@ service:
 ```
 
 The default configuration template (included as a ConfigMap in `k8s-core-only/tinyolly-opamp-server.yaml`) shows a complete example with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.
+
+---
+
+## Testing this setup
+
+`./scripts/test-kind.sh` (add `--demo` for the demo apps) creates a throwaway kind cluster, deploys core-only and the full core, checks the UI, OpAMP and OTLP ingestion, and deletes the cluster. It briefly stops the Docker stack because both use ports 5005/4317/4318.
 
 ---
 

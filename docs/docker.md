@@ -28,9 +28,12 @@ This starts:
 - **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)  
 - **TinyOlly UI**: `http://localhost:5005`  
 - **TinyOlly OTLP Receiver and its SQLite storage**: OTLP observability back end and storage  
-- Rebuilds images if code changes are detected  
+- Pulls images from Docker Hub (use `./01-start-core-local.sh` to build from your checkout instead)  
 
 **Open the UI:** `http://localhost:5005` (empty until you send data)
+
+!!! note
+    `01-start-core.sh` starts from a clean slate: it removes the SQLite data volume and the supervisor's cached collector config on every run. Use `docker compose -f docker-compose-tinyolly-core.yml restart` to keep data.
 
 **OpenTelemetry Collector + OpAMP Config Page:** Navigate to the "OpenTelemetry Collector + OpAMP Config" tab in the UI to view and manage collector configurations remotely. See the [OpAMP Configuration](#opamp-configuration-optional) section below for setup instructions.
 

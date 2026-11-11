@@ -127,7 +127,7 @@ Visualize metrics with automatic charting.
 </div>
 
 ### Service Catalog
-View all services with RED metrics (Rate, Errors, Duration).
+View all services with RED metrics (Rate, Errors, Duration). Click a service name for a menu that jumps to its map node, traces, spans, logs or metrics.
 
 <div align="center">
   <img src="../images/servicecatalog.png" alt="Service Catalog" width="700">
@@ -135,7 +135,7 @@ View all services with RED metrics (Rate, Errors, Duration).
 </div>
 
 ### Service Map
-Visualize service dependencies with an interactive graph.
+Visualize service dependencies with an interactive graph. Shape shows the service type and color shows health (see the legend above the map); click a node for latency and a link to the Service Catalog, and use the checkbox to hide TinyOlly's own services.
 
 <div align="center">
   <img src="../images/servicemap.png" alt="Service Map" width="700">
@@ -209,7 +209,7 @@ cd docker
 
 ### UI shows "No traces/logs/metrics"
 - Wait 30 seconds after starting demo apps
-- Check containers are running: `docker ps`
+- Check containers are running in the TinyOlly VM: `docker --context colima-tinyolly ps` (plain `docker ps` shows whichever context is active, possibly another Colima VM)
 - Check demo app logs: `docker compose -f docker-demo/docker-compose-demo.yml logs`
 
 ### Port conflicts

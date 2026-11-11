@@ -158,7 +158,7 @@ The eBPF agent is configured via environment variables in `docker-compose.yml`:
 
 ```yaml
 otel-ebpf-agent:
-  image: docker.io/otel/ebpf-instrument:main
+  image: docker.io/otel/ebpf-instrument:v1.0.0
   privileged: true
   pid: host
   environment:
@@ -183,7 +183,7 @@ spec:
       hostPID: true
       containers:
       - name: ebpf-agent
-        image: docker.io/otel/ebpf-instrument:main
+        image: docker.io/otel/ebpf-instrument:v1.0.0
         securityContext:
           privileged: true
         env:
@@ -210,7 +210,7 @@ spec:
 
 **No traces appearing?**
 - Ensure TinyOlly core is running (`docker ps | grep otel-collector`)
-- Check eBPF agent logs: `docker logs otel-ebpf-instrumentation`
+- Check eBPF agent logs: `docker logs otel-ebpf-instrumentation` (run against the `colima-tinyolly` context: `DOCKER_CONTEXT=colima-tinyolly docker logs ...`)
 - Verify the agent can access `/sys/kernel/debug`
 
 **Traces have wrong service name?**
@@ -219,8 +219,8 @@ spec:
 
 **eBPF agent won't start?**
 - Requires Linux kernel 4.4+ with eBPF support
-- On macOS, runs inside Docker's Linux VM (should work)
-- Check Docker has sufficient privileges
+- On macOS it runs inside the Colima Linux VM. This demo has not been verified on Colima's default `vz` VM type; if the agent fails to start, check its logs and whether the VM kernel exposes `/sys/kernel/debug`
+- The agent runs privileged with the host PID namespace (required for eBPF)
 
 ## Learn More
 

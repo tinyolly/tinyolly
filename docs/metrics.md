@@ -59,10 +59,8 @@ Use the buttons in the "Raw Active Series" section to export data for offline an
 
 TinyOlly includes built-in protection against cardinality explosions to prevent memory exhaustion during local development.
 
-- **Hard Limit**: 1000 unique metric names (configurable).
-- **Visual Warnings**: 
-    - ⚠️ **Yellow**: > 70% capacity
-    - 🔴 **Red**: > 90% capacity
+- **Hard Limit**: 1000 unique metric names (`MAX_METRIC_CARDINALITY`).
+- **Visual Warning**: the Metrics tab shows `count/1000`, which turns red with a ⚠️ at 80% of the limit (the display assumes the default 1000).
 - **Behavior**: Metrics exceeding the limit are dropped, and a system alert is triggered.
 
 See [Cardinality Protection](CARDINALITY-PROTECTION.md) for more details.
