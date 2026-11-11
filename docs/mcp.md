@@ -9,15 +9,27 @@ description: "Read-only MCP server so AI agents can query TinyOlly telemetry and
 
 ## Install
 
-```bash
-docker/apps/tinyolly-mcp/install.sh     # creates .venv and prints the registration command
-```
+1. Start TinyOlly (UI on `http://localhost:5005`).
+2. Run the installer. It creates a venv and prints the exact lines to copy for your client, with your paths filled in:
 
-```bash
-claude mcp add tinyolly -- /path/to/tinyolly/docker/apps/tinyolly-mcp/.venv/bin/python /path/to/tinyolly/docker/apps/tinyolly-mcp/server.py
-```
+    ```bash
+    docker/apps/tinyolly-mcp/install.sh
+    ```
 
-TinyOlly must be running (`http://localhost:5005`; override with `TINYOLLY_URL`). For HTTP instead of stdio: `python server.py --http --port 8765`, then register `http://127.0.0.1:8765/mcp` (e.g. `claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp`).
+3. Connect your client:
+
+| Client | What to do |
+|---|---|
+| **Claude Code** | Paste the `claude mcp add tinyolly -- ...` line the installer printed. |
+| **Claude Desktop** | Open `~/Library/Application Support/Claude/claude_desktop_config.json` (Settings, Developer, Edit Config opens it if your version has that menu). Paste the `"tinyolly": {...}` entry under `"mcpServers"`, then quit (Cmd+Q) and reopen Claude. |
+| **Zed** | Paste the `context_servers` entry into `~/.config/zed/settings.json`. |
+
+The client starts the server itself, so there is nothing else to run. Ask it "pretty print the service catalog" to check it works.
+
+!!! note "Why not just a URL?"
+    Claude Desktop's URL connectors are called from Anthropic's cloud, which cannot reach `localhost`. A local server is started by the client instead.
+
+**Optional:** to use a URL (Claude Code only), run `python server.py --http --port 8765` and register it with `claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp`. To point at a TinyOlly on another address, set `TINYOLLY_URL` (default `http://localhost:5005`).
 
 ## Tools
 
@@ -34,7 +46,7 @@ TinyOlly must be running (`http://localhost:5005`; override with `TINYOLLY_URL`)
 | `list_metrics` | Metric names with a search filter |
 | `query_metric` | Time series for the last N minutes, downsampled with min/max/avg/last |
 | `chart_metric` | **Image**: line chart of a metric (histograms: mean solid, p95 dashed), series labelled by what differs between them |
-| `chart_service_map` | **Image**: one service's dependencies, callers left and callees right, colored by health, edges labelled with p95 and request rate (`depth=2` for two hops) |
+| `chart_service_map` | **Image**: with no arguments, the whole service map (layers of callers to callees, unconnected services in a strip below); with `service`, one service's dependencies, callers left and callees right, colored by health, edges labelled with p95 and request rate (`depth=2` for two hops) |
 | `list_skills` | Investigation skills (playbooks): when to use each |
 | `get_skill` | The full steps of one skill |
 | `list_docs` | These documentation pages: name, title, description, section headings |
@@ -47,7 +59,9 @@ The same pages are also exposed as MCP resources: `tinyolly-docs://<name>` (for 
 
 The JSON tools are compact for agents. When you want something to show a person, pass `format="table"` (catalog, traces, spans, logs: markdown tables with health and severity icons, readable durations and times) or `format="waterfall"` on `get_trace` (indented span tree with timing bars; big traces keep every error span plus the slowest spans, up to `max_rows`). `chart_metric` and `chart_service_map` return PNG images, so the client must display image results (Claude Desktop and Claude Code do). Charts are drawn with matplotlib, which `install.sh` installs into the server's venv.
 
-Try asking: "chart http.server.duration for tinyolly-ui", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "pretty print the service catalog".
+Claude Desktop shows tool images as a small preview. Click it to enlarge, or ask for a full-size file: both chart tools take `save_to` (for example "show me the service map and save it to ~/Desktop/map.png").
+
+Try asking: "chart http.server.duration for tinyolly-ui", "show me the service map", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "pretty print the service catalog".
 
 ## Investigation skills
 

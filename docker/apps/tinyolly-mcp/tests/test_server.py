@@ -141,3 +141,10 @@ def test_unreachable_api_gives_clear_error(monkeypatch):
     monkeypatch.setattr(server, "BASE_URL", "http://127.0.0.1:9")
     with pytest.raises(RuntimeError, match="Is the stack running"):
         server._api("/api/traces")
+
+
+def test_image_result_saves_png(tmp_path):
+    out = server._image_result(b"\x89PNGdata", "cap", str(tmp_path / "sub" / "m.png"))
+    assert (tmp_path / "sub" / "m.png").read_bytes() == b"\x89PNGdata"
+    assert "Saved to" in out[1]
+    assert "Could not save" in server._image_result(b"x", "cap", "/proc/nope/x.png")[1]

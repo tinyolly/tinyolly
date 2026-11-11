@@ -390,7 +390,7 @@ For building and publishing Docker images, see [build/README.md](build/README.md
 A read-only [MCP](https://modelcontextprotocol.io) server lets Claude Code, Zed or any MCP client query your telemetry: services, traces (large traces are summarized and paged), logs and metrics, with pretty tables, a trace waterfall and charts (metric chart, single-service map), it can read TinyOlly's own docs, and it ships investigation skills (triage, trace and service deep dives, metrics, troubleshooting) served through the MCP server itself as tools, prompts and resources.
 
 ```bash
-docker/apps/tinyolly-mcp/install.sh   # prints the `claude mcp add ...` command and the Zed config
+docker/apps/tinyolly-mcp/install.sh   # prints copy-paste setup for Claude Code, Claude Desktop and Zed
 ```
 
 Details and the tool list: [docs/mcp.md](docs/mcp.md).

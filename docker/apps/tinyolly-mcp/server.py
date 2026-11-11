@@ -18,6 +18,7 @@ import json
 import os
 import time
 from collections import defaultdict
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -157,7 +158,8 @@ def list_services(format: str = "json") -> str:
 
 @mcp.tool()
 def get_service_map() -> str:
-    """Service dependency graph as compact edges: caller -> callee with call counts, plus node types."""
+    """Service dependency graph as compact edges: caller -> callee with call counts, plus node types.
+    To SHOW the map to the user, call chart_service_map (no arguments) for a picture instead of drawing it as text."""
     data = _api("/api/service-map", limit=2000) or {}
     nodes = [{"id": n["id"], "type": n.get("type")} for n in data.get("nodes", [])]
     edges = [{k: e.get(k) for k in ("source", "target", "call_count", "error_count") if k in e}
@@ -415,15 +417,26 @@ def search_spans(service: str | None = None, errors_only: bool = False, min_dura
     return _out({"matched": len(out), "returned": len(rows), "spans": rows})
 
 
-def _image_result(png: bytes, caption: str):
+def _image_result(png: bytes, caption: str, save_to: str | None = None):
+    """Image plus caption. save_to also writes the PNG to that path so the user can open it full size."""
+    if save_to:
+        try:
+            path = Path(save_to).expanduser()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(png)
+            caption += f" Saved to {path}."
+        except OSError as e:
+            caption += f" Could not save to {save_to}: {e}."
     return [Image(data=png, format="png"), caption]
 
 
 @mcp.tool()
-def chart_metric(name: str, service: str | None = None, minutes: float = 15, max_series: int = 6):
+def chart_metric(name: str, service: str | None = None, minutes: float = 15, max_series: int = 6,
+                 save_to: str | None = None):
     """Line chart (PNG image) of one metric over the last `minutes`. Gauges and sums plot their value;
     histograms plot per-datapoint mean and a p95 estimate. `service` filters on service.name; at most
-    max_series lines are drawn (<=12). Use list_metrics to find names."""
+    max_series lines are drawn (<=12). Use list_metrics to find names.
+    save_to: optional file path (e.g. ~/Desktop/chart.png) to also save the PNG so the user can open it full size."""
     end = time.time()
     params = {"name": name, "start": end - minutes * 60, "end": end}
     if service:
@@ -435,23 +448,28 @@ def chart_metric(name: str, service: str | None = None, minutes: float = 15, max
     shown = max(1, min(max_series, 12))
     png = render.metric_chart(name, d.get("unit") or "", d.get("type") or "", series, shown)
     note = f"; showing {shown} of {len(series)}" if len(series) > shown else ""
-    return _image_result(png, f"{name} ({d.get('type')}, {d.get('unit') or 'no unit'}), last {minutes:g} min, {len(series)} series{note}.")
+    return _image_result(png, f"{name} ({d.get('type')}, {d.get('unit') or 'no unit'}), last {minutes:g} min, {len(series)} series{note}.", save_to)
 
 
 @mcp.tool()
-def chart_service_map(service: str, depth: int = 1):
-    """Diagram (PNG image) of one service's dependencies: callers on the left, callees on the right, nodes
+def chart_service_map(service: str | None = None, depth: int = 1, save_to: str | None = None):
+    """Diagram (PNG image). With no service: the WHOLE service map (layers of callers -> callees, unconnected
+    services in a strip below). With a service: just its dependencies: callers on the left, callees on the right, nodes
     coloured by health (blue ok, amber some errors, red >5% errors), edges labelled with p95 latency and request
-    rate. depth=2 adds callers/callees of those. Use list_services for names."""
+    rate. depth=2 adds callers/callees of those. Use list_services for names.
+    save_to: optional file path (e.g. ~/Desktop/map.png) to also save the PNG so the user can open it full size."""
     graph = _api("/api/service-map", limit=2000) or {}
     names = {n["id"] for n in graph.get("nodes", [])}
+    if not service:
+        edges = len(graph.get("edges", []))
+        return _image_result(render.full_map_chart(graph), f"Service map: {len(names)} services, {edges} connections.", save_to)
     if service not in names:
         return _out({"error": f"service '{service}' not in the service map", "available": sorted(names)[:50]})
     g = render.ego_graph(graph, service, max(1, min(depth, 2)))
     png = render.service_map_chart(graph, service, max(1, min(depth, 2)))
     callers = sum(len(v) for c, v in g["columns"].items() if c < 0)
     callees = sum(len(v) for c, v in g["columns"].items() if c > 0)
-    return _image_result(png, f"{service}: {callers} callers, {callees} callees (depth {max(1, min(depth, 2))}).")
+    return _image_result(png, f"{service}: {callers} callers, {callees} callees (depth {max(1, min(depth, 2))}).", save_to)
 
 
 # ---------- documentation ----------

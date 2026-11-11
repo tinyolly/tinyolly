@@ -101,3 +101,12 @@ def test_chart_handles_huge_neighbourhood():
          "edges": [{"source": "hub", "target": n} for n in names]}
     png = render.service_map_chart(g, "hub")
     assert png[:8] == PNG and render.ego_graph(g, "hub")["hidden"] == {1: 50}
+
+
+def test_full_map_chart_renders_connected_and_isolated():
+    graph = {"nodes": [{"id": n, "metrics": {"span_count": 5}} for n in "abcde"],
+             "edges": [{"source": "a", "target": "b", "p95": 12, "req_rate": 2}, {"source": "b", "target": "c"},
+                       {"source": "c", "target": "a"}]}   # includes a cycle; d and e are unconnected
+    png = render.full_map_chart(graph)
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert render.full_map_chart({"nodes": [], "edges": []})[:4] == b"\x89PNG"

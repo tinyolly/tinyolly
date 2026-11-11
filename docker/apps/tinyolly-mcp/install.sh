@@ -10,6 +10,9 @@ TinyOlly MCP server ready.
 Claude Code:
   claude mcp add tinyolly -- $DIR/.venv/bin/python $DIR/server.py
 
+Claude Desktop: edit ~/Library/Application Support/Claude/claude_desktop_config.json, add under "mcpServers", then quit and reopen Claude:
+  "tinyolly": { "command": "$DIR/.venv/bin/python", "args": ["$DIR/server.py"] }
+
 Zed (~/.config/zed/settings.json):
   "context_servers": { "tinyolly": { "command": "$DIR/.venv/bin/python", "args": ["$DIR/server.py"] } }
 

@@ -194,7 +194,7 @@ def _plt():
 
 def _png(fig) -> bytes:
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=110, bbox_inches="tight", facecolor="white")
+    fig.savefig(buf, format="png", dpi=110, bbox_inches="tight", facecolor=fig.get_facecolor())
     _plt().close(fig)
     return buf.getvalue()
 
@@ -286,6 +286,98 @@ def _node_color(m: dict, isolated: bool = False) -> str:
     return COLOR_IDLE if isolated else COLOR_OK
 
 
+ROW = 1.35   # vertical spacing between nodes in the map charts
+
+
+def node_roles(graph: dict) -> dict:
+    """Same rules as the web UI's service map: shape says what the node is, colour says its health."""
+    ins: dict[str, int] = defaultdict(int)
+    outs: dict[str, int] = defaultdict(int)
+    for e in graph.get("edges", []):
+        outs[e["source"]] += 1
+        ins[e["target"]] += 1
+    roles = {}
+    for n in graph.get("nodes", []):
+        i, o = ins[n["id"]], outs[n["id"]]
+        if n.get("type") == "database":
+            roles[n["id"]] = "database"
+        elif n.get("type") == "messaging":
+            roles[n["id"]] = "messaging"
+        elif i == 0 and o == 0:
+            roles[n["id"]] = "isolated"
+        elif i == 0:
+            roles[n["id"]] = "client"
+        elif o == 0:
+            roles[n["id"]] = "external"
+        else:
+            roles[n["id"]] = "server"
+    return roles
+
+
+def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bool = False) -> None:
+    """Shape at (x, y) with the service name and error/p95 line underneath."""
+    from matplotlib.patches import Ellipse, FancyBboxPatch, Polygon, Rectangle
+    color = _node_color(m, isolated=role == "isolated")
+    kw = dict(fc=color, ec="#0f172a" if center else "none", lw=2.4 if center else 0, alpha=0.95, zorder=3)
+    hw, hh = 0.5, 0.3
+    if role == "client":
+        ax.add_patch(Polygon([(x - hw, y), (x, y + hh * 1.3), (x + hw, y), (x, y - hh * 1.3)], **kw))
+    elif role == "external":
+        w = hh * 1.1547
+        ax.add_patch(Polygon([(x - w * 1.0, y), (x - w * 0.5, y + hh), (x + w * 0.5, y + hh), (x + w * 1.0, y),
+                              (x + w * 0.5, y - hh), (x - w * 0.5, y - hh)], **kw))
+    elif role == "isolated":
+        ax.add_patch(Ellipse((x, y), hw * 1.6, hh * 2, **kw))
+    elif role == "database":
+        ax.add_patch(Rectangle((x - hw * 0.8, y - hh), hw * 1.6, hh * 2, **kw))
+        ax.add_patch(Ellipse((x, y + hh), hw * 1.6, hh * 0.7, fc=color, ec="white", lw=1.2, zorder=4))
+        ax.add_patch(Ellipse((x, y - hh), hw * 1.6, hh * 0.7, fc=color, ec="none", zorder=3))
+    elif role == "messaging":
+        k = 0.22
+        ax.add_patch(Polygon([(x - hw + k, y + hh), (x + hw + k, y + hh), (x + hw - k, y - hh), (x - hw - k, y - hh)], **kw))
+    else:
+        ax.add_patch(FancyBboxPatch((x - hw, y - hh), hw * 2, hh * 2, boxstyle="round,pad=0.02,rounding_size=0.12", **kw))
+    ax.text(x, y - 0.5, name if len(name) <= 26 else name[:25] + "…", ha="center", va="center", fontsize=9,
+            fontweight="bold" if center else "normal", color="#0f172a")
+    ax.text(x, y - 0.72, f"{m.get('error_rate', 0):g}% err · p95 {fmt_ms(m.get('duration_p95'))}", ha="center", va="center",
+            fontsize=7, color="#64748b")
+
+
+def _legend(ax, x: float, y: float) -> None:
+    items = [("client", "client (no callers)"), ("server", "service"), ("external", "external (no callees)"),
+             ("isolated", "no connections")]
+    for i, (role, text) in enumerate(items):
+        _draw_node_icon(ax, x + i * 3.0, y, role)
+        ax.text(x + i * 3.0 + 0.45, y, text, fontsize=7, va="center", color="#64748b")
+
+
+def _draw_node_icon(ax, x: float, y: float, role: str) -> None:
+    from matplotlib.patches import Ellipse, FancyBboxPatch, Polygon
+    kw = dict(fc="#2563eb" if role != "isolated" else "#94a3b8", ec="none", zorder=3)
+    r = 0.14
+    if role == "client":
+        ax.add_patch(Polygon([(x - r, y), (x, y + r), (x + r, y), (x, y - r)], **kw))
+    elif role == "external":
+        ax.add_patch(Polygon([(x - r, y), (x - r / 2, y + r), (x + r / 2, y + r), (x + r, y), (x + r / 2, y - r), (x - r / 2, y - r)], **kw))
+    elif role == "isolated":
+        ax.add_patch(Ellipse((x, y), 2 * r, 2 * r, **kw))
+    else:
+        ax.add_patch(FancyBboxPatch((x - r, y - r * 0.8), 2 * r, 1.6 * r, boxstyle="round,pad=0,rounding_size=0.05", **kw))
+
+
+def _draw_edge(ax, e: dict, pos: dict, t: float = 0.55) -> None:
+    (x1, y1), (x2, y2) = pos[e["source"]], pos[e["target"]]
+    bad = (e.get("error_count") or 0) > 0
+    color = "#ef4444" if bad else "#94a3b8"
+    ax.annotate("", xy=(x2 - 0.72, y2), xytext=(x1 + 0.72, y1), zorder=1,
+                arrowprops=dict(arrowstyle="-|>", color=color, lw=1.4 + min(2.0, (e.get("value") or e.get("call_count") or 0) ** 0.25 / 3),
+                                connectionstyle="arc3,rad=0.06", shrinkA=0, shrinkB=0))
+    if e.get("p95") is not None:
+        label = fmt_ms(e.get("p95")) + (f" · {e['req_rate']:g}/s" if e.get("req_rate") else "")
+        ax.text(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t + 0.12, label, ha="center", va="bottom", fontsize=7.5, color="#475569", zorder=5,
+                bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="#e2e8f0", lw=0.6))
+
+
 def ego_graph(graph: dict, service: str, depth: int = 1, max_per_column: int = 10) -> dict:
     """Neighbourhood of one service: columns of callers (negative) and callees (positive) up to `depth` hops."""
     edges = graph.get("edges") or []
@@ -326,30 +418,19 @@ def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
     g = ego_graph(graph, service, depth)
     cols = sorted(g["columns"])
     rows = max(len(v) for v in g["columns"].values())
-    fig, ax = plt.subplots(figsize=(3.6 * len(cols) + 1, max(3.2, 0.95 * rows + 1.4)))
+    roles = node_roles(graph)
+    fig, ax = plt.subplots(figsize=(3.6 * len(cols) + 1, max(3.6, 1.3 * rows + 2.0)))
+    fig.patch.set_facecolor("#f8fafc")
     ax.axis("off")
     pos: dict[str, tuple[float, float]] = {}
     for ci, c in enumerate(cols):
         names = g["columns"][c]
         for ri, n in enumerate(names):
-            pos[n] = (ci * 3.4, -(ri - (len(names) - 1) / 2) * 1.0)
-    for e in g["edges"]:
-        (x1, y1), (x2, y2) = pos[e["source"]], pos[e["target"]]
-        ax.annotate("", xy=(x2 - 1.05, y2), xytext=(x1 + 1.05, y1),
-                    arrowprops=dict(arrowstyle="-|>", color="#64748b", lw=1.1 + min(2.0, (e.get("value") or 0) ** 0.25 / 3),
-                                    connectionstyle="arc3,rad=0.08"))
-        label = f"{fmt_ms(e.get('p95'))} p95" + (f"\n{e.get('req_rate'):g} req/s" if e.get("req_rate") else "")
-        ax.text((x1 + x2) / 2, (y1 + y2) / 2 + 0.14, label, ha="center", va="bottom", fontsize=7, color="#475569",
-                bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.85))
+            pos[n] = (ci * 3.4, -(ri - (len(names) - 1) / 2) * ROW)
+    for i, e in enumerate(g["edges"]):
+        _draw_edge(ax, e, pos, 0.5)
     for n, (x, y) in pos.items():
-        m = (g["nodes"].get(n) or {}).get("metrics") or {}
-        center = n == service
-        ax.add_patch(FancyBboxPatch((x - 1.0, y - 0.32), 2.0, 0.64, boxstyle="round,pad=0.02,rounding_size=0.12",
-                                    fc=_node_color(m), ec="#0f172a" if center else "none", lw=2.4 if center else 0, alpha=0.95))
-        ax.text(x, y + 0.09, n if len(n) <= 24 else n[:23] + "…", ha="center", va="center", color="white", fontsize=9,
-                fontweight="bold" if center else "normal")
-        ax.text(x, y - 0.17, f"{m.get('error_rate', 0):g}% err · p95 {fmt_ms(m.get('duration_p95'))}", ha="center", va="center",
-                color="white", fontsize=7)
+        _draw_node(ax, x, y, n, (g["nodes"].get(n) or {}).get("metrics") or {}, roles.get(n, "server"), center=n == service)
     for c, k in g["hidden"].items():
         x = cols.index(c) * 3.4
         ax.text(x, min(y for (px, y) in pos.values() if px == x) - 0.75, f"+{k} more", ha="center", fontsize=8, color="#64748b")
@@ -360,4 +441,77 @@ def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
     for ci, c in enumerate(cols):
         ax.text(ci * 3.4, max(ys) + 0.75, titles.get(c, f"hop {c}"), ha="center", fontsize=8, color="#94a3b8")
     ax.set_title(f"{service}: dependencies", loc="left", fontsize=12, fontweight="bold")
+    return _png(fig)
+
+
+def full_map_chart(graph: dict) -> bytes:
+    """Whole service map: connected services in left-to-right layers (callers -> callees), unconnected ones in a compact grid below."""
+    from matplotlib.patches import FancyBboxPatch
+    plt = _plt()
+    roles = node_roles(graph)
+    nodes = {n["id"]: n for n in graph.get("nodes", [])}
+    edges = [e for e in graph.get("edges", []) if e["source"] in nodes and e["target"] in nodes and e["source"] != e["target"]]
+    linked = {e["source"] for e in edges} | {e["target"] for e in edges}
+    layer = {n: 0 for n in linked}
+    for _ in range(len(linked)):                       # longest-path layering; the pass cap stops cycles looping forever
+        changed = False
+        for e in edges:
+            if layer[e["target"]] < layer[e["source"]] + 1 and layer[e["source"]] < len(linked):
+                layer[e["target"]] = layer[e["source"]] + 1
+                changed = True
+        if not changed:
+            break
+    spans = lambda n: float(((nodes.get(n) or {}).get("metrics") or {}).get("span_count") or 0)
+    by_layer: dict[int, list[str]] = defaultdict(list)
+    for n, l in layer.items():
+        by_layer[l].append(n)
+    X = 4.2
+    rank = {n: float(i) for names in by_layer.values() for i, n in enumerate(sorted(names, key=lambda n: -spans(n)))}
+    for sweep in range(4):                              # barycentre ordering: put nodes near their neighbours to cut crossings
+        order = sorted(by_layer) if sweep % 2 == 0 else sorted(by_layer, reverse=True)
+        for l in order:
+            def bary(n):
+                nb = [rank[e["source"] if sweep % 2 == 0 else e["target"]] for e in edges
+                      if (e["target"] if sweep % 2 == 0 else e["source"]) == n]
+                return sum(nb) / len(nb) if nb else rank[n]
+            for i, n in enumerate(sorted(by_layer[l], key=lambda n: (bary(n), -spans(n)))):
+                rank[n] = float(i)
+    pos: dict[str, tuple[float, float]] = {}
+    for l, names in by_layer.items():
+        names.sort(key=lambda n: rank[n])
+        for i, n in enumerate(names):
+            pos[n] = (l * X, -(i - (len(names) - 1) / 2) * ROW)
+    ncols = (max(by_layer) + 1) if by_layer else 1
+    rows = max((len(v) for v in by_layer.values()), default=1)
+    alone = sorted((n for n in nodes if n not in linked), key=lambda n: -spans(n))
+    per_row = 4
+    alone_cols = min(per_row, len(alone))
+    width_units = max(ncols, alone_cols, 3)             # width of the drawing in column units
+    top = (rows - 1) * ROW / 2
+    strip_top = -(rows - 1) * ROW / 2 - 2.9 if linked else top
+    for i, n in enumerate(alone):
+        pos[n] = ((i % per_row) * X * 0.75, strip_top - (i // per_row) * ROW)
+    alone_rows = (len(alone) + per_row - 1) // per_row
+    fig, ax = plt.subplots(figsize=(2.9 * width_units + 0.8, 1.05 * (rows + alone_rows) + 3.0))
+    fig.patch.set_facecolor("#f8fafc")
+    ax.set_facecolor("#f8fafc")
+    ax.axis("off")
+    for i, e in enumerate(edges):
+        _draw_edge(ax, e, pos, 0.5)
+    for n, (x, y) in pos.items():
+        _draw_node(ax, x, y, n, (nodes.get(n) or {}).get("metrics") or {}, roles.get(n, "server"))
+    ys = [y for _, y in pos.values()] or [0]
+    xs = [x for x, _ in pos.values()] or [0]
+    if linked:
+        ax.text(-0.7, top + 0.95, "CALLERS  →  CALLEES", ha="left", fontsize=7.5, color="#94a3b8", fontweight="bold")
+    if alone and linked:
+        ax.plot([-0.9, max(max(xs), (width_units - 1) * X) + 0.9], [strip_top + 1.2, strip_top + 1.2], color="#e2e8f0", lw=1, zorder=0)
+        ax.text(-0.7, strip_top + 1.4, "NO CONNECTIONS", ha="left", fontsize=7.5, color="#94a3b8", fontweight="bold")
+    right = max(max(xs) + 1.2, (width_units - 1) * X + 1.2)
+    _legend(ax, -0.7, min(ys) - 1.25)
+    ax.set_xlim(-1.2, right)
+    ax.set_ylim(min(ys) - 1.7, max(ys) + 1.35)
+    errs = sum(1 for n in nodes.values() if float(((n.get("metrics") or {}).get("error_rate")) or 0) > 5)
+    ax.set_title(f"Service map  ·  {len(nodes)} services  ·  {len(edges)} connections" + (f"  ·  {errs} unhealthy" if errs else ""),
+                 loc="left", fontsize=13, fontweight="bold", color="#0f172a", pad=14)
     return _png(fig)
