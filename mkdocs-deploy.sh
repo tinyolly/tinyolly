@@ -6,4 +6,5 @@ if [ -d "$VENV_DIR" ]; then
 elif [ -d "$(dirname "${BASH_SOURCE[0]}")/.venv" ]; then
     source "$(dirname "${BASH_SOURCE[0]}")/.venv/bin/activate"
 fi
-python3 -m mkdocs gh-deploy --remote-name upstream
+# Publishes the site to the gh-pages branch of the remote (default: origin; override with REMOTE=...)
+python3 -m mkdocs gh-deploy --remote-name "${REMOTE:-origin}"

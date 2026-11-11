@@ -71,6 +71,7 @@ nav:
       - MCP Server (AI agents): mcp.md
   - Advanced:
       - Architecture: technical.md
+      - Metrics Explorer: metrics.md
       - Cardinality Protection: CARDINALITY-PROTECTION.md
       - Development & Testing: development.md
   - Licensing: licensing.md
