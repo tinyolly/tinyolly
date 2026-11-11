@@ -19,20 +19,29 @@ TinyOlly is <i>the world's first desktop observability platform</i>: a **lightwe
 Visualize and correlate logs, metrics, and traces without sending data to the cloud.  
 
 **Key Features:**
-- Full OpenTelemetry Protocol (OTLP) support with gRPC and HTTP ingestion
-- REST API with OpenAPI documentation
-- Service catalog, dependency maps, and distributed tracing
-- Per-trace service dependency map (trace map) with inferred external client detection
-- Deep linking — shareable URLs that open directly to a specific trace or span
-- Click-to-copy trace/span IDs and "Copy Link" buttons for shareable URLs
-- Cross-tab log correlation and navigation
-- Smart auto-refresh that pauses when search filters are active
-- Bounded retention (30-minute TTL by default, 256 MB database cap; both configurable)
-- Works with any OTel Collector distro
+
+*Ingest & compatibility*
+- Native OTLP over gRPC and HTTP; works with any OTel Collector distro
+- Runs on Colima (Docker and kind) on Apple Silicon, no Docker Desktop; pre-built images on Docker Hub
+- Bounded retention: 30-minute TTL and 256 MB database cap, both configurable
+
+*Explore your telemetry*
+- Service catalog with RED metrics, and an interactive service dependency map
+- Distributed trace waterfall with correlated logs and a per-trace service map
+- Metrics Explorer with cardinality analysis and raw series
+- Deep links and click-to-copy IDs: share a URL that opens straight to a trace or span
+
+*Collector control*
 - Collector presets applied from the UI via OpAMP: tail sampling, PII redaction, OTTL transforms, enrichment, metrics shaping, log dedup, derived-metric and routing connectors ([docs](docs/collector-presets.md))
+
+*AI & automation*
+- MCP server: Claude Code, Zed or any MCP client can query traces, logs and metrics, render charts, and follow built-in investigation skills ([docs](docs/mcp.md))
+- REST API with OpenAPI documentation
+
+*Demos*
 - Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags ([docs](docs/otel-demo.md))
-- Built with Python (FastAPI), SQLite, and JavaScript
-- Pre-built Docker images available on Docker Hub
+
+*Built with* Python (FastAPI), SQLite and JavaScript.
 
 **Platform Support:** Docker via Colima, Kubernetes via kind on Colima (Apple Silicon Mac)
 **Architectures:** linux/amd64, linux/arm64 (Apple Silicon)
@@ -94,9 +103,19 @@ echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.do
 ./scripts/colima-up.sh      # starts the 'tinyolly' Colima VM: 4 CPU / 4 GB by default
 ```
 
-Override VM sizing with `COLIMA_CPU`, `COLIMA_MEMORY` (GiB) and `COLIMA_DISK` (GiB). On an 8 GB Mac keep the default; on larger machines `COLIMA_MEMORY=8` is more comfortable when running demos. Only one of the Docker stack or the kind cluster should run at a time, since both bind host ports 4317/4318/5005.
+**VM sizing**
 
-**Docker contexts:** Colima creates one Docker context per profile: `colima` (the default VM) and `colima-tinyolly` (this project's VM). All TinyOlly scripts pin themselves to `colima-tinyolly` (override with `COLIMA_PROFILE`), so they work whichever context your shell has active. For your own `docker` commands against the TinyOlly stack, use `docker --context colima-tinyolly ...` or `export DOCKER_CONTEXT=colima-tinyolly`; a plain `docker` uses your active context (`docker context show`), which may be the other VM.
+- Override with `COLIMA_CPU`, `COLIMA_MEMORY` (GiB) and `COLIMA_DISK` (GiB).
+- On an 8 GB Mac, keep the default.
+- On larger machines, `COLIMA_MEMORY=8` is more comfortable for demos.
+- Run only one of the Docker stack or the kind cluster at a time; both bind host ports 4317, 4318 and 5005.
+
+**Docker contexts**
+
+- Colima creates one Docker context per profile: `colima` (the default VM) and `colima-tinyolly` (this project's VM).
+- All TinyOlly scripts pin themselves to `colima-tinyolly` (override with `COLIMA_PROFILE`), so they work whichever context your shell has active.
+- For your own `docker` commands against the TinyOlly stack, use `docker --context colima-tinyolly ...` or `export DOCKER_CONTEXT=colima-tinyolly`.
+- A plain `docker` uses your active context (`docker context show`), which may be the other VM.
 
 ## Docker Deployment
 
