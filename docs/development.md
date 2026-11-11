@@ -8,6 +8,7 @@ description: "Developer notes: pinned versions, lint, local test suites, Docker 
 - Python dependencies are locked: edit `requirements.in` in a service directory, then regenerate with
   `uv pip compile requirements.in --universal --python-version 3.13 -o requirements.txt`.
 - Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in `versions.env`; the Dockerfiles carry matching `ARG` defaults. Update both together.
+- Architecture diagram (`docs/images/architecture.png`) is generated: edit `scripts/make-architecture-diagram.py` and run `docker/apps/tinyolly-mcp/.venv/bin/python scripts/make-architecture-diagram.py` (needs matplotlib and Pillow).
 - Lint: `pip install ruff==0.17.4 && ruff check docker/apps/` (rules are in `ruff.toml`; keep the ruff version pinned, its defaults change between releases). There is no CI; run the checks locally.
 - **All local tests:** `./scripts/test-all.sh` (fast suites; `--stack` adds the e2e run against the running stack, `--kind` adds the kind smoke test, which briefly stops the compose stack). Nothing runs in CI. Docs pages need `title`/`description` front matter (the MCP server lists them). Suites: common, UI/API, receiver, MCP server, frontend JS (`node --test`), Go, collector configs, kubectl guard. Individually:
 - Tests: `cd docker/apps/tinyolly-common && pip install -r requirements-test.txt . && pytest tests`.

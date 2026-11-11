@@ -267,19 +267,25 @@ export function renderServiceMap(graph) {
                     <span>Service Catalog</span>
                 </button>
                 <div style="display: flex; gap: 8px;">
-                    <button onclick="window.viewServiceSpans('${safeLabel}');" 
-                        style="flex: 1; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s;">
+                    <button onclick="window.viewServiceTraces('${safeLabel}');"
+                        style="flex: 1; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.2s;">
+                        <span>Traces</span>
+                    </button>
+                    <button onclick="window.viewServiceSpans('${safeLabel}');"
+                        style="flex: 1; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.2s;">
                         <span>Spans</span>
                     </button>
-                    <button onclick="window.viewServiceLogs('${safeLabel}');" 
-                        style="flex: 1; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s;">
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="window.viewServiceLogs('${safeLabel}');"
+                        style="flex: 1; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.2s;">
                         <span>Logs</span>
                     </button>
+                    <button onclick="window.viewMetricsForService('${safeLabel}');"
+                        style="flex: 1; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.2s;">
+                        <span>Metrics</span>
+                    </button>
                 </div>
-                <button onclick="window.viewMetricsForService('${safeLabel}');" 
-                    style="width: 100%; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.2s;">
-                    <span>Metrics</span>
-                </button>
             </div>
         `;
 

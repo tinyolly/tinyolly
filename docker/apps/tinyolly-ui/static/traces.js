@@ -370,7 +370,12 @@ async function renderWaterfall(trace) {
     }).join('')}
             </div>
         </div>
-    ` : '';
+    ` : `
+        <div style="margin: 16px 0; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px; color: var(--text-muted);">
+            <span style="font-weight: 600; color: var(--text-main);">Correlated Logs (0)</span>
+            &nbsp;No logs carry this trace ID. Logs only correlate when the application exports them with trace context (trace_id and span_id).
+        </div>
+    `;
 
     // Build a mapping from filtered index to original allSpans index
     const filteredToOriginal = spans.map(span => allSpans.indexOf(span));
