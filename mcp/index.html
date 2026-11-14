@@ -622,6 +622,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Istio Ambient Mesh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1174,11 +1202,45 @@
 <h1 id="mcp-server-ai-agents">MCP server (AI agents)</h1>
 <p><code>docker/apps/tinyolly-mcp</code> is a small, <strong>read-only</strong> <a href="https://modelcontextprotocol.io">MCP</a> server. It lets Claude Code, Zed or any MCP client query the telemetry in your running TinyOlly (traces, spans, logs, metrics, the service catalog and the service map) and read these docs, so an agent can also answer "how do I set up / configure / use TinyOlly?". It is telemetry only: no collector config or admin operations.</p>
 <h2 id="install">Install</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker/apps/tinyolly-mcp/install.sh<span class="w">     </span><span class="c1"># creates .venv and prints the registration command</span>
+<ol>
+<li>Start TinyOlly (UI on <code>http://localhost:5005</code>).</li>
+<li>
+<p>Run the installer. It creates a venv and prints the exact lines to copy for your client, with your paths filled in:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker/apps/tinyolly-mcp/install.sh
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>tinyolly<span class="w"> </span>--<span class="w"> </span>/path/to/tinyolly/docker/apps/tinyolly-mcp/.venv/bin/python<span class="w"> </span>/path/to/tinyolly/docker/apps/tinyolly-mcp/server.py
-</code></pre></div>
-<p>TinyOlly must be running (<code>http://localhost:5005</code>; override with <code>TINYOLLY_URL</code>). For HTTP instead of stdio: <code>python server.py --http --port 8765</code>, then register <code>http://127.0.0.1:8765/mcp</code> (e.g. <code>claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp</code>).</p>
+</li>
+<li>
+<p>Connect your client:</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Client</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Claude Code</strong></td>
+<td>Paste the <code>claude mcp add tinyolly -- ...</code> line the installer printed.</td>
+</tr>
+<tr>
+<td><strong>Claude Desktop</strong></td>
+<td>Open <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> (Settings, Developer, Edit Config opens it if your version has that menu). Paste the <code>"tinyolly": {...}</code> entry under <code>"mcpServers"</code>, then quit (Cmd+Q) and reopen Claude.</td>
+</tr>
+<tr>
+<td><strong>Zed</strong></td>
+<td>Paste the <code>context_servers</code> entry into <code>~/.config/zed/settings.json</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The client starts the server itself, so there is nothing else to run. Ask it "pretty print the service catalog" to check it works.</p>
+<div class="admonition note">
+<p class="admonition-title">Why not just a URL?</p>
+<p>Claude Desktop's URL connectors are called from Anthropic's cloud, which cannot reach <code>localhost</code>. A local server is started by the client instead.</p>
+</div>
+<p><strong>Optional:</strong> to use a URL (Claude Code only), run <code>python server.py --http --port 8765</code> and register it with <code>claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp</code>. To point at a TinyOlly on another address, set <code>TINYOLLY_URL</code> (default <code>http://localhost:5005</code>).</p>
 <h2 id="tools">Tools</h2>
 <table>
 <thead>
@@ -1194,7 +1256,31 @@
 </tr>
 <tr>
 <td><code>get_service_map</code></td>
-<td>Compact caller → callee edges</td>
+<td>Compact caller → callee edges with call counts, errors and p95. With Istio: node <code>role</code> (waypoint, gateway), edge <code>mtls</code>, <code>source_kind</code> and <code>denied_count</code>; <code>merge=False</code> for the layered view. Filters for big meshes: <code>service</code>, <code>only</code> (<code>denied</code>, <code>plaintext</code>, <code>errors</code>), <code>limit</code></td>
+</tr>
+<tr>
+<td><code>get_mesh_posture</code></td>
+<td>Istio posture: mTLS coverage %, plaintext edges and denied calls</td>
+</tr>
+<tr>
+<td><code>find_denied</code>, <code>find_plaintext</code></td>
+<td>Just the denied or the non-mTLS edges</td>
+</tr>
+<tr>
+<td><code>get_edge</code></td>
+<td>One caller → callee edge in detail, with the RED numbers of both services</td>
+</tr>
+<tr>
+<td><code>get_trace_mesh</code></td>
+<td>Mesh view of a trace: proxy time per hop (mesh time), retry attempts and decoded Envoy response flags</td>
+</tr>
+<tr>
+<td><code>get_version_split</code></td>
+<td>Canary view: traffic share and error rate per destination version</td>
+</tr>
+<tr>
+<td><code>compare_windows</code></td>
+<td>What changed in the last N minutes vs the N before: new, gone, more errors, slower services</td>
 </tr>
 <tr>
 <td><code>search_traces</code></td>
@@ -1226,7 +1312,7 @@
 </tr>
 <tr>
 <td><code>query_metric</code></td>
-<td>Time series for the last N minutes, downsampled with min/max/avg/last</td>
+<td>Time series for the last N minutes, downsampled with min/max/avg/last. <code>labels</code> filters on metric attributes; <code>group_by</code> sums series per attribute value (for example <code>destination_service_name</code>)</td>
 </tr>
 <tr>
 <td><code>chart_metric</code></td>
@@ -1234,7 +1320,7 @@
 </tr>
 <tr>
 <td><code>chart_service_map</code></td>
-<td><strong>Image</strong>: one service's dependencies, callers left and callees right, colored by health, edges labelled with p95 and request rate (<code>depth=2</code> for two hops)</td>
+<td><strong>Image</strong>: with no arguments, the whole service map (layers of callers to callees, unconnected services in a strip below); with <code>service</code>, one service's dependencies, callers left and callees right, colored by health, edges labelled with p95 and request rate (<code>depth=2</code> for two hops)</td>
 </tr>
 <tr>
 <td><code>list_skills</code></td>
@@ -1261,9 +1347,10 @@
 <p>The same pages are also exposed as MCP resources: <code>tinyolly-docs://&lt;name&gt;</code> (for example <code>tinyolly-docs://quickstart</code>).</p>
 <h2 id="pretty-output-and-visuals">Pretty output and visuals</h2>
 <p>The JSON tools are compact for agents. When you want something to show a person, pass <code>format="table"</code> (catalog, traces, spans, logs: markdown tables with health and severity icons, readable durations and times) or <code>format="waterfall"</code> on <code>get_trace</code> (indented span tree with timing bars; big traces keep every error span plus the slowest spans, up to <code>max_rows</code>). <code>chart_metric</code> and <code>chart_service_map</code> return PNG images, so the client must display image results (Claude Desktop and Claude Code do). Charts are drawn with matplotlib, which <code>install.sh</code> installs into the server's venv.</p>
-<p>Try asking: "chart http.server.duration for tinyolly-ui", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "pretty print the service catalog".</p>
+<p>Claude Desktop shows tool images as a small preview. Click it to enlarge, or ask for a full-size file: both chart tools take <code>save_to</code> (for example "show me the service map and save it to ~/Desktop/map.png").</p>
+<p>Try asking: "chart http.server.duration for tinyolly-ui", "show me the service map", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "pretty print the service catalog".</p>
 <h2 id="investigation-skills">Investigation skills</h2>
-<p>Six short skills teach an agent how to investigate with these tools. They live only inside the MCP server (<code>docker/apps/tinyolly-mcp/skills/</code>); nothing is installed into Claude Code or any other client.</p>
+<p>Seven short skills teach an agent how to investigate with these tools. They live only inside the MCP server (<code>docker/apps/tinyolly-mcp/skills/</code>); nothing is installed into Claude Code or any other client.</p>
 <table>
 <thead>
 <tr>
@@ -1291,6 +1378,10 @@
 <tr>
 <td><code>tinyolly-troubleshoot-stack</code></td>
 <td>TinyOlly itself is empty or unreachable (Colima contexts, ports, retention) and setup questions</td>
+</tr>
+<tr>
+<td><code>tinyolly-mesh-investigation</code></td>
+<td>Istio mesh: mTLS posture, denied and plaintext edges, mesh time and retries in a trace, version split, what changed</td>
 </tr>
 <tr>
 <td><code>tinyolly-demo-failure-injection</code></td>
