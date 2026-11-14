@@ -8,6 +8,12 @@
             <input type="checkbox" id="map-hide-self" onchange="window.toggleHideSelfServices(this.checked)">
             Hide TinyOlly services
         </label>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+            <input type="checkbox" id="map-merge" onchange="window.toggleMergeView(this.checked)">
+            Merge proxy and app nodes
+        </label>
+        <script>document.getElementById('map-merge').checked = localStorage.getItem('tinyolly.map.merge') !== '0';</script>
+        <span id="map-posture" style="font-size: 12px; font-weight: 600; color: var(--text-muted); align-self: center;"></span>
         <script>document.getElementById('map-hide-self').checked = localStorage.getItem('tinyolly.map.hideSelf') === '1';</script>
     </div>
     <div class="map-container"
@@ -22,6 +28,12 @@
             <div style="display: flex; align-items: center; margin-bottom: 4px;"><svg width="18" height="14" viewBox="0 0 18 14" style="margin-right: 8px;"><path d="M3 3v8c0 2 12 2 12 0V3" fill="#94a3b8" stroke="#475569" stroke-width="1"/><ellipse cx="9" cy="3" rx="6" ry="2" fill="#94a3b8" stroke="#475569" stroke-width="1"/></svg><span>Database</span></div>
             <div style="display: flex; align-items: center; margin-bottom: 4px;"><svg width="18" height="14" viewBox="0 0 18 14" style="margin-right: 8px;"><polygon points="5,2 17,2 13,12 1,12" fill="#94a3b8" stroke="#475569" stroke-width="1"/></svg><span>Messaging</span></div>
             <div style="display: flex; align-items: center; margin-bottom: 4px;"><svg width="18" height="14" viewBox="0 0 18 14" style="margin-right: 8px;"><ellipse cx="9" cy="7" rx="6" ry="5" fill="#94a3b8" stroke="#475569" stroke-width="1"/></svg><span>Isolated (no connections)</span></div>
+<div style="font-weight: 600; margin: 8px 0 6px; color: #64748b;">Mesh roles</div>
+            <div style="margin-bottom: 4px;">Cut box = waypoint · Pentagon = gateway</div>
+            <div style="font-weight: 600; margin: 8px 0 6px; color: #64748b;">Edge = security</div>
+            <div style="display: flex; align-items: center; margin-bottom: 4px;"><span style="width: 14px; height: 3px; background: #16a34a; margin-right: 8px;"></span><span>mTLS</span></div>
+            <div style="display: flex; align-items: center; margin-bottom: 4px;"><span style="width: 14px; height: 0; border-top: 3px dashed #f59e0b; margin-right: 8px;"></span><span>Plaintext</span></div>
+            <div style="display: flex; align-items: center; margin-bottom: 4px;"><span style="width: 14px; height: 4px; background: #ef4444; margin-right: 8px;"></span><span>Denied</span></div>
 <div style="font-weight: 600; margin: 8px 0 6px; color: #64748b;">Color = health</div>
             <div style="display: flex; align-items: center; margin-bottom: 4px;"><span style="width: 14px; height: 10px; background: #2563eb; border-radius: 2px; margin-right: 8px;"></span><span>Healthy</span></div>
             <div style="display: flex; align-items: center; margin-bottom: 4px;"><span style="width: 14px; height: 10px; background: #f59e0b; border-radius: 2px; margin-right: 8px;"></span><span>Some errors</span></div>

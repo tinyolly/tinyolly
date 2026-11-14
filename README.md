@@ -369,6 +369,7 @@ For building and publishing Docker images, see [build/README.md](build/README.md
 - Interactive graph with zoom/pan
 - Call counts between services
 - Real-time topology updates
+- Istio service mesh support: topology from mesh metrics even with no traces (ambient ztunnel), waypoint/gateway node shapes, mTLS / plaintext / denied edge styling, an mTLS posture bar, and a Merged vs Layered view of proxy and app nodes (see [Istio ambient](docs/istio.md))
 
 ### Cardinality Protection
 - Hard limit of 1000 unique metric names (configurable via `MAX_METRIC_CARDINALITY`)
@@ -387,7 +388,7 @@ For building and publishing Docker images, see [build/README.md](build/README.md
 
 ## MCP server (for AI agents)
 
-A read-only [MCP](https://modelcontextprotocol.io) server lets Claude Code, Zed or any MCP client query your telemetry: services, traces (large traces are summarized and paged), logs and metrics, with pretty tables, a trace waterfall and charts (metric chart, single-service map), it can read TinyOlly's own docs, and it ships investigation skills (triage, trace and service deep dives, metrics, troubleshooting) served through the MCP server itself as tools, prompts and resources.
+A read-only [MCP](https://modelcontextprotocol.io) server lets Claude Code, Zed or any MCP client query your telemetry: services, traces (large traces are summarized and paged), logs and metrics, with pretty tables, a trace waterfall and charts (metric chart, service map with mTLS and denied edges), Istio mesh tools (mTLS posture, denied and plaintext edges, mesh time and retries per trace, version split, what changed), it can read TinyOlly's own docs, and it ships investigation skills (triage, trace and service deep dives, metrics, mesh investigation, troubleshooting) served through the MCP server itself as tools, prompts and resources.
 
 ```bash
 docker/apps/tinyolly-mcp/install.sh   # prints copy-paste setup for Claude Code, Claude Desktop and Zed

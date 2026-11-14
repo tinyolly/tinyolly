@@ -156,15 +156,76 @@ def list_services(format: str = "json") -> str:
     return _out(sorted(rows, key=lambda r: -(r["error_rate"] or 0)))
 
 
+_EDGE_KEYS = ("source", "target", "call_count", "value", "error_count", "p95", "req_rate", "mtls", "source_kind", "denied_count")
+
+
 @mcp.tool()
-def get_service_map() -> str:
-    """Service dependency graph as compact edges: caller -> callee with call counts, plus node types.
+def get_service_map(merge: bool = True, service: str | None = None, only: str | None = None, limit: int = 200) -> str:
+    """Service dependency graph as compact edges: caller -> callee with call counts (value), errors, p95, plus node
+    types and mesh roles (service, waypoint, gateway, ztunnel). Istio mesh fields when present: mtls (True/False),
+    source_kind (traces, metrics or traces+metrics) and denied_count. merge=False shows proxy and app as separate nodes.
+    Filters for big meshes: service (only edges touching it), only = "denied" | "plaintext" | "errors", limit (max edges,
+    busiest first; `edges_total` says how many matched).
     To SHOW the map to the user, call chart_service_map (no arguments) for a picture instead of drawing it as text."""
-    data = _api("/api/service-map", limit=2000) or {}
-    nodes = [{"id": n["id"], "type": n.get("type")} for n in data.get("nodes", [])]
-    edges = [{k: e.get(k) for k in ("source", "target", "call_count", "error_count") if k in e}
-             for e in data.get("edges", [])]
-    return _out({"nodes": nodes, "edges": edges})
+    data = _api("/api/service-map", limit=2000, merge=str(merge).lower()) or {}
+    edges = data.get("edges", [])
+    if service:
+        edges = [e for e in edges if service in (e.get("source"), e.get("target"))]
+    if only == "denied":
+        edges = [e for e in edges if (e.get("denied_count") or 0) > 0]
+    elif only == "plaintext":
+        edges = [e for e in edges if e.get("mtls") is False]
+    elif only == "errors":
+        edges = [e for e in edges if (e.get("error_count") or 0) > 0]
+    edges = sorted(edges, key=lambda e: -(e.get("value") or e.get("call_count") or 0))
+    total = len(edges)
+    edges = [{k: e[k] for k in _EDGE_KEYS if k in e and e[k] is not None} for e in edges[: max(1, min(limit, 1000))]]
+    keep = {e["source"] for e in edges} | {e["target"] for e in edges} if (service or only) else None
+    nodes = [{k: v for k, v in (("id", n["id"]), ("type", n.get("type")), ("role", n.get("role"))) if v is not None}
+             for n in data.get("nodes", []) if keep is None or n["id"] in keep]
+    out = {"nodes": nodes, "edges": edges}
+    if total > len(edges):
+        out["edges_total"] = total
+    return _out(out)
+
+
+@mcp.tool()
+def get_mesh_posture() -> str:
+    """Istio mesh security posture: mTLS coverage (mtls_pct), counts of mTLS, plaintext and unknown edges, the plaintext
+    edges themselves, and edges with denied calls (authorization policy blocks). Use to answer "is traffic encrypted?"
+    and "what was denied?"."""
+    return _out(_api("/api/mesh-posture") or {})
+
+
+@mcp.tool()
+def find_denied() -> str:
+    """Calls blocked by Istio authorization policy: list of {source, target, count} (empty if none)."""
+    return _out((_api("/api/mesh-posture") or {}).get("denied", []))
+
+
+@mcp.tool()
+def find_plaintext() -> str:
+    """Service-to-service edges NOT using mutual TLS: list of {source, target, value} (empty if all encrypted)."""
+    return _out((_api("/api/mesh-posture") or {}).get("plaintext", []))
+
+
+@mcp.tool()
+def get_edge(source: str, target: str) -> str:
+    """Drill into one caller -> callee edge: calls, errors, p95, request rate, mTLS, denied count and where the edge came
+    from (traces/metrics), plus the RED summary of both services. Use after get_service_map to explain a red or orange edge."""
+    graph = _api("/api/service-map", limit=2000) or {}
+    edge = next((e for e in graph.get("edges", []) if e.get("source") == source and e.get("target") == target), None)
+    if not edge:
+        near = [f"{e['source']} -> {e['target']}" for e in graph.get("edges", []) if source in (e.get("source"), e.get("target"))
+                or target in (e.get("source"), e.get("target"))]
+        return _out({"error": f"no edge {source} -> {target}", "edges_touching_these_services": near[:20]})
+    catalog = {c["name"]: c for c in (_api("/api/service-catalog") or [])}
+
+    def red(name):
+        c = catalog.get(name) or {}
+        return {"rate": c.get("rate"), "error_rate": c.get("error_rate"), "p95": c.get("duration_p95")}
+    return _out({"edge": {k: edge[k] for k in _EDGE_KEYS if k in edge and edge[k] is not None},
+                 "source": {"service": source, **red(source)}, "target": {"service": target, **red(target)}})
 
 
 # ---------- traces ----------
@@ -203,9 +264,84 @@ def search_traces(service: str | None = None, errors_only: bool = False,
     return _out({"matched": len(out), "showing": len(shown), "traces": shown})
 
 
+def _p95(values: list[float]) -> float:
+    if not values:
+        return 0
+    sv = sorted(values)
+    return sv[min(len(sv) - 1, int(len(sv) * 0.95))]
+
+
+@mcp.tool()
+def compare_windows(minutes: float = 5, service: str | None = None) -> str:
+    """What changed in the last few minutes: per-service trace/error/p95 comparison between the last `minutes` and the
+    `minutes` before, flagging new, gone, errors_up, slower, errors_down or steady services (changed first)."""
+    now_ns = int(time.time() * 1e9)
+    w = minutes * 60e9
+    rows = _api("/api/traces", limit=5000) or []
+    cur: dict[str, list[dict]] = {}
+    prev: dict[str, list[dict]] = {}
+    for t in rows:
+        if service and t.get("service_name") != service:
+            continue
+        st = t.get("start_time")
+        if st is None:
+            continue
+        st = int(st)
+        svc = t.get("service_name") or "?"
+        if now_ns - w < st <= now_ns:
+            cur.setdefault(svc, []).append(t)
+        elif now_ns - 2 * w < st <= now_ns - w:
+            prev.setdefault(svc, []).append(t)
+
+    def stats(bucket: dict[str, list[dict]], svc: str) -> tuple[int, int, float]:
+        ts = bucket.get(svc, [])
+        return len(ts), sum(1 for t in ts if t.get("has_error")), _p95([t.get("duration_ms") or 0 for t in ts])
+
+    order = {"new": 0, "gone": 1, "errors_up": 2, "slower": 3, "errors_down": 4, "steady": 5}
+    out = []
+    for svc in set(cur) | set(prev):
+        tn, en, pn = stats(cur, svc)
+        tp, ep, pp = stats(prev, svc)
+        if tp == 0:
+            change = "new"
+        elif tn == 0:
+            change = "gone"
+        elif en > ep:
+            change = "errors_up"
+        elif pp > 0 and pn >= 1.5 * pp:
+            change = "slower"
+        elif en < ep:
+            change = "errors_down"
+        else:
+            change = "steady"
+        out.append({"service": svc, "traces_now": tn, "traces_prev": tp,
+                    "errors_now": en, "errors_prev": ep, "p95_now": pn, "p95_prev": pp, "change": change})
+    out.sort(key=lambda r: (order[r["change"]], -r["traces_now"]))
+    return _out({"window_minutes": minutes, "services": out})
+
+
 def _fetch_trace(trace_id: str) -> list[dict] | None:
     d = _api(f"/api/traces/{trace_id}")
     return None if d is None else d.get("spans", [])
+
+
+_PROXY_FLAGS = {
+    "UH": "no healthy upstream",
+    "UF": "upstream connection failure",
+    "UC": "upstream connection termination",
+    "UT": "upstream request timeout",
+    "NR": "no route configured",
+    "URX": "retry limit exceeded",
+    "DC": "downstream connection termination",
+    "RL": "rate limited",
+    "UAEX": "unauthorized by external authorization",
+    "UR": "upstream remote reset",
+    "LR": "local reset",
+    "DI": "delay injected",
+    "FI": "fault injected",
+    "IH": "invalid header",
+    "SI": "stream idle timeout",
+}
 
 
 @mcp.tool()
@@ -260,6 +396,68 @@ def get_trace(trace_id: str, slowest: int = 10, format: str = "json", max_rows: 
         "error_spans_omitted": max(0, len(errors) - 10),
         "slowest_spans": [_span_row(s) for s in ranked],
         "next": "get_trace_spans(trace_id, offset, limit, service?, errors_only?) to page all spans; get_span for full attributes.",
+    })
+
+
+@mcp.tool()
+def get_trace_mesh(trace_id: str) -> str:
+    """The service-mesh part of a trace: time spent in proxies (waypoint/gateway), retry attempts per URL, and
+    decoded Envoy response flags. Use to answer "why was this request slow in the mesh" or "were there retries"."""
+    spans = _fetch_trace(trace_id)
+    if spans is None:
+        return _out({"error": f"trace {trace_id} not found"})
+    children: dict[str, list[dict]] = defaultdict(list)
+    for s in spans:
+        p = s.get("parentSpanId")
+        if p:
+            children[p].append(s)
+    proxy_spans = [s for s in spans if _attrs(s, full=True).get("component") == "proxy"]
+    if not proxy_spans:
+        return _out({"trace_id": trace_id, "proxy_spans": 0, "total_mesh_ms": 0, "retries": [], "hops": [],
+                     "note": "no proxy spans in this trace (no waypoint/gateway tracing enabled)"})
+    attempts: dict[tuple, int] = defaultdict(int)
+    for s in proxy_spans:
+        a = _attrs(s, full=True)
+        attempts[(s.get("parentSpanId"), a.get("http.url"))] += 1
+    hops = []
+    for s in proxy_spans:
+        a = _attrs(s, full=True)
+        proxy_ms = _ms(s)
+        app_child = None
+        for c in children.get(s["spanId"], []):
+            if _attrs(c, full=True).get("component") == "proxy":
+                continue
+            if app_child is None or _ms(c) > _ms(app_child):
+                app_child = c
+        app_ms = _ms(app_child) if app_child is not None else None
+        mesh_ms = max(0.0, proxy_ms - app_ms) if app_child is not None else proxy_ms
+        raw_flags = a.get("response_flags") or ""
+        flags = [{"code": code, "meaning": _PROXY_FLAGS.get(code, "unknown flag")}
+                 for code in raw_flags.split(",") if code and code != "-"]
+        hops.append({
+            "proxy": s.get("serviceName"),
+            "url": a.get("http.url"),
+            "status": a.get("http.status_code"),
+            "proxy_ms": round(proxy_ms, 2),
+            "app_service": app_child.get("serviceName") if app_child is not None else None,
+            "app_ms": round(app_ms, 2) if app_ms is not None else None,
+            "mesh_ms": round(mesh_ms, 2),
+            "attempts": attempts[(s.get("parentSpanId"), a.get("http.url"))],
+            "flags": flags,
+        })
+    hops.sort(key=lambda h: h["mesh_ms"], reverse=True)
+    retries = []
+    seen = set()
+    for h in hops:
+        if h["attempts"] > 1 and h["url"] not in seen:
+            seen.add(h["url"])
+            retries.append({"url": h["url"], "attempts": h["attempts"]})
+    return _out({
+        "trace_id": trace_id,
+        "proxy_spans": len(proxy_spans),
+        "total_mesh_ms": round(sum(h["mesh_ms"] for h in hops), 2),
+        "retries": retries,
+        "hops": hops[:30],
     })
 
 
@@ -356,16 +554,43 @@ def list_metrics(search: str | None = None, limit: int = 50) -> str:
 
 @mcp.tool()
 def query_metric(name: str, service: str | None = None, minutes: float = 10,
-                 max_series: int = 10, max_points: int = 30) -> str:
+                 max_series: int = 10, max_points: int = 30,
+                 labels: dict[str, str] | None = None, group_by: str | None = None) -> str:
     """Time series for a metric over the last `minutes`, downsampled to <= max_points per series
-    (plus min/max/avg/last) and capped at max_series series. `service` filters on service.name."""
+    (plus min/max/avg/last) and capped at max_series series. `service` filters on service.name.
+    `labels` filters on metric attributes (each key/value sent as attribute.<key>=<value>).
+    `group_by` aggregates the series by one attribute: instead of per-series points it returns
+    per-label-value groups with series_count, last_sum and delta_sum (largest delta first, missing
+    label last), capped at max_series groups."""
     end = time.time()
     params = {"name": name, "start": end - minutes * 60, "end": end}
     if service:
         params["resource.service.name"] = service
+    if labels:
+        for k, v in labels.items():
+            params[f"attribute.{k}"] = v
     d = _api("/api/metrics/query", **params)
     if not d or not d.get("series"):
         return _out({"name": name, "series": [], "note": "no data (check name with list_metrics)"})
+    if group_by:
+        groups: dict[Any, dict] = {}
+        for s in d["series"]:
+            key = (s.get("attributes") or {}).get(group_by)
+            pts = [p["value"] for p in s.get("datapoints", []) if p.get("value") is not None]
+            if not pts:
+                continue
+            g = groups.setdefault(key, {"value": key, "series_count": 0, "last_sum": 0.0, "delta_sum": 0.0})
+            g["series_count"] += 1
+            g["last_sum"] += pts[-1]
+            g["delta_sum"] += pts[-1] - pts[0]
+        ordered = sorted(groups.values(), key=lambda g: (g["value"] is None, -g["delta_sum"]))
+        cap = max(1, min(max_series, 50))
+        return _out({"name": d.get("name"), "type": d.get("type"), "unit": d.get("unit"),
+                     "group_by": group_by, "series_total": len(d["series"]),
+                     "groups_total": len(ordered),
+                     "groups": [{"value": g["value"], "series_count": g["series_count"],
+                                "last_sum": round(g["last_sum"], 6), "delta_sum": round(g["delta_sum"], 6)}
+                               for g in ordered[:cap]]})
     max_points = max(2, min(max_points, 200))
     series = []
     for s in d["series"][: max(1, min(max_series, 50))]:
@@ -387,6 +612,49 @@ def query_metric(name: str, service: str | None = None, minutes: float = 10,
         })
     return _out({"name": d.get("name"), "type": d.get("type"), "unit": d.get("unit"),
                  "series_total": len(d["series"]), "series": series})
+
+
+@mcp.tool()
+def get_version_split(service: str, minutes: float = 10) -> str:
+    """Canary / version traffic split and error rate per version for a service, from istio_requests_total."""
+    end = time.time()
+    d = _api("/api/metrics/query", name="istio_requests_total", start=end - minutes * 60, end=end,
+             **{"attribute.destination_service_name": service})
+    series = (d or {}).get("series") or []
+    if not series:
+        return _out({"service": service, "minutes": minutes, "total_requests": 0, "versions": [],
+                     "note": "no istio_requests_total data for this service (is the mesh metrics collector running?)"})
+    by_version: dict[str, dict] = {}
+    for s in series:
+        pts = [p["value"] for p in s.get("datapoints", []) if p.get("value") is not None]
+        if not pts:
+            continue
+        delta = max(0, pts[-1] - pts[0])
+        if delta == 0:
+            continue
+        attrs = s.get("attributes") or {}
+        version = attrs.get("destination_version") or "unknown"
+        is_error = str(attrs.get("response_code", "")).startswith("5")
+        g = by_version.setdefault(version, {"requests": 0, "errors": 0})
+        g["requests"] += delta
+        if is_error:
+            g["errors"] += delta
+    if not by_version:
+        return _out({"service": service, "minutes": minutes, "total_requests": 0, "versions": [],
+                     "note": "no istio_requests_total data for this service (is the mesh metrics collector running?)"})
+    total = sum(g["requests"] for g in by_version.values())
+    versions = []
+    for version, g in sorted(by_version.items(), key=lambda kv: -kv[1]["requests"]):
+        req = int(g["requests"])
+        err = int(g["errors"])
+        versions.append({
+            "version": version,
+            "requests": req,
+            "share_pct": round(req / total * 100, 1) if total else 0.0,
+            "errors": err,
+            "error_rate_pct": round(err / req * 100, 1) if req else 0.0,
+        })
+    return _out({"service": service, "minutes": minutes, "total_requests": int(total), "versions": versions})
 
 
 # ---------- spans, visuals ----------
@@ -462,7 +730,9 @@ def chart_service_map(service: str | None = None, depth: int = 1, save_to: str |
     names = {n["id"] for n in graph.get("nodes", [])}
     if not service:
         edges = len(graph.get("edges", []))
-        return _image_result(render.full_map_chart(graph), f"Service map: {len(names)} services, {edges} connections.", save_to)
+        posture = render.posture_line(graph)
+        return _image_result(render.full_map_chart(graph), f"Service map: {len(names)} services, {edges} connections."
+                             + (f" Mesh: {posture}." if posture else ""), save_to)
     if service not in names:
         return _out({"error": f"service '{service}' not in the service map", "available": sorted(names)[:50]})
     g = render.ego_graph(graph, service, max(1, min(depth, 2)))

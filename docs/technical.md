@@ -45,7 +45,7 @@ TinyOlly is **fully OpenTelemetry-native**:
 - **Correlated Logs**: Trace detail view shows correlated logs inline — click any log row to navigate to the Logs tab filtered by trace ID  
 - **Cross-Tab Navigation**: Click trace/span IDs in logs to jump to the corresponding trace or span view  
 - **Service Catalog**: RED metrics; clicking a service name opens a menu (Service map, Traces, Spans, Logs, Metrics) filtered to that service  
-- **Service Map**: Cytoscape.js dependency graph laid out left-to-right (dagre), sized to always fit the window. Shape = service type (server, client, external, database, messaging, isolated), color = health (blue healthy, amber some errors, red >5% errors). Isolated services sit in a grid to the right; an option hides TinyOlly's own services. Selecting a node shows P50/P95/P99 latency and rate with a link back to the catalog  
+- **Service Map**: Cytoscape.js dependency graph laid out left-to-right (dagre), sized to always fit the window. Shape = service type (server, client, external, database, messaging, isolated), color = health (blue healthy, amber some errors, red >5% errors). Isolated services sit in a grid to the right; an option hides TinyOlly's own services. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), waypoint and gateway nodes get their own shapes, and a checkbox merges proxy and app nodes; see [Istio Ambient Mesh](istio.md). Selecting a node shows P50/P95/P99 latency and rate with a link back to the catalog  
 - **Smart Auto-Refresh**: 5-second polling pauses automatically when a search filter is active, preventing result disruption  
 - **Scrollable Lists**: Trace, span, and log lists support scrolling with sticky headers for large datasets
 
@@ -53,7 +53,7 @@ TinyOlly is **fully OpenTelemetry-native**:
 
 ## MCP Server
 
-`docker/apps/tinyolly-mcp` is a read-only MCP server over the REST API (traces, spans, logs, metrics, service catalog/map) that also serves these docs (`list_docs`, `search_docs`, `read_doc`) renders pretty tables, a trace waterfall and PNG charts (metrics, single-service map), and ships investigation skills (`skills/`) that it serves as MCP tools, prompts and resources. Every response is size-bounded; large traces are summarized and paged. See the [MCP guide](mcp.md).
+`docker/apps/tinyolly-mcp` is a read-only MCP server over the REST API (traces, spans, logs, metrics, service catalog/map) that also serves these docs (`list_docs`, `search_docs`, `read_doc`) renders pretty tables, a trace waterfall and PNG charts (metrics, service map with mesh styling), Istio mesh tools (posture, denied and plaintext edges, per-trace mesh time and retries, version split, what changed), and ships investigation skills (`skills/`) that it serves as MCP tools, prompts and resources. Every response is size-bounded; large traces are summarized and paged. See the [MCP guide](mcp.md).
 
 ---
 

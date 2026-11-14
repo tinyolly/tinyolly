@@ -23,6 +23,7 @@ router = APIRouter(prefix="/api", tags=["Services"])
 )
 async def get_service_map(
     limit: int = Query(default=500, le=5000, description="Maximum number of traces to analyze (max 5000)"),
+    merge: bool = Query(default=True, description="Merge `.namespace` proxy/app identities into one node (false for a layered view)"),
     storage: Storage = Depends(get_storage)
 ):
     """
@@ -34,8 +35,27 @@ async def get_service_map(
     
     Perfect for visualizing microservice architectures and understanding dependencies.
     """
-    graph = await storage.get_service_graph(limit)
+    graph = await storage.get_service_graph(limit, merge=merge)
     return graph
+
+
+@router.get(
+    '/mesh-posture',
+    response_model=Dict[str, Any],
+    operation_id="get_mesh_posture",
+    summary="Get mesh posture summary",
+    responses={
+        200: {"description": "Mesh posture: mTLS coverage, plaintext edges, and denied edges"}
+    }
+)
+async def get_mesh_posture(storage: Storage = Depends(get_storage)):
+    """
+    Get a mesh posture summary computed from the merged service graph.
+
+    Returns mTLS coverage (mtls_pct), the list of plaintext edges, and the
+    list of edges with denied (403) traffic.
+    """
+    return await storage.get_mesh_posture()
 
 
 @router.get(

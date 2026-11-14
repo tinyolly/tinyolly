@@ -66,6 +66,7 @@ nav:
       - OpenTelemetry Demo (Astronomy Shop): otel-demo.md
       - eBPF Zero-Code Tracing: ebpf.md
       - AI Agent with Ollama: ai-agent.md
+      - Istio Ambient Mesh: istio.md
   - API Reference:
       - REST API & Examples: api.md
       - MCP Server (AI agents): mcp.md

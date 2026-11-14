@@ -16,6 +16,13 @@ echo "=================================================="
 
 # Build on Colima docker, then load into the kind cluster (only for UI)
 # Using --no-cache to ensure latest changes are picked up
+# The shared tinyolly_common package ships in the python-base image, so rebuild it first or backend changes
+# (storage, graph, API helpers) would not reach the UI image.
+echo "Building tinyolly-python-base:latest..."
+docker build -t tinyolly/python-base:latest \
+  -f ../docker/dockerfiles/Dockerfile.tinyolly-python-base \
+  ../docker/ || { echo "✗ Failed to build python-base image"; exit 1; }
+
 echo "Building tinyolly-ui:latest..."
 docker build --no-cache -t tinyolly/ui:latest \
   -f ../docker/dockerfiles/Dockerfile.tinyolly-ui \

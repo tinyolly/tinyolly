@@ -104,6 +104,46 @@ def test_list_services_and_map(api):
     assert m["nodes"] == [{"id": "a", "type": "service"}] and m["edges"] == [{"source": "a", "target": "b", "call_count": 4}]
 
 
+def test_service_map_mesh_fields_and_posture(api):
+    api["/api/service-map"] = {"nodes": [{"id": "wp", "type": "service", "role": "waypoint"}],
+                               "edges": [{"source": "a", "target": "wp", "value": 9, "mtls": True, "source_kind": "metrics",
+                                          "denied_count": 2, "p95": 0, "extra": 1}]}
+    m = call(server.get_service_map)
+    assert m["nodes"] == [{"id": "wp", "type": "service", "role": "waypoint"}]
+    assert m["edges"] == [{"source": "a", "target": "wp", "value": 9, "p95": 0, "mtls": True,
+                           "source_kind": "metrics", "denied_count": 2}]
+    api["/api/mesh-posture"] = {"mtls_pct": 50.0, "plaintext": [], "denied": []}
+    assert call(server.get_mesh_posture)["mtls_pct"] == 50.0
+
+
+def test_get_service_map_filters_and_limit(api):
+    api["/api/service-map"] = {"nodes": [{"id": n, "type": "service"} for n in "abcd"], "edges": [
+        {"source": "a", "target": "b", "value": 5, "mtls": True},
+        {"source": "b", "target": "c", "value": 9, "mtls": False},
+        {"source": "c", "target": "d", "value": 1, "mtls": True, "denied_count": 3, "error_count": 1}]}
+    assert [e["target"] for e in call(server.get_service_map)["edges"]] == ["c", "b", "d"]       # busiest first
+    assert [e["target"] for e in call(server.get_service_map, service="b")["edges"]] == ["c", "b"]
+    d = call(server.get_service_map, only="plaintext")
+    assert [e["source"] for e in d["edges"]] == ["b"] and {n["id"] for n in d["nodes"]} == {"b", "c"}
+    assert [e["source"] for e in call(server.get_service_map, only="denied")["edges"]] == ["c"]
+    assert len(call(server.get_service_map, only="errors")["edges"]) == 1
+    cut = call(server.get_service_map, limit=1)
+    assert len(cut["edges"]) == 1 and cut["edges_total"] == 3
+
+
+def test_find_denied_plaintext_and_get_edge(api):
+    api["/api/mesh-posture"] = {"denied": [{"source": "i", "target": "cart", "count": 5}],
+                                "plaintext": [{"source": "a", "target": "x", "value": 1}]}
+    assert call(server.find_denied) == [{"source": "i", "target": "cart", "count": 5}]
+    assert call(server.find_plaintext)[0]["target"] == "x"
+    api["/api/service-map"] = {"nodes": [], "edges": [{"source": "a", "target": "b", "value": 7, "mtls": False, "error_count": 1}]}
+    api["/api/service-catalog"] = [{"name": "a", "rate": 2, "error_rate": 0, "duration_p95": 3}, {"name": "b", "error_rate": 9}]
+    d = call(server.get_edge, "a", "b")
+    assert d["edge"]["mtls"] is False and d["source"]["rate"] == 2 and d["target"]["error_rate"] == 9
+    miss = call(server.get_edge, "a", "zzz")
+    assert "no edge" in miss["error"] and miss["edges_touching_these_services"] == ["a -> b"]
+
+
 def test_query_logs_filters_and_truncates(api):
     logs = [{"timestamp": i, "severity": "error" if i % 2 else "info", "service_name": "cart", "message": "m" * 1000 if i == 5 else f"hello {i}",
              "trace_id": "", "span_id": ""} for i in range(1, 21)]
@@ -148,3 +188,138 @@ def test_image_result_saves_png(tmp_path):
     assert (tmp_path / "sub" / "m.png").read_bytes() == b"\x89PNGdata"
     assert "Saved to" in out[1]
     assert "Could not save" in server._image_result(b"x", "cap", "/proc/nope/x.png")[1]
+
+
+def _mseries(**attrs):
+    first, last = attrs.pop("first"), attrs.pop("last")
+    return {"resource": {"service.name": "ztunnel"}, "attributes": attrs,
+            "datapoints": [{"timestamp": 1.0, "value": first}, {"timestamp": 2.0, "value": last}]}
+
+
+def test_query_metric_label_filter_is_sent_as_attribute_params(api):
+    seen = {}
+
+    def fake(**params):
+        seen.update(params)
+        return {"name": "m", "series": [_mseries(code="200", first=1, last=2)]}
+    api["/api/metrics/query"] = fake
+    call(server.query_metric, "m", labels={"response_code": "403", "reporter": "waypoint"})
+    assert seen["attribute.response_code"] == "403" and seen["attribute.reporter"] == "waypoint"
+
+
+def test_query_metric_group_by_sums_series_per_label_value(api):
+    api["/api/metrics/query"] = {"name": "reqs", "type": "sum", "unit": "1", "series": [
+        _mseries(dest="cart", code="200", first=0, last=10), _mseries(dest="cart", code="500", first=5, last=8),
+        _mseries(dest="ad", code="200", first=0, last=100), _mseries(code="200", first=0, last=1)]}
+    d = call(server.query_metric, "reqs", group_by="dest")
+    assert d["group_by"] == "dest" and d["series_total"] == 4
+    assert [g["value"] for g in d["groups"]] == ["ad", "cart", None]          # largest delta first; missing label last
+    cart = d["groups"][1]
+    assert cart["series_count"] == 2 and cart["last_sum"] == 18 and cart["delta_sum"] == 13
+    assert "series" not in d
+
+
+def test_query_metric_group_by_respects_max_series(api):
+    api["/api/metrics/query"] = {"name": "m", "series": [_mseries(k=str(i), first=0, last=i) for i in range(10)]}
+    d = call(server.query_metric, "m", group_by="k", max_series=3)
+    assert len(d["groups"]) == 3 and d["groups_total"] == 10
+
+
+NOW = 1_000_000.0           # seconds; trace start_time is in nanoseconds
+MIN = 60 * 10**9
+
+
+def _tr(svc, minutes_ago, ms=10, error=False):
+    return {"trace_id": "t", "service_name": svc, "duration_ms": ms, "has_error": error,
+            "start_time": int(NOW * 1e9 - minutes_ago * MIN)}
+
+
+def test_compare_windows_flags_what_changed(api, monkeypatch):
+    monkeypatch.setattr(server.time, "time", lambda: NOW)
+    api["/api/traces"] = (
+        [_tr("steady", 1), _tr("steady", 2), _tr("steady", 6), _tr("steady", 7)]
+        + [_tr("fresh", 1)]                                                    # only in the current window
+        + [_tr("dead", 7), _tr("dead", 8)]                                     # only in the previous window
+        + [_tr("bad", 1, error=True), _tr("bad", 2, error=True), _tr("bad", 6), _tr("bad", 7)]
+        + [_tr("slow", 1, ms=300), _tr("slow", 7, ms=100)]
+        + [_tr("old", 30)])                                                    # outside both windows
+    d = call(server.compare_windows, minutes=5)
+    by = {s["service"]: s for s in d["services"]}
+    assert d["window_minutes"] == 5 and "old" not in by
+    assert by["fresh"]["change"] == "new" and by["dead"]["change"] == "gone"
+    assert by["bad"]["change"] == "errors_up" and (by["bad"]["errors_now"], by["bad"]["errors_prev"]) == (2, 0)
+    assert by["slow"]["change"] == "slower" and (by["slow"]["p95_now"], by["slow"]["p95_prev"]) == (300, 100)
+    assert by["steady"]["change"] == "steady" and by["steady"]["traces_now"] == 2 and by["steady"]["traces_prev"] == 2
+    assert d["services"][-1]["service"] == "steady"                            # changed services first
+
+
+def test_compare_windows_service_filter_and_errors_down(api, monkeypatch):
+    monkeypatch.setattr(server.time, "time", lambda: NOW)
+    api["/api/traces"] = [_tr("a", 1), _tr("a", 7, error=True), _tr("b", 1)]
+    d = call(server.compare_windows, minutes=5, service="a")
+    assert [s["service"] for s in d["services"]] == ["a"] and d["services"][0]["change"] == "errors_down"
+
+
+def _attr(**kv):
+    return [{"key": k, "value": {"stringValue": str(v)}} for k, v in kv.items()]
+
+
+def _proxy(i, parent, ms, flags="-", status="200", url="http://cart:7070/Get"):
+    return span(i, parent=parent, service="waypoint.shop", dur_ms=ms,
+                attrs=_attr(component="proxy", response_flags=flags, **{"http.status_code": status, "http.url": url}))
+
+
+def test_get_trace_mesh_computes_mesh_time_retries_and_flags(api):
+    spans = [span(1, service="frontend", dur_ms=100),
+             _proxy(2, 1, 40),                                   # healthy hop: 40 ms in the proxy, app took 30
+             span(3, parent=2, service="cart", dur_ms=30),
+             _proxy(4, 1, 5, flags="UF", status="503", url="http://pay:80/Charge"),     # failing hop, three attempts
+             _proxy(5, 1, 5, flags="UF", status="503", url="http://pay:80/Charge"),
+             _proxy(6, 1, 5, flags="URX,UF", status="503", url="http://pay:80/Charge")]
+    api[f"/api/traces/{T}"] = {"trace_id": T, "spans": spans}
+    d = call(server.get_trace_mesh, T)
+    assert d["proxy_spans"] == 4 and d["total_mesh_ms"] == 25.0          # 10 (cart hop) + 5 * 3 (no app child: whole span)
+    cart = next(h for h in d["hops"] if h["app_service"] == "cart")
+    assert (cart["proxy_ms"], cart["app_ms"], cart["mesh_ms"], cart["attempts"]) == (40, 30, 10, 1)
+    pay = [h for h in d["hops"] if h["url"] == "http://pay:80/Charge"]
+    assert len(pay) == 3 and all(h["attempts"] == 3 for h in pay) and pay[0]["app_service"] is None
+    assert d["retries"] == [{"url": "http://pay:80/Charge", "attempts": 3}]
+    flags = {f["code"]: f["meaning"] for h in d["hops"] for f in h["flags"]}
+    assert flags["UF"] == "upstream connection failure" and flags["URX"] == "retry limit exceeded"
+    assert d["hops"][0]["mesh_ms"] >= d["hops"][-1]["mesh_ms"]           # biggest mesh time first
+
+
+def test_get_trace_mesh_without_proxy_spans(api):
+    api[f"/api/traces/{T}"] = {"trace_id": T, "spans": [span(1, service="a"), span(2, parent=1, service="b")]}
+    d = call(server.get_trace_mesh, T)
+    assert d["proxy_spans"] == 0 and d["hops"] == [] and "no proxy spans" in d["note"]
+
+
+def _vs(version, code, first, last, svc="cart"):
+    return {"resource": {"service.name": "ztunnel"},
+            "attributes": {"destination_service_name": svc, "destination_version": version, "response_code": code},
+            "datapoints": [{"timestamp": 1.0, "value": first}, {"timestamp": 2.0, "value": last}]}
+
+
+def test_get_version_split_shares_and_error_rates(api):
+    seen = {}
+
+    def fake(**params):
+        seen.update(params)
+        return {"name": "istio_requests_total", "series": [
+            _vs("v1", "200", 0, 70), _vs("v1", "500", 0, 10),          # v1: 80 requests, 10 errors
+            _vs("v2", "200", 5, 25),                                   # v2: 20 requests, no errors
+            _vs("", "200", 0, 0)]}                                     # no traffic: dropped
+    api["/api/metrics/query"] = fake
+    d = call(server.get_version_split, "cart", minutes=15)
+    assert seen["name"] == "istio_requests_total" and seen["attribute.destination_service_name"] == "cart"
+    assert d["service"] == "cart" and d["total_requests"] == 100
+    v1, v2 = d["versions"]
+    assert (v1["version"], v1["requests"], v1["share_pct"], v1["errors"], v1["error_rate_pct"]) == ("v1", 80, 80.0, 10, 12.5)
+    assert (v2["version"], v2["requests"], v2["share_pct"], v2["errors"], v2["error_rate_pct"]) == ("v2", 20, 20.0, 0, 0.0)
+
+
+def test_get_version_split_no_data(api):
+    api["/api/metrics/query"] = {"name": "istio_requests_total", "series": []}
+    d = call(server.get_version_split, "ghost")
+    assert d["versions"] == [] and "no istio_requests_total data" in d["note"]

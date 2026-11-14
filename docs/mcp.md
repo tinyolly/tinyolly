@@ -36,7 +36,13 @@ The client starts the server itself, so there is nothing else to run. Ask it "pr
 | Tool | What it does |
 |---|---|
 | `list_services` | Service catalog with rate, error rate, p50/p95/p99, worst errors first (`format="table"` for a pretty table) |
-| `get_service_map` | Compact caller → callee edges |
+| `get_service_map` | Compact caller → callee edges with call counts, errors and p95. With Istio: node `role` (waypoint, gateway), edge `mtls`, `source_kind` and `denied_count`; `merge=False` for the layered view. Filters for big meshes: `service`, `only` (`denied`, `plaintext`, `errors`), `limit` |
+| `get_mesh_posture` | Istio posture: mTLS coverage %, plaintext edges and denied calls |
+| `find_denied`, `find_plaintext` | Just the denied or the non-mTLS edges |
+| `get_edge` | One caller → callee edge in detail, with the RED numbers of both services |
+| `get_trace_mesh` | Mesh view of a trace: proxy time per hop (mesh time), retry attempts and decoded Envoy response flags |
+| `get_version_split` | Canary view: traffic share and error rate per destination version |
+| `compare_windows` | What changed in the last N minutes vs the N before: new, gone, more errors, slower services |
 | `search_traces` | Recent traces filtered by service, errors, min duration, root name (`format="table"`) |
 | `get_trace` | **Bounded summary** of a trace: duration, counts, per-service breakdown, error spans, slowest spans, depth. `format="waterfall"` draws a text waterfall |
 | `get_trace_spans` | Page through a trace's spans (offset/limit, service/error/duration filters) |
@@ -44,7 +50,7 @@ The client starts the server itself, so there is nothing else to run. Ask it "pr
 | `search_spans` | Recent spans across traces filtered by service, errors, duration, name (`format="table"`) |
 | `query_logs` | Logs by trace, service, severity, substring (`format="table"`) |
 | `list_metrics` | Metric names with a search filter |
-| `query_metric` | Time series for the last N minutes, downsampled with min/max/avg/last |
+| `query_metric` | Time series for the last N minutes, downsampled with min/max/avg/last. `labels` filters on metric attributes; `group_by` sums series per attribute value (for example `destination_service_name`) |
 | `chart_metric` | **Image**: line chart of a metric (histograms: mean solid, p95 dashed), series labelled by what differs between them |
 | `chart_service_map` | **Image**: with no arguments, the whole service map (layers of callers to callees, unconnected services in a strip below); with `service`, one service's dependencies, callers left and callees right, colored by health, edges labelled with p95 and request rate (`depth=2` for two hops) |
 | `list_skills` | Investigation skills (playbooks): when to use each |
@@ -65,7 +71,7 @@ Try asking: "chart http.server.duration for tinyolly-ui", "show me the service m
 
 ## Investigation skills
 
-Six short skills teach an agent how to investigate with these tools. They live only inside the MCP server (`docker/apps/tinyolly-mcp/skills/`); nothing is installed into Claude Code or any other client.
+Seven short skills teach an agent how to investigate with these tools. They live only inside the MCP server (`docker/apps/tinyolly-mcp/skills/`); nothing is installed into Claude Code or any other client.
 
 | Skill | Use it for |
 |---|---|
@@ -74,6 +80,7 @@ Six short skills teach an agent how to investigate with these tools. They live o
 | `tinyolly-service-deep-dive` | One service: vitals, dependency map, errors, slow traces, logs, metrics |
 | `tinyolly-metrics-explorer` | Finding, charting and interpreting metrics (counters, gauges, histograms, cardinality) |
 | `tinyolly-troubleshoot-stack` | TinyOlly itself is empty or unreachable (Colima contexts, ports, retention) and setup questions |
+| `tinyolly-mesh-investigation` | Istio mesh: mTLS posture, denied and plaintext edges, mesh time and retries in a trace, version split, what changed |
 | `tinyolly-demo-failure-injection` | Break the OTel demo with a feature flag and watch TinyOlly catch it |
 
 The server offers them three ways, so any MCP client can use them:

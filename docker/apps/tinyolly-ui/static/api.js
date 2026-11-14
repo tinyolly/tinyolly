@@ -6,6 +6,7 @@ import { renderServiceCatalog } from './serviceCatalog.js';
 import { renderErrorState, renderLoadingState } from './utils.js';
 import { filterTinyOllyData, filterTinyOllyTrace, filterTinyOllyMetric, filterTinyOllyMetricSeries } from './filter.js';
 import { loadOpampStatus, initCollector } from './collector.js';
+import { postureSummary } from './serviceMapUtils.js';
 
 const requestInFlight = {
     spans: false,
@@ -149,8 +150,10 @@ export async function loadMetrics() {
 
 export async function loadServiceMap() {
     try {
-        const response = await fetch('/api/service-map?limit=500');
+        const merge = localStorage.getItem('tinyolly.map.merge') !== '0';
+        const response = await fetch(`/api/service-map?limit=500&merge=${merge}`);
         let graph = await response.json();
+        loadPosture();
 
         // Filter out TinyOlly nodes and edges
         if (graph.nodes) {
@@ -165,6 +168,20 @@ export async function loadServiceMap() {
         renderServiceMap(graph);
     } catch (error) {
         console.error('Error loading service map:', error);
+    }
+}
+
+async function loadPosture() {
+    try {
+        const p = await (await fetch('/api/mesh-posture')).json();
+        const el = document.getElementById('map-posture');
+        if (el) {
+            el.textContent = postureSummary(p);
+            el.title = (p.plaintext || []).map(e => `plaintext: ${e.source} → ${e.target}`)
+                .concat((p.denied || []).map(e => `denied: ${e.source} → ${e.target} (${e.count})`)).join('\n');
+        }
+    } catch (error) {
+        console.error('Error loading mesh posture:', error);
     }
 }
 

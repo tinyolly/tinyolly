@@ -41,7 +41,8 @@ The REST API provides endpoints for:
 | `/api/metrics` | GET | List metrics with type, unit, description and cardinality |
 | `/api/metrics/query` | GET | Time series for one metric, with `resource.*` / `attribute.*` filters and `start`/`end` |
 | `/api/metrics/{name}` | GET | Time series for one metric (no filters) |
-| `/api/service-map` | GET | Get service dependency graph |
+| `/api/service-map` | GET | Get service dependency graph (`merge=false` for the layered Istio view) |
+| `/api/mesh-posture` | GET | Istio mesh security posture: mTLS coverage, plaintext and denied edges |
 | `/api/service-catalog` | GET | List services with RED metrics |
 | `/api/stats` | GET | System stats and cardinality info |
 | `/admin/stats` | GET | Detailed admin statistics |
@@ -314,35 +315,57 @@ Retrieve the service dependency graph:
 
     print("Services:", len(graph['nodes']))
     for node in graph['nodes']:
-        print(f"  - {node['service_name']} ({node['type']})")
+        print(f"  - {node['id']} ({node['type']}, role {node.get('role')})")
 
     print("\nConnections:", len(graph['edges']))
     for edge in graph['edges']:
-        print(f"  {edge['source']} → {edge['target']} ({edge['call_count']} calls)")
+        print(f"  {edge['source']} → {edge['target']} ({edge['value']} calls)")
     ```
 
 **Response Format:**
 ```json
 {
   "nodes": [
-    {
-      "service_name": "demo-frontend",
-      "type": "server",
-      "span_count": 1523
-    },
-    {
-      "service_name": "demo-backend",
-      "type": "server",
-      "span_count": 3046
-    }
+    {"id": "frontend", "label": "frontend", "type": "service", "role": "service", "metrics": {"rate": 12, "error_rate": 0.0}},
+    {"id": "waypoint", "label": "waypoint", "type": "service", "role": "waypoint", "metrics": {}}
   ],
   "edges": [
     {
-      "source": "demo-frontend",
-      "target": "demo-backend",
-      "call_count": 1523
+      "source": "frontend",
+      "target": "waypoint",
+      "value": 1523,
+      "p95": 4.2,
+      "req_rate": 3.1,
+      "error_count": 0,
+      "source_kind": "traces+metrics",
+      "mtls": true,
+      "denied_count": 0
     }
   ]
+}
+```
+
+- `role` is `service`, `waypoint`, `gateway` or `ztunnel` (detected from the node name).
+- `source_kind` says where the edge came from: `traces`, `metrics` (Istio `istio_tcp_*` / `istio_requests_total` metrics, so a mesh with only ztunnel still has a map) or `traces+metrics`.
+- `mtls` is `true`/`false` from Istio's `connection_security_policy`, or `null` when no mesh metrics cover the edge.
+- `denied_count` counts denied calls: HTTP 403, gRPC status 7 (PERMISSION_DENIED), or a waypoint local reply.
+- `merge` (default `true`) folds `name.namespace` proxy identities (for example `waypoint.boutique`) into the app node. Pass `merge=false` to keep them separate.
+
+### Mesh Posture
+
+```bash
+curl http://localhost:5005/api/mesh-posture
+```
+
+```json
+{
+  "total_edges": 36,
+  "mtls_edges": 33,
+  "plaintext_edges": 3,
+  "unknown_edges": 0,
+  "mtls_pct": 91.7,
+  "plaintext": [{"source": "frontend", "target": "tinyolly-otlp-receiver", "value": 1}],
+  "denied": [{"source": "intruder", "target": "cartservice", "count": 115}]
 }
 ```
 

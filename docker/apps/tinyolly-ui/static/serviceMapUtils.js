@@ -26,6 +26,21 @@ export function filterSelfServices(graph) {
 
 const NODE_SIZE = 40;
 
+/** Edge style class: denied beats plaintext beats mTLS; anything else is plain. */
+export function edgeClass(edge) {
+    if ((edge.denied_count || 0) > 0) return 'denied';
+    if (edge.mtls === false) return 'plaintext';
+    if (edge.mtls === true) return 'mtls';
+    return '';
+}
+
+/** One-line posture summary for the bar above the map. */
+export function postureSummary(p) {
+    if (!p || !p.total_edges) return '';
+    const parts = [`mTLS ${fmtNum(p.mtls_pct)}%`, `${p.plaintext_edges} plaintext`, `${p.denied.length} denied`];
+    return parts.join(' · ');
+}
+
 /** Graph -> Cytoscape elements. Shape = service type, colour = health. */
 export function buildElements(graph) {
     // Calculate node types (Root, Leaf, Intermediate)
@@ -70,6 +85,10 @@ export function buildElements(graph) {
         } else {
             type = 'Server';
         }
+        // Mesh roles (from the backend) override the shape: what the node is in the mesh.
+        if (node.role === 'waypoint') { shape = 'cut-rectangle'; type = 'Waypoint'; }
+        else if (node.role === 'gateway') { shape = 'pentagon'; type = 'Gateway'; }
+        else if (node.role === 'ztunnel') { shape = 'tag'; type = 'Ztunnel'; }
 
         const metrics = node.metrics || {};
         let color = '#2563eb';                                  // healthy
@@ -86,6 +105,7 @@ export function buildElements(graph) {
                 w: shape === 'hexagon' ? NODE_SIZE * 1.1547 : NODE_SIZE,   // a regular hexagon is 1.1547x wider than tall;
                 h: NODE_SIZE,                                               // a square box would squash it horizontally
                 type: type,
+                role: node.role || 'service',
                 color: color,
                 metrics: metrics
             }
@@ -97,13 +117,17 @@ export function buildElements(graph) {
         graph.edges.forEach(edge => {
             elements.push({
                 group: 'edges',
+                classes: edgeClass(edge),
                 data: {
                     id: `${edge.source}-${edge.target}`,
                     source: edge.source,
                     target: edge.target,
                     label: edge.p95 ? formatMs(edge.p95) : '',
                     p95: edge.p95,
-                    weight: edge.value
+                    weight: edge.value,
+                    mtls: edge.mtls ?? null,
+                    kind: edge.source_kind || 'traces',
+                    denied: edge.denied_count || 0
                 }
             });
         });
@@ -114,6 +138,6 @@ export function buildElements(graph) {
 // Identity of the drawn graph (nodes + edges + inferred types). Re-layout/re-fit only when it changes,
 // so the 20 s auto-refresh does not reset the user's pan and zoom.
 export function graphSignature(elements) {
-    return elements.map(e => e.group === 'nodes' ? `n:${e.data.id}:${e.data.type}` : `e:${e.data.id}`).sort().join('|');
+    return elements.map(e => e.group === 'nodes' ? `n:${e.data.id}:${e.data.type}:${e.data.role}` : `e:${e.data.id}`).sort().join('|');
 }
 

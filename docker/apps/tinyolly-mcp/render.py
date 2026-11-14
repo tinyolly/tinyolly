@@ -299,7 +299,9 @@ def node_roles(graph: dict) -> dict:
     roles = {}
     for n in graph.get("nodes", []):
         i, o = ins[n["id"]], outs[n["id"]]
-        if n.get("type") == "database":
+        if n.get("role") in ("waypoint", "gateway", "ztunnel"):
+            roles[n["id"]] = n["role"]
+        elif n.get("type") == "database":
             roles[n["id"]] = "database"
         elif n.get("type") == "messaging":
             roles[n["id"]] = "messaging"
@@ -328,6 +330,13 @@ def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bo
                               (x + w * 0.5, y - hh), (x - w * 0.5, y - hh)], **kw))
     elif role == "isolated":
         ax.add_patch(Ellipse((x, y), hw * 1.6, hh * 2, **kw))
+    elif role in ("waypoint", "ztunnel"):                       # cut-corner box
+        c = 0.16
+        ax.add_patch(Polygon([(x - hw + c, y + hh), (x + hw - c, y + hh), (x + hw, y + hh - c), (x + hw, y - hh + c),
+                              (x + hw - c, y - hh), (x - hw + c, y - hh), (x - hw, y - hh + c), (x - hw, y + hh - c)], **kw))
+    elif role == "gateway":                                     # pentagon
+        ax.add_patch(Polygon([(x - hw, y + hh * 0.2), (x, y + hh * 1.2), (x + hw, y + hh * 0.2),
+                              (x + hw * 0.65, y - hh), (x - hw * 0.65, y - hh)], **kw))
     elif role == "database":
         ax.add_patch(Rectangle((x - hw * 0.8, y - hh), hw * 1.6, hh * 2, **kw))
         ax.add_patch(Ellipse((x, y + hh), hw * 1.6, hh * 0.7, fc=color, ec="white", lw=1.2, zorder=4))
@@ -343,12 +352,16 @@ def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bo
             fontsize=7, color="#64748b")
 
 
-def _legend(ax, x: float, y: float) -> None:
+def _legend(ax, x: float, y: float, mesh: bool = False) -> None:
     items = [("client", "client (no callers)"), ("server", "service"), ("external", "external (no callees)"),
              ("isolated", "no connections")]
     for i, (role, text) in enumerate(items):
         _draw_node_icon(ax, x + i * 3.0, y, role)
         ax.text(x + i * 3.0 + 0.45, y, text, fontsize=7, va="center", color="#64748b")
+    if mesh:
+        for i, (color, style, text) in enumerate([("#16a34a", "-", "mTLS"), ("#f59e0b", "--", "plaintext"), ("#ef4444", "-", "denied / errors")]):
+            ax.plot([x + i * 3.0, x + i * 3.0 + 0.35], [y - 0.4, y - 0.4], color=color, linestyle=style, lw=2)
+            ax.text(x + i * 3.0 + 0.45, y - 0.4, text, fontsize=7, va="center", color="#64748b")
 
 
 def _draw_node_icon(ax, x: float, y: float, role: str) -> None:
@@ -365,14 +378,38 @@ def _draw_node_icon(ax, x: float, y: float, role: str) -> None:
         ax.add_patch(FancyBboxPatch((x - r, y - r * 0.8), 2 * r, 1.6 * r, boxstyle="round,pad=0,rounding_size=0.05", **kw))
 
 
+def edge_style(e: dict) -> tuple[str, str]:
+    """(colour, linestyle) for an edge: denied red, plaintext orange dashed, errors red, mTLS green, else grey."""
+    if (e.get("denied_count") or 0) > 0:
+        return "#ef4444", "-"
+    if e.get("mtls") is False:
+        return "#f59e0b", "--"
+    if (e.get("error_count") or 0) > 0:
+        return "#ef4444", "-"
+    if e.get("mtls") is True:
+        return "#16a34a", "-"
+    return "#94a3b8", "-"
+
+
+def posture_line(graph: dict) -> str:
+    """'mTLS 92% · 3 plaintext · 1 denied' from the edges' mesh fields, or '' when the graph has no mesh data."""
+    edges = graph.get("edges") or []
+    mtls = sum(1 for e in edges if e.get("mtls") is True)
+    plain = sum(1 for e in edges if e.get("mtls") is False)
+    denied = sum(1 for e in edges if (e.get("denied_count") or 0) > 0)
+    if not (mtls or plain):
+        return ""
+    return f"mTLS {mtls / (mtls + plain) * 100:.0f}% · {plain} plaintext · {denied} denied"
+
+
 def _draw_edge(ax, e: dict, pos: dict, t: float = 0.55) -> None:
     (x1, y1), (x2, y2) = pos[e["source"]], pos[e["target"]]
-    bad = (e.get("error_count") or 0) > 0
-    color = "#ef4444" if bad else "#94a3b8"
+    color, style = edge_style(e)
     ax.annotate("", xy=(x2 - 0.72, y2), xytext=(x1 + 0.72, y1), zorder=1,
-                arrowprops=dict(arrowstyle="-|>", color=color, lw=1.4 + min(2.0, (e.get("value") or e.get("call_count") or 0) ** 0.25 / 3),
+                arrowprops=dict(arrowstyle="-|>", color=color, linestyle=style,
+                                lw=1.4 + min(2.0, (e.get("value") or e.get("call_count") or 0) ** 0.25 / 3),
                                 connectionstyle="arc3,rad=0.06", shrinkA=0, shrinkB=0))
-    if e.get("p95") is not None:
+    if e.get("p95"):                                   # metric-only edges have no latency; skip the "0" label
         label = fmt_ms(e.get("p95")) + (f" · {e['req_rate']:g}/s" if e.get("req_rate") else "")
         ax.text(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t + 0.12, label, ha="center", va="bottom", fontsize=7.5, color="#475569", zorder=5,
                 bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="#e2e8f0", lw=0.6))
@@ -452,15 +489,27 @@ def full_map_chart(graph: dict) -> bytes:
     nodes = {n["id"]: n for n in graph.get("nodes", [])}
     edges = [e for e in graph.get("edges", []) if e["source"] in nodes and e["target"] in nodes and e["source"] != e["target"]]
     linked = {e["source"] for e in edges} | {e["target"] for e in edges}
-    layer = {n: 0 for n in linked}
-    for _ in range(len(linked)):                       # longest-path layering; the pass cap stops cycles looping forever
-        changed = False
-        for e in edges:
-            if layer[e["target"]] < layer[e["source"]] + 1 and layer[e["source"]] < len(linked):
-                layer[e["target"]] = layer[e["source"]] + 1
-                changed = True
-        if not changed:
-            break
+    # Layers = shortest distance from the roots (nodes nobody calls). Unlike longest-path layering this stays compact
+    # when the mesh has two-way edges (cycles, e.g. waypoint <-> frontend); back edges are simply drawn as curves.
+    callees: dict[str, list[str]] = defaultdict(list)
+    called = set()
+    for e in edges:
+        callees[e["source"]].append(e["target"])
+        called.add(e["target"])
+    layer: dict[str, int] = {}
+    roots = sorted((n for n in linked if n not in called), key=lambda n: n)
+    pending = list(roots) + sorted(linked - set(roots), key=lambda n: -len(callees[n]))
+    for root in pending:
+        if root in layer:
+            continue
+        layer[root] = 0
+        queue = [root]
+        while queue:
+            cur = queue.pop(0)
+            for nxt in callees[cur]:
+                if nxt not in layer:
+                    layer[nxt] = layer[cur] + 1
+                    queue.append(nxt)
     spans = lambda n: float(((nodes.get(n) or {}).get("metrics") or {}).get("span_count") or 0)
     by_layer: dict[int, list[str]] = defaultdict(list)
     for n, l in layer.items():
@@ -508,10 +557,12 @@ def full_map_chart(graph: dict) -> bytes:
         ax.plot([-0.9, max(max(xs), (width_units - 1) * X) + 0.9], [strip_top + 1.2, strip_top + 1.2], color="#e2e8f0", lw=1, zorder=0)
         ax.text(-0.7, strip_top + 1.4, "NO CONNECTIONS", ha="left", fontsize=7.5, color="#94a3b8", fontweight="bold")
     right = max(max(xs) + 1.2, (width_units - 1) * X + 1.2)
-    _legend(ax, -0.7, min(ys) - 1.25)
+    mesh = bool(posture_line(graph))
+    _legend(ax, -0.7, min(ys) - 1.25, mesh)
     ax.set_xlim(-1.2, right)
-    ax.set_ylim(min(ys) - 1.7, max(ys) + 1.35)
+    ax.set_ylim(min(ys) - (2.1 if mesh else 1.7), max(ys) + 1.35)
     errs = sum(1 for n in nodes.values() if float(((n.get("metrics") or {}).get("error_rate")) or 0) > 5)
-    ax.set_title(f"Service map  ·  {len(nodes)} services  ·  {len(edges)} connections" + (f"  ·  {errs} unhealthy" if errs else ""),
+    ax.set_title(f"Service map  ·  {len(nodes)} services  ·  {len(edges)} connections" + (f"  ·  {errs} unhealthy" if errs else "")
+                 + (f"  ·  {posture_line(graph)}" if mesh else ""),
                  loc="left", fontsize=13, fontweight="bold", color="#0f172a", pad=14)
     return _png(fig)

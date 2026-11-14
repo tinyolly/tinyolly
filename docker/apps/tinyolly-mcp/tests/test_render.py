@@ -110,3 +110,23 @@ def test_full_map_chart_renders_connected_and_isolated():
     png = render.full_map_chart(graph)
     assert png[:8] == b"\x89PNG\r\n\x1a\n"
     assert render.full_map_chart({"nodes": [], "edges": []})[:4] == b"\x89PNG"
+
+
+def test_edge_style_priority_and_posture_line():
+    assert render.edge_style({"mtls": True, "denied_count": 2}) == ("#ef4444", "-")
+    assert render.edge_style({"mtls": False, "error_count": 5}) == ("#f59e0b", "--")
+    assert render.edge_style({"mtls": True}) == ("#16a34a", "-")
+    assert render.edge_style({"error_count": 1}) == ("#ef4444", "-")
+    assert render.edge_style({}) == ("#94a3b8", "-")
+    g = {"edges": [{"mtls": True}, {"mtls": True}, {"mtls": True}, {"mtls": False}, {"mtls": True, "denied_count": 1}, {}]}
+    assert render.posture_line(g) == "mTLS 80% · 1 plaintext · 1 denied"
+    assert render.posture_line({"edges": [{"call_count": 1}]}) == ""
+
+
+def test_full_map_chart_with_mesh_roles_and_edges_renders():
+    g = {"nodes": [{"id": "c", "type": "service"}, {"id": "wp", "type": "service", "role": "waypoint"},
+                   {"id": "gw", "type": "service", "role": "gateway"}, {"id": "s", "type": "service"}],
+         "edges": [{"source": "gw", "target": "c", "mtls": True}, {"source": "c", "target": "wp", "mtls": False},
+                   {"source": "wp", "target": "s", "mtls": True, "denied_count": 3}]}
+    assert render.node_roles(g)["wp"] == "waypoint" and render.node_roles(g)["gw"] == "gateway"
+    assert render.full_map_chart(g)[:4] == b"\x89PNG"

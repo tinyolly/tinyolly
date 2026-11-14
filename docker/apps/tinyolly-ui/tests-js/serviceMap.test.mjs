@@ -73,3 +73,20 @@ test('every static JS file parses as an ES module', () => {
         execFileSync(process.execPath, ['--input-type=module', '--check'], { input: readFileSync(dir + f) });
     }
 });
+
+test('mesh roles override shape; edges get security classes', async () => {
+    const { edgeClass, postureSummary } = await import('../static/serviceMapUtils.js');
+    const graph = {
+        nodes: [node('c'), node('wp', { role: 'waypoint' }), node('gw', { role: 'gateway' }), node('s')],
+        edges: [{ source: 'c', target: 'wp' }, { source: 'gw', target: 'c' }, { source: 'wp', target: 's' }],
+    };
+    const n = nodesOf(buildElements(graph));
+    assert.deepEqual([n.wp.shape, n.wp.type], ['cut-rectangle', 'Waypoint']);
+    assert.deepEqual([n.gw.shape, n.gw.type], ['pentagon', 'Gateway']);
+    assert.equal(edgeClass({ mtls: true }), 'mtls');
+    assert.equal(edgeClass({ mtls: false }), 'plaintext');
+    assert.equal(edgeClass({ mtls: true, denied_count: 2 }), 'denied');
+    assert.equal(edgeClass({}), '');
+    assert.equal(postureSummary({ total_edges: 4, mtls_pct: 75, plaintext_edges: 1, denied: [{}] }), 'mTLS 75% · 1 plaintext · 1 denied');
+    assert.equal(postureSummary({ total_edges: 0 }), '');
+});

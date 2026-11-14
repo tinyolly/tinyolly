@@ -20,6 +20,7 @@ import orjson
 import zstandard as zstd
 from async_lru import alru_cache
 
+from .mesh_adapters import merge_graph, metric_edges, metric_namespaces, posture
 from .otlp_utils import (
     exponential_to_explicit,
     extract_resource_attributes,
@@ -1649,15 +1650,56 @@ class StorageSQLite:
         await self._cache_delete(self._service_cache_key("catalog"))
         await self._cache_delete(self._service_snapshot_key("catalog"))
 
-    async def get_service_graph(self, limit: int = 500) -> Dict[str, Any]:
-        cache_key = f"service_graph_cache_v3:{limit}"
+    async def get_service_graph(self, limit: int = 500, merge: bool = True) -> Dict[str, Any]:
+        cache_key = f"service_graph_cache_v4:{limit}:merge={merge}"
         snapshot_key = self._service_snapshot_key("map")
         reset_at = await self._get_service_reset_ts("map")
         trace_ids = await self.get_recent_traces(limit, since_ts=reset_at)
 
+        # Mesh metrics (z-tunnel / sidecar) describe service-to-service traffic even when no traces
+        # are stored, so fetch them up front and merge them into the graph below.
+        metric_edges_map: Dict[Tuple[str, str], Dict[str, Any]] = {}
+        try:
+            tcp_series = await self.get_metric_series("istio_tcp_connections_opened_total")
+            req_series = await self.get_metric_series("istio_requests_total")
+            for edge in metric_edges(tcp_series + req_series):
+                metric_edges_map[(edge["source"], edge["target"])] = edge
+            namespaces = metric_namespaces(tcp_series + req_series)
+        except Exception as e:
+            logger.warning(f"Service graph: metric edges unavailable: {e}")
+            namespaces = set()
+
         if not trace_ids:
-            snapshot = await self._cache_get_json(snapshot_key)
-            return snapshot or {"nodes": [], "edges": []}
+            if not metric_edges_map:
+                snapshot = await self._cache_get_json(snapshot_key)
+                return snapshot or {"nodes": [], "edges": []}
+            nodes = {}
+            for (source, target) in metric_edges_map:
+                for name in (source, target):
+                    if name not in nodes:
+                        nodes[name] = {"type": "service", "metrics": {}}
+            graph_nodes = [
+                {"id": name, "label": name, "type": data.get("type", "service"), "metrics": data.get("metrics", {})}
+                for name, data in nodes.items()
+            ]
+            graph_edges = [
+                {
+                    "source": source,
+                    "target": target,
+                    "value": edge["count"],
+                    "p95": 0,
+                    "req_rate": 0,
+                    "error_count": edge["errors"],
+                    "denied_count": edge.get("denied", 0),
+                    "source_kind": "metrics",
+                    "mtls": edge["mtls"],
+                }
+                for (source, target), edge in metric_edges_map.items()
+            ]
+            result = merge_graph({"nodes": graph_nodes, "edges": graph_edges}, namespaces if merge else set())
+            await self._cache_set_json_safe(snapshot_key, result, SERVICE_SNAPSHOT_TTL_SECONDS)
+            await self._cache_set_json_safe(cache_key, result, SERVICE_VIEW_CACHE_TTL)
+            return result
 
         cached_graph = await self._cache_get_json(cache_key)
         if cached_graph:
@@ -1704,14 +1746,17 @@ class StorageSQLite:
                     target_node = dest
                     node_type = "messaging"
 
+                is_error = is_error_status(span.get("status", {}) or {})
+
                 if target_node:
                     if target_node not in nodes:
                         nodes[target_node] = {"type": node_type, "metrics": {}}
                     key = (service, target_node)
                     if key not in edges:
-                        edges[key] = {"count": 0, "durations": []}
+                        edges[key] = {"count": 0, "durations": [], "spans": []}
                     edges[key]["count"] += 1
                     edges[key]["durations"].append(duration_ms)
+                    edges[key]["spans"].append((start, end, is_error))
 
                 parent_id = span.get("parentSpanId", span.get("parent_span_id"))
                 if parent_id and parent_id in span_map:
@@ -1720,14 +1765,10 @@ class StorageSQLite:
                     if parent_service != service and parent_service != "unknown" and service != "unknown":
                         key = (parent_service, service)
                         if key not in edges:
-                            edges[key] = {"count": 0, "durations": []}
+                            edges[key] = {"count": 0, "durations": [], "spans": []}
                         edges[key]["count"] += 1
                         edges[key]["durations"].append(duration_ms)
-
-        graph_nodes = [
-            {"id": name, "label": name, "type": data.get("type", "service"), "metrics": data.get("metrics", {})}
-            for name, data in nodes.items()
-        ]
+                        edges[key]["spans"].append((start, end, is_error))
 
         graph_edges = []
         for (source, target), data in edges.items():
@@ -1738,20 +1779,73 @@ class StorageSQLite:
                 idx = min(idx, len(durations) - 1)
                 p95 = durations[idx]
 
+            error_count = sum(1 for s in data["spans"] if s[2])
+            if data["spans"]:
+                min_start = min(s[0] for s in data["spans"])
+                max_end = max(s[1] for s in data["spans"])
+                window = max((max_end - min_start) / 1_000_000_000, 1.0)
+                req_rate = round(data["count"] / window, 2)
+            else:
+                req_rate = 0
+
+            metric_edge = metric_edges_map.get((source, target))
+            if metric_edge:
+                source_kind = "traces+metrics"
+                mtls = metric_edge["mtls"]
+                denied_count = metric_edge.get("denied", 0)
+            else:
+                source_kind = "traces"
+                mtls = None
+                denied_count = 0
+
             graph_edges.append(
                 {
                     "source": source,
                     "target": target,
                     "value": data["count"],
                     "p95": round(p95, 2),
-                    "req_rate": round(data["count"] / 60, 2),
+                    "req_rate": req_rate,
+                    "error_count": error_count,
+                    "denied_count": denied_count,
+                    "source_kind": source_kind,
+                    "mtls": mtls,
                 }
             )
 
-        result = {"nodes": graph_nodes, "edges": graph_edges}
+        # Metric-only edges (no trace for the pair): add them, and any endpoint nodes they need.
+        for (source, target), edge in metric_edges_map.items():
+            if (source, target) in edges:
+                continue
+            for name in (source, target):
+                if name not in nodes:
+                    nodes[name] = {"type": "service", "metrics": {}}
+            graph_edges.append(
+                {
+                    "source": source,
+                    "target": target,
+                    "value": edge["count"],
+                    "p95": 0,
+                    "req_rate": 0,
+                    "error_count": edge["errors"],
+                    "denied_count": edge.get("denied", 0),
+                    "source_kind": "metrics",
+                    "mtls": edge["mtls"],
+                }
+            )
+
+        graph_nodes = [
+            {"id": name, "label": name, "type": data.get("type", "service"), "metrics": data.get("metrics", {})}
+            for name, data in nodes.items()
+        ]
+
+        result = merge_graph({"nodes": graph_nodes, "edges": graph_edges}, namespaces if merge else set())
         await self._cache_set_json_safe(snapshot_key, result, SERVICE_SNAPSHOT_TTL_SECONDS)
         await self._cache_set_json_safe(cache_key, result, SERVICE_VIEW_CACHE_TTL)
         return result
+
+    async def get_mesh_posture(self) -> Dict[str, Any]:
+        """Mesh posture summary (mTLS coverage, plaintext edges, denied edges) from the merged service graph."""
+        return posture(await self.get_service_graph())
 
     async def get_service_catalog(self) -> List[Dict[str, Any]]:
         cache_key = self._service_cache_key("catalog")
@@ -1776,31 +1870,36 @@ class StorageSQLite:
             start_time = int(span.get("startTimeUnixNano", span.get("start_time", 0)) or 0)
             end_time = int(span.get("endTimeUnixNano", span.get("end_time", 0)) or 0)
             duration_ms = (end_time - start_time) / 1_000_000 if end_time > start_time else 0.0
-
+            kind = span.get("kind", 0)
             is_error = is_error_status(span.get("status", {}) or {})
 
             if service_name not in services:
                 services[service_name] = {
                     "name": service_name,
-                    "span_count": 0,
                     "trace_ids": set(),
                     "first_seen": start_time,
                     "last_seen": start_time,
-                    "durations": [],
-                    "error_count": 0,
+                    "spans": [],
                 }
 
-            services[service_name]["span_count"] += 1
             services[service_name]["trace_ids"].add(trace_id)
             services[service_name]["first_seen"] = min(services[service_name]["first_seen"], start_time)
             services[service_name]["last_seen"] = max(services[service_name]["last_seen"], start_time)
-            services[service_name]["durations"].append(duration_ms)
-            if is_error:
-                services[service_name]["error_count"] += 1
+            services[service_name]["spans"].append((kind, start_time, end_time, duration_ms, is_error))
 
+        counted_kinds = (2, 5, "SPAN_KIND_SERVER", "SPAN_KIND_CONSUMER")
         result = []
         for data in services.values():
-            durations = sorted(data["durations"])
+            all_spans = data["spans"]
+            counted = [s for s in all_spans if s[0] in counted_kinds]
+            if not counted:
+                counted = all_spans
+
+            span_count = len(all_spans)
+            counted_count = len(counted)
+            error_count = sum(1 for s in counted if s[4])
+
+            durations = sorted(s[3] for s in counted)
             p50 = None
             p95 = None
             p99 = None
@@ -1809,16 +1908,24 @@ class StorageSQLite:
                 p95 = round(durations[int((len(durations) - 1) * 0.95)], 2)
                 p99 = round(durations[int((len(durations) - 1) * 0.99)], 2)
 
-            span_count = data["span_count"]
-            error_count = data["error_count"]
+            if counted_count > 0:
+                min_start = min(s[1] for s in counted)
+                max_end = max(s[2] for s in counted)
+                window = max((max_end - min_start) / 1_000_000_000, 1.0)
+                rate = round(counted_count / window, 2)
+            else:
+                rate = 0
+
+            error_rate = round((error_count / counted_count) * 100, 2) if counted_count > 0 else 0.0
+
             service_info = {
                 "name": data["name"],
                 "span_count": span_count,
                 "trace_count": len(data["trace_ids"]),
                 "first_seen": data["first_seen"],
                 "last_seen": data["last_seen"],
-                "rate": max(1, round(span_count / 300)) if span_count > 0 else 0,
-                "error_rate": round((error_count / span_count) * 100, 2) if span_count > 0 else 0.0,
+                "rate": rate,
+                "error_rate": error_rate,
                 "duration_p50": p50,
                 "duration_p95": p95,
                 "duration_p99": p99,

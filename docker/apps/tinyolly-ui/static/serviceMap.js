@@ -14,6 +14,13 @@ window.toggleHideSelfServices = (on) => {
     if (window.refreshServiceMap) window.refreshServiceMap();
 };
 
+const MERGE_KEY = 'tinyolly.map.merge';
+window.toggleMergeView = (on) => {
+    localStorage.setItem(MERGE_KEY, on ? '1' : '0');
+    lastSignature = null;
+    if (window.refreshServiceMap) window.refreshServiceMap();
+};
+
 let lastSignature = null;
 
 // Size the map to the visible window (below its top edge) so the fitted graph is always fully in view.
@@ -110,7 +117,7 @@ export function renderServiceMap(graph) {
             // Update Edges
             elements.filter(e => e.group === 'edges').forEach(ele => {
                 if (currentEdges.has(ele.data.id)) {
-                    cy.$id(ele.data.id).data(ele.data);
+                    cy.$id(ele.data.id).data(ele.data).classes(ele.classes || '');
                     currentEdges.delete(ele.data.id);
                 } else {
                     cy.add(ele);
@@ -186,6 +193,9 @@ export function renderServiceMap(graph) {
                     'text-border-opacity': 1
                 }
             },
+            { selector: 'edge.mtls', style: { 'line-color': '#16a34a', 'target-arrow-color': '#16a34a' } },
+            { selector: 'edge.plaintext', style: { 'line-color': '#f59e0b', 'target-arrow-color': '#f59e0b', 'line-style': 'dashed' } },
+            { selector: 'edge.denied', style: { 'line-color': '#ef4444', 'target-arrow-color': '#ef4444', 'width': 4 } },
             {
                 selector: 'node:selected',
                 style: {
