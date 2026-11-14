@@ -29,7 +29,32 @@ The client starts the server itself, so there is nothing else to run. Ask it "pr
 !!! note "Why not just a URL?"
     Claude Desktop's URL connectors are called from Anthropic's cloud, which cannot reach `localhost`. A local server is started by the client instead.
 
-**Optional:** to use a URL (Claude Code only), run `python server.py --http --port 8765` and register it with `claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp`. To point at a TinyOlly on another address, set `TINYOLLY_URL` (default `http://localhost:5005`).
+### Always-on server (Docker or Kubernetes)
+
+The MCP server is a small separate service. Besides the per-client **stdio** setup above, TinyOlly can run it for you as a container, so nothing has to be started on your machine and every client shares one server over **streamable HTTP**:
+
+| Where | How it runs | URL |
+|---|---|---|
+| **Docker Compose** | A `tinyolly-mcp` service in the core compose files (`docker/` and `docker-core-only/`). It starts and stops with the stack. | `http://localhost:8765/mcp` |
+| **Kubernetes (kind)** | A `tinyolly-mcp` Deployment and NodePort Service (`k8s/tinyolly-mcp.yaml`, `k8s-core-only/tinyolly-mcp.yaml`). The kind config maps host port 8765 to it. | `http://localhost:8765/mcp` |
+
+Register the URL once (Claude Code only; Claude Desktop and Zed keep using the stdio command):
+
+```bash
+claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp
+```
+
+How it works: the container runs `server.py --http` and reads TinyOlly over its REST API (`TINYOLLY_URL`, `http://tinyolly-ui:5002` inside the stack). It is read-only, bundles the TinyOlly docs and the investigation skills, and binds to `127.0.0.1` on the host in Docker.
+
+**Updating it after you change `docker/apps/tinyolly-mcp` or `docs/`:**
+
+- Docker: `docker compose -f docker/docker-compose-tinyolly-core-local.yml up -d --build tinyolly-mcp`
+- Kubernetes: `k8s/05-rebuild+deploy-mcp.sh`
+- Then restart your MCP client so it reloads the tool list.
+
+**Kubernetes cluster created before the 8765 mapping existed** (`scripts/kind-config.yaml`): kind cannot add a host port to a running cluster, so bridge it instead of recreating the cluster. With the Colima docker context: `docker run -d --restart=always --network kind -p 8765:8765 alpine/socat tcp-listen:8765,fork,reuseaddr tcp:tinyolly-control-plane:30876`.
+
+**Without containers:** run `python server.py --http --port 8765` yourself and register the same URL. To point at a TinyOlly on another address, set `TINYOLLY_URL` (default `http://localhost:5005`).
 
 ## Tools
 

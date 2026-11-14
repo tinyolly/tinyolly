@@ -84,6 +84,19 @@ docker buildx build --platform $PLATFORM \
 echo "✓ Built $DOCKER_HUB_ORG/ui:$VERSION"
 echo ""
 
+# Image: MCP server (build context is the repo root: it bundles docs/*.md)
+echo "----------------------------------------"
+echo "Building mcp..."
+echo "----------------------------------------"
+docker buildx build --platform $PLATFORM \
+  --no-cache \
+  -f dockerfiles/Dockerfile.tinyolly-mcp \
+  -t $DOCKER_HUB_ORG/mcp:latest \
+  -t $DOCKER_HUB_ORG/mcp:$VERSION \
+  --load ..
+echo "✓ Built $DOCKER_HUB_ORG/mcp:$VERSION"
+echo ""
+
 # Image 4: OpAMP Server (independent Go build)
 echo "----------------------------------------"
 echo "Building opamp-server..."

@@ -86,6 +86,20 @@ services:
       - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
 
+  # MCP server (read-only) for AI agents: http://localhost:8765/mcp
+  #   claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp
+  tinyolly-mcp:
+    image: tinyolly/mcp:latest
+    pull_policy: always
+    container_name: tinyolly-mcp
+    ports:
+      - "127.0.0.1:8765:8765"
+    depends_on:
+      tinyolly-ui:
+        condition: service_started
+    environment:
+      - TINYOLLY_URL=http://tinyolly-ui:5002
+
 volumes:
   otel-supervisor-data:
     name: tinyolly-otel-supervisor-data

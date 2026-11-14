@@ -31,6 +31,12 @@ docker build --no-cache -t tinyolly/python-base:latest \
   "$DOCKER_DIR/"
 
 echo ""
+echo "Building mcp..."
+docker build --no-cache -t tinyolly/mcp:latest \
+  -f "$DOCKER_DIR/dockerfiles/Dockerfile.tinyolly-mcp" \
+  "$DOCKER_DIR/.."
+
+echo ""
 echo "Building ui..."
 docker build --no-cache -t tinyolly/ui:latest \
   -f "$DOCKER_DIR/dockerfiles/Dockerfile.tinyolly-ui" \
@@ -60,6 +66,7 @@ echo ""
 echo "Loading images into kind cluster $KIND_CLUSTER..."
 kind load docker-image tinyolly/python-base:latest --name "$KIND_CLUSTER"
 kind load docker-image tinyolly/ui:latest --name "$KIND_CLUSTER"
+kind load docker-image tinyolly/mcp:latest --name "$KIND_CLUSTER"
 kind load docker-image tinyolly/otlp-receiver:latest --name "$KIND_CLUSTER"
 kind load docker-image tinyolly/opamp-server:latest --name "$KIND_CLUSTER"
 kind load docker-image tinyolly/otel-supervisor:latest --name "$KIND_CLUSTER"
@@ -72,6 +79,7 @@ echo ""
 echo "Images:"
 echo "  - tinyolly/python-base:latest"
 echo "  - tinyolly/ui:latest"
+echo "  - tinyolly/mcp:latest"
 echo "  - tinyolly/otlp-receiver:latest"
 echo "  - tinyolly/opamp-server:latest"
 echo "  - tinyolly/otel-supervisor:latest"

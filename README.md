@@ -134,6 +134,7 @@ cd docker
 - **OTLP Receiver**: `localhost:4343` (gRPC)
 - **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)
 - **UI**: `http://localhost:5005`
+- **MCP server**: `http://localhost:8765/mcp` (read-only, for AI agents)
 
 - **OTel Collector**: `localhost:4317` (gRPC), `localhost:4318` (HTTP)
 
@@ -248,6 +249,7 @@ Deploys TinyOlly without the bundled OTel Collector. Includes:
 - **OTLP Receiver**: `localhost:4343` (gRPC only)
 - **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)
 - **UI**: `http://localhost:5005`
+- **MCP server**: `http://localhost:8765/mcp` (read-only, for AI agents)
 
 Point your external collector to `localhost:4343` for telemetry ingestion.
 
@@ -394,7 +396,9 @@ A read-only [MCP](https://modelcontextprotocol.io) server lets Claude Code, Zed 
 docker/apps/tinyolly-mcp/install.sh   # prints copy-paste setup for Claude Code, Claude Desktop and Zed
 ```
 
-Details and the tool list: [docs/mcp.md](docs/mcp.md).
+The Docker and Kubernetes deployments also run it for you as a container (`tinyolly-mcp`, port 8765, streamable HTTP), so there is nothing to start by hand: `claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp`.
+
+Details, the tool list and how the containerized server works: [docs/mcp.md](docs/mcp.md).
 
 ## REST API & OpenAPI
 

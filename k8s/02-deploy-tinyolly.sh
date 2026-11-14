@@ -100,6 +100,13 @@ if ! kubectl apply -f "$SCRIPT_DIR/tinyolly-ui.yaml"; then
     FAILED=true
 fi
 
+# 7. Apply the MCP server (talks to the UI's REST API)
+echo "  → Deploying TinyOlly MCP server..."
+if ! kubectl apply -f "$SCRIPT_DIR/tinyolly-mcp.yaml"; then
+    echo "    Error: Failed to apply tinyolly-mcp.yaml"
+    FAILED=true
+fi
+
 # Check if deployment was successful
 if [ "$FAILED" = true ]; then
     echo ""
@@ -115,3 +122,4 @@ echo "Deployment applied successfully!"
 echo "Run 'kubectl get pods' to check status."
 echo ""
 echo "TinyOlly UI will be available at: http://localhost:5005 (kind port mapping, see scripts/kind-config.yaml)"
+echo "MCP server (HTTP): http://localhost:8765/mcp  ->  claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp"

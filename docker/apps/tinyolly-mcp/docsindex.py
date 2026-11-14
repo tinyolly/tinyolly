@@ -11,7 +11,9 @@ from pathlib import Path
 
 def default_docs_dir() -> Path | None:
     env = os.environ.get("TINYOLLY_DOCS_DIR")
-    for p in ([Path(env)] if env else []) + [Path(__file__).resolve().parents[3] / "docs"]:
+    parents = Path(__file__).resolve().parents                  # shallow when copied into a container image
+    candidates = ([Path(env)] if env else []) + ([parents[3] / "docs"] if len(parents) > 3 else [])
+    for p in candidates:
         if p.is_dir():
             return p
     return None

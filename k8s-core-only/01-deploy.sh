@@ -16,6 +16,7 @@ kubectl apply -f tinyolly-sqlite-pvc.yaml
 kubectl apply -f tinyolly-otlp-receiver.yaml
 kubectl apply -f tinyolly-opamp-server.yaml
 kubectl apply -f tinyolly-ui.yaml
+kubectl apply -f tinyolly-mcp.yaml
 
 echo ""
 echo "Deployment applied successfully!"

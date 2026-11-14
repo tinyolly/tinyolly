@@ -25,6 +25,7 @@ echo "Deleting TinyOlly resources..."
 
 echo ""
 echo "→ Deleting resources..."
+kubectl delete -f tinyolly-mcp.yaml --ignore-not-found
 kubectl delete -f tinyolly-ui.yaml --ignore-not-found
 kubectl delete -f tinyolly-opamp-server.yaml --ignore-not-found
 kubectl delete -f tinyolly-otlp-receiver.yaml --ignore-not-found

@@ -68,6 +68,22 @@ services:
     networks:
       - tinyolly-core-network
 
+  # MCP server (read-only) for AI agents: http://localhost:8765/mcp
+  #   claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp
+  tinyolly-mcp:
+    image: tinyolly/mcp:latest
+    pull_policy: always
+    container_name: tinyolly-mcp
+    ports:
+      - "127.0.0.1:8765:8765"
+    depends_on:
+      tinyolly-ui:
+        condition: service_started
+    environment:
+      - TINYOLLY_URL=http://tinyolly-ui:5002
+    networks:
+      - tinyolly-core-network
+
 networks:
   tinyolly-core-network:
     name: tinyolly-core-network

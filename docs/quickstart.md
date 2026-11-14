@@ -46,6 +46,7 @@ This pulls pre-built images from Docker Hub and starts:
 - **OpAMP Server** (ports 4320/4321)
 - **TinyOlly OTLP Receiver** (internal)
 - **TinyOlly UI** (port 5005)
+- **TinyOlly MCP server** (port 8765, for AI agents: [MCP guide](mcp.md))
 - **SQLite storage** (embedded)
 
 **Deployment time:** ~30 seconds (pulls from Docker Hub)
@@ -218,7 +219,7 @@ cd docker
 - Check demo app logs: `docker compose -f docker-demo/docker-compose-demo.yml logs`
 
 ### Port conflicts
-- TinyOlly uses ports 4317, 4318, 4320, 4321, 4343, 5005, 19291
+- TinyOlly uses ports 4317, 4318, 4320, 4321, 4343, 5005, 8765, 19291
 - Stop conflicting services or modify ports in `docker-compose-tinyolly-core.yml`
 
 ### Demo apps not generating traffic

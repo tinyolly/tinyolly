@@ -1,0 +1,20 @@
+# TinyOlly MCP server (read-only telemetry over MCP, streamable HTTP).
+# Build context is the REPO ROOT (it also bundles docs/*.md for the docs tools):
+#   docker build -f docker/dockerfiles/Dockerfile.tinyolly-mcp -t tinyolly/mcp:latest .
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY docker/apps/tinyolly-mcp/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY docker/apps/tinyolly-mcp/server.py docker/apps/tinyolly-mcp/render.py \
+     docker/apps/tinyolly-mcp/docsindex.py docker/apps/tinyolly-mcp/skillsindex.py ./
+COPY docker/apps/tinyolly-mcp/skills/ skills/
+COPY docs/*.md docs/
+
+ENV TINYOLLY_DOCS_DIR=/app/docs \
+    TINYOLLY_URL=http://tinyolly-ui:5002
+
+EXPOSE 8765
+CMD ["python", "server.py", "--http", "--host", "0.0.0.0", "--port", "8765"]

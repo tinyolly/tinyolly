@@ -32,6 +32,7 @@ This starts:
 - **OTel Collector**: Listening on `localhost:4317` (gRPC) and `localhost:4318` (HTTP)  
 - **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)  
 - **TinyOlly UI**: `http://localhost:5005`  
+- **TinyOlly MCP server**: `http://localhost:8765/mcp` (read-only, for AI agents; see [MCP](mcp.md))  
 - **TinyOlly OTLP Receiver and its SQLite storage**: OTLP observability back end and storage  
 - Pulls images from Docker Hub (use `./01-start-core-local.sh` to build from your checkout instead)  
 
@@ -161,6 +162,7 @@ This starts:
 - **TinyOlly OTLP Receiver**: Listening on `localhost:4343` (gRPC only)
 - **OpAMP Server**: `ws://localhost:4320/v1/opamp` (WebSocket), `localhost:4321` (HTTP REST API)
 - **TinyOlly UI**: `http://localhost:5005`
+- **TinyOlly MCP server**: `http://localhost:8765/mcp` (see [MCP](mcp.md))
 
 Swap out the included Otel Collector for any distro of Otel Collector.
 
