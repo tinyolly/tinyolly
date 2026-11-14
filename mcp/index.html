@@ -814,6 +814,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Install">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#always-on-server-docker-or-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Always-on server (Docker or Kubernetes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1122,6 +1139,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Install">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#always-on-server-docker-or-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Always-on server (Docker or Kubernetes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1240,7 +1274,41 @@
 <p class="admonition-title">Why not just a URL?</p>
 <p>Claude Desktop's URL connectors are called from Anthropic's cloud, which cannot reach <code>localhost</code>. A local server is started by the client instead.</p>
 </div>
-<p><strong>Optional:</strong> to use a URL (Claude Code only), run <code>python server.py --http --port 8765</code> and register it with <code>claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp</code>. To point at a TinyOlly on another address, set <code>TINYOLLY_URL</code> (default <code>http://localhost:5005</code>).</p>
+<h3 id="always-on-server-docker-or-kubernetes">Always-on server (Docker or Kubernetes)</h3>
+<p>The MCP server is a small separate service. Besides the per-client <strong>stdio</strong> setup above, TinyOlly can run it for you as a container, so nothing has to be started on your machine and every client shares one server over <strong>streamable HTTP</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Where</th>
+<th>How it runs</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Docker Compose</strong></td>
+<td>A <code>tinyolly-mcp</code> service in the core compose files (<code>docker/</code> and <code>docker-core-only/</code>). It starts and stops with the stack.</td>
+<td><code>http://localhost:8765/mcp</code></td>
+</tr>
+<tr>
+<td><strong>Kubernetes (kind)</strong></td>
+<td>A <code>tinyolly-mcp</code> Deployment and NodePort Service (<code>k8s/tinyolly-mcp.yaml</code>, <code>k8s-core-only/tinyolly-mcp.yaml</code>). The kind config maps host port 8765 to it.</td>
+<td><code>http://localhost:8765/mcp</code></td>
+</tr>
+</tbody>
+</table>
+<p>Register the URL once (Claude Code only; Claude Desktop and Zed keep using the stdio command):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>tinyolly<span class="w"> </span>http://127.0.0.1:8765/mcp
+</code></pre></div>
+<p>How it works: the container runs <code>server.py --http</code> and reads TinyOlly over its REST API (<code>TINYOLLY_URL</code>, <code>http://tinyolly-ui:5002</code> inside the stack). It is read-only, bundles the TinyOlly docs and the investigation skills, and binds to <code>127.0.0.1</code> on the host in Docker.</p>
+<p><strong>Updating it after you change <code>docker/apps/tinyolly-mcp</code> or <code>docs/</code>:</strong></p>
+<ul>
+<li>Docker: <code>docker compose -f docker/docker-compose-tinyolly-core-local.yml up -d --build tinyolly-mcp</code></li>
+<li>Kubernetes: <code>k8s/05-rebuild+deploy-mcp.sh</code></li>
+<li>Then restart your MCP client so it reloads the tool list.</li>
+</ul>
+<p><strong>Kubernetes cluster created before the 8765 mapping existed</strong> (<code>scripts/kind-config.yaml</code>): kind cannot add a host port to a running cluster, so bridge it instead of recreating the cluster. With the Colima docker context: <code>docker run -d --restart=always --network kind -p 8765:8765 alpine/socat tcp-listen:8765,fork,reuseaddr tcp:tinyolly-control-plane:30876</code>.</p>
+<p><strong>Without containers:</strong> run <code>python server.py --http --port 8765</code> yourself and register the same URL. To point at a TinyOlly on another address, set <code>TINYOLLY_URL</code> (default <code>http://localhost:5005</code>).</p>
 <h2 id="tools">Tools</h2>
 <table>
 <thead>
