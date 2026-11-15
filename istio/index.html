@@ -1142,7 +1142,7 @@
 <p>Because ztunnel produces only metrics, TinyOlly builds map edges from Istio metrics as well as from traces.</p>
 <div class="admonition tip">
 <p class="admonition-title">Runnable demo</p>
-<p>The <a href="https://github.com/stevelerner/istio-demo">istio-demo</a> repo installs Istio ambient on a local kind cluster, deploys Online Boutique, and has scenarios for waypoint, fault injection, retries and authorization policy.</p>
+<p>The <a href="https://github.com/stevelerner/istio-ambient-demo">istio-ambient-demo</a> repo installs Istio ambient on a local kind cluster, deploys Online Boutique, and has scenarios for waypoint, fault injection, retries and authorization policy. It is a separate repo so TinyOlly stays small.</p>
 </div>
 <h2 id="what-you-get-on-the-map">What you get on the map</h2>
 <table>
@@ -1163,7 +1163,7 @@
 </tr>
 <tr>
 <td>Denied calls</td>
-<td>Red thick edge. Counted from HTTP 403, gRPC status 7 (PERMISSION_DENIED) and waypoint local replies</td>
+<td>Red thick edge. Counted from HTTP 403, gRPC status 7 (PERMISSION_DENIED), waypoint local replies, and L4 connections ztunnel refuses (<code>response_flags=DENY</code>, e.g. plaintext into a STRICT mTLS namespace)</td>
 </tr>
 <tr>
 <td>Mesh roles</td>
@@ -1185,7 +1185,7 @@
 <h2 id="good-to-know">Good to know</h2>
 <ul>
 <li><strong>Namespace merge:</strong> a name like <code>waypoint.boutique</code> is merged into <code>waypoint</code> only when <code>boutique</code> appears as a workload namespace in the mesh metrics.</li>
-<li><strong>Denial detection is heuristic:</strong> a gRPC call denied by an authorization policy returns HTTP 200 with <code>grpc-status: 7</code>, and a waypoint local reply shows up with no upstream workload. TinyOlly treats both as denied. Calls that fail upstream with a response flag (for example <code>UH</code>) count as errors, not denials.</li>
+<li><strong>Denial detection is heuristic:</strong> a gRPC call denied by an authorization policy returns HTTP 200 with <code>grpc-status: 7</code>, and a waypoint local reply shows up with no upstream workload. TinyOlly treats both as denied, and also connections ztunnel marks <code>DENY</code>. Calls that fail upstream with a response flag (for example <code>UH</code>) count as errors, not denials.</li>
 <li><strong>Plaintext edges</strong> are normal for non-mesh traffic such as apps exporting telemetry to TinyOlly.</li>
 </ul>
 
