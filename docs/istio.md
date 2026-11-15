@@ -21,7 +21,7 @@ Because ztunnel produces only metrics, TinyOlly builds map edges from Istio metr
 |---|---|
 | Topology without traces | Edges from `istio_tcp_connections_opened_total` and `istio_requests_total` (`source_kind: metrics`) |
 | mTLS posture | Green edges are mutual TLS, orange dashed edges are plaintext; the bar above the map shows `mTLS 92.5% · 3 plaintext · 1 denied` |
-| Denied calls | Red thick edge. Counted from HTTP 403, gRPC status 7 (PERMISSION_DENIED) and waypoint local replies |
+| Denied calls | Red thick edge. Counted from HTTP 403, gRPC status 7 (PERMISSION_DENIED), waypoint local replies, and L4 connections ztunnel refuses (`response_flags=DENY`, e.g. plaintext into a STRICT mTLS namespace) |
 | Mesh roles | Waypoint (cut box) and gateway (pentagon) node shapes |
 | Merged vs Layered | `waypoint.boutique` (trace identity) and `waypoint` (metric identity) merge into one node; untick **Merge proxy and app nodes** to see both |
 
@@ -36,5 +36,5 @@ The same data is available from `GET /api/service-map` and `GET /api/mesh-postur
 ## Good to know
 
 - **Namespace merge:** a name like `waypoint.boutique` is merged into `waypoint` only when `boutique` appears as a workload namespace in the mesh metrics.
-- **Denial detection is heuristic:** a gRPC call denied by an authorization policy returns HTTP 200 with `grpc-status: 7`, and a waypoint local reply shows up with no upstream workload. TinyOlly treats both as denied. Calls that fail upstream with a response flag (for example `UH`) count as errors, not denials.
+- **Denial detection is heuristic:** a gRPC call denied by an authorization policy returns HTTP 200 with `grpc-status: 7`, and a waypoint local reply shows up with no upstream workload. TinyOlly treats both as denied, and also connections ztunnel marks `DENY`. Calls that fail upstream with a response flag (for example `UH`) count as errors, not denials.
 - **Plaintext edges** are normal for non-mesh traffic such as apps exporting telemetry to TinyOlly.

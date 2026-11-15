@@ -12,7 +12,7 @@
 
 - **A service map from mesh metrics alone** — Ambient ztunnel emits no traces, so most tools show an empty map. TinyOlly now builds edges from Istio metrics and merges them with trace edges: install the mesh and the map fills in.
 
-- **Zero-trust at a glance** — Edges show mTLS (green), plaintext (orange, dashed) and denied calls (red), with a one-line posture summary: "mTLS 92%, 3 plaintext, 0 denied". Node shapes mark waypoints and gateways, and a Merged / Layered toggle switches between app view and proxy view.
+- **Zero-trust at a glance** — Edges show mTLS (green), plaintext (orange, dashed) and denied calls (red, including L4 connections refused by STRICT mTLS), with a one-line posture summary: "mTLS 92%, 3 plaintext, 0 denied". Node shapes mark waypoints and gateways, and a Merged / Layered toggle switches between app view and proxy view.
 
 - **An MCP server that understands the mesh** — New tools: `get_mesh_posture`, `find_denied`, `find_plaintext`, `get_edge`, `get_trace_mesh`, `get_version_split` and `compare_windows`, plus label filters on `query_metric` and a mesh investigation skill. `chart_service_map` is redrawn with cards, a legend and health colors. Ask "what is denied in the mesh?" and get an answer plus a picture.
 

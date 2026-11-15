@@ -618,9 +618,14 @@ def query_metric(name: str, service: str | None = None, minutes: float = 10,
 def get_version_split(service: str, minutes: float = 10) -> str:
     """Canary / version traffic split and error rate per version for a service, from istio_requests_total."""
     end = time.time()
-    d = _api("/api/metrics/query", name="istio_requests_total", start=end - minutes * 60, end=end,
-             **{"attribute.destination_service_name": service})
-    series = (d or {}).get("series") or []
+    # canonical service is the app label shared by every version; per-version backend Services (canary) have other names
+    series = []
+    for attr in ("destination_canonical_service", "destination_service_name"):
+        d = _api("/api/metrics/query", name="istio_requests_total", start=end - minutes * 60, end=end,
+                 **{f"attribute.{attr}": service})
+        series = (d or {}).get("series") or []
+        if series:
+            break
     if not series:
         return _out({"service": service, "minutes": minutes, "total_requests": 0, "versions": [],
                      "note": "no istio_requests_total data for this service (is the mesh metrics collector running?)"})

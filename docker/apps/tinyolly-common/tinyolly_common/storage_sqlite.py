@@ -1662,9 +1662,11 @@ class StorageSQLite:
         try:
             tcp_series = await self.get_metric_series("istio_tcp_connections_opened_total")
             req_series = await self.get_metric_series("istio_requests_total")
-            for edge in metric_edges(tcp_series + req_series):
+            failed_series = await self.get_metric_series("istio_tcp_connections_failed_total")  # DENY flag = refused by policy
+            all_series = tcp_series + req_series + failed_series
+            for edge in metric_edges(all_series):
                 metric_edges_map[(edge["source"], edge["target"])] = edge
-            namespaces = metric_namespaces(tcp_series + req_series)
+            namespaces = metric_namespaces(all_series)
         except Exception as e:
             logger.warning(f"Service graph: metric edges unavailable: {e}")
             namespaces = set()

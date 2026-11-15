@@ -312,11 +312,24 @@ def test_get_version_split_shares_and_error_rates(api):
             _vs("", "200", 0, 0)]}                                     # no traffic: dropped
     api["/api/metrics/query"] = fake
     d = call(server.get_version_split, "cart", minutes=15)
-    assert seen["name"] == "istio_requests_total" and seen["attribute.destination_service_name"] == "cart"
+    assert seen["name"] == "istio_requests_total" and seen["attribute.destination_canonical_service"] == "cart"
     assert d["service"] == "cart" and d["total_requests"] == 100
     v1, v2 = d["versions"]
     assert (v1["version"], v1["requests"], v1["share_pct"], v1["errors"], v1["error_rate_pct"]) == ("v1", 80, 80.0, 10, 12.5)
     assert (v2["version"], v2["requests"], v2["share_pct"], v2["errors"], v2["error_rate_pct"]) == ("v2", 20, 20.0, 0, 0.0)
+
+
+def test_get_version_split_falls_back_to_service_name(api):
+    calls = []
+
+    def fake(**params):
+        calls.append(params)
+        if "attribute.destination_service_name" in params:
+            return {"name": "istio_requests_total", "series": [_vs("v1", "200", 0, 10)]}
+        return {"name": "istio_requests_total", "series": []}
+    api["/api/metrics/query"] = fake
+    d = call(server.get_version_split, "cart")
+    assert len(calls) == 2 and d["total_requests"] == 10
 
 
 def test_get_version_split_no_data(api):

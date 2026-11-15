@@ -82,3 +82,13 @@ def test_upstream_failure_with_flag_is_an_error_not_a_denial():
          "datapoints": [{"timestamp": 0, "value": 0}, {"timestamp": 1, "value": 3}]}
     e = metric_edges([s])[0]
     assert e["denied"] == 0 and e["errors"] == 3
+
+
+def test_deny_flagged_failed_connections_count_as_denied():
+    """ztunnel flags L4 connections refused by policy (STRICT mTLS) with response_flags=DENY."""
+    from tinyolly_common.mesh_adapters import metric_edges
+    s = {"attributes": {"source_canonical_service": "outsider", "destination_canonical_service": "frontend",
+                        "connection_security_policy": "unknown", "reporter": "destination", "response_flags": "DENY"},
+         "datapoints": [{"timestamp": 1, "value": 0}, {"timestamp": 2, "value": 12}]}
+    (e,) = metric_edges([s])
+    assert e["denied"] == 12 and e["errors"] == 0 and e["mtls"] is False

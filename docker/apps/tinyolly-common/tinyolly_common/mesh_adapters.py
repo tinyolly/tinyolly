@@ -134,7 +134,8 @@ def metric_edges(series: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         # gRPC reports failures as HTTP 200 plus a status: 7 = PERMISSION_DENIED (RBAC), other non-zero = error.
         # A waypoint local reply (no upstream, no error flag, 200 or 403) is how an RBAC deny looks in metrics.
         local_reply = unreached and attrs.get("reporter") == "waypoint" and attrs.get("response_flags") == "-"
-        is_denied = code == "403" or grpc == "7" or local_reply
+        # ztunnel marks an L4 connection refused by policy (STRICT mTLS, L4 AuthorizationPolicy) with flag DENY.
+        is_denied = code == "403" or grpc == "7" or local_reply or attrs.get("response_flags") == "DENY"
         is_error = (isinstance(code, str) and code.startswith("5")) or (grpc not in (None, "", "0", "7"))
 
         key = (source, target)
