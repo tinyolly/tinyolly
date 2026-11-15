@@ -1355,7 +1355,7 @@
 </tr>
 <tr>
 <td><code>get_version_split</code></td>
-<td>Canary view: traffic share and error rate per destination version</td>
+<td>Canary view: traffic share, error rate and average latency (<code>avg_ms</code>) per destination version</td>
 </tr>
 <tr>
 <td><code>compare_windows</code></td>
@@ -1427,7 +1427,7 @@
 <h2 id="pretty-output-and-visuals">Pretty output and visuals</h2>
 <p>The JSON tools are compact for agents. When you want something to show a person, pass <code>format="table"</code> (catalog, traces, spans, logs: markdown tables with health and severity icons, readable durations and times) or <code>format="waterfall"</code> on <code>get_trace</code> (indented span tree with timing bars; big traces keep every error span plus the slowest spans, up to <code>max_rows</code>). <code>chart_metric</code> and <code>chart_service_map</code> return PNG images, so the client must display image results (Claude Desktop and Claude Code do). Charts are drawn with matplotlib, which <code>install.sh</code> installs into the server's venv.</p>
 <p>Claude Desktop shows tool images as a small preview. Click it to enlarge, or ask for a full-size file: both chart tools take <code>save_to</code> (for example "show me the service map and save it to ~/Desktop/map.png").</p>
-<p><code>chart_service_map</code> draws each service as a card: a small icon for its role (client, service, external, waypoint or ztunnel, gateway), the name and <code>err · p95</code> inside, and a stripe coloured by health (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green solid mTLS, amber dashed plaintext, red denied or errors. Every chart carries a legend. The whole map lays callers left of callees; pass a service name to draw just its neighbourhood (<code>depth=2</code> for two hops), which stays readable on large meshes.</p>
+<p><code>chart_service_map</code> draws each service as a card: a small icon for its role (client, service, external, waypoint or ztunnel, gateway), the name and <code>err · p95</code> inside, and a stripe coloured by health (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green solid mTLS, amber dashed plaintext, red denied or errors. Every chart carries a legend. The whole map lays callers left of callees; pass a service name to draw just its neighbourhood (<code>depth=2</code> for two hops), which stays readable on large meshes. A grey edge means mTLS is unknown (the edge is known only from traces). On the whole-service map only the six busiest edges carry latency labels so the picture stays readable.</p>
 <p>Try asking: "chart http.server.duration for tinyolly-ui", "show me the service map", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "pretty print the service catalog".</p>
 <h2 id="investigation-skills">Investigation skills</h2>
 <p>Seven short skills teach an agent how to investigate with these tools. They live only inside the MCP server (<code>docker/apps/tinyolly-mcp/skills/</code>); nothing is installed into Claude Code or any other client.</p>
