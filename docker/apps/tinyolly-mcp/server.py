@@ -21,12 +21,11 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-import httpx
-from mcp.server.mcpserver import Image, MCPServer
-
 import docsindex
+import httpx
 import render
 import skillsindex
+from mcp.server.mcpserver import Image, MCPServer
 
 BASE_URL = os.environ.get("TINYOLLY_URL", "http://localhost:5005").rstrip("/")
 MAX_CHARS = int(os.environ.get("TINYOLLY_MCP_MAX_CHARS", "20000"))
@@ -519,20 +518,20 @@ def query_logs(trace_id: str | None = None, service: str | None = None, severity
     limit = max(1, min(limit, 200))
     logs = _api("/api/logs", trace_id=trace_id, limit=5000) or []
     out = []
-    for l in logs:
-        if service and l.get("service_name") != service:
+    for entry in logs:
+        if service and entry.get("service_name") != service:
             continue
-        if severity and (l.get("severity") or "").lower() != severity.lower():
+        if severity and (entry.get("severity") or "").lower() != severity.lower():
             continue
-        if contains and contains.lower() not in (l.get("message") or "").lower():
+        if contains and contains.lower() not in (entry.get("message") or "").lower():
             continue
-        out.append(l)
-    out.sort(key=lambda l: -(l.get("timestamp") or 0))
+        out.append(entry)
+    out.sort(key=lambda entry: -(entry.get("timestamp") or 0))
     if format == "table":
         return (render.logs_table(out[:limit]) + f"\n\n{len(out)} matching logs, showing {min(limit, len(out))}.") if out else "No matching logs."
-    rows = [{"time": l.get("timestamp"), "severity": l.get("severity"), "service": l.get("service_name"),
-             "message": _t(l.get("message"), 300), "trace_id": l.get("trace_id") or None,
-             "span_id": l.get("span_id") or None} for l in out[:limit]]
+    rows = [{"time": entry.get("timestamp"), "severity": entry.get("severity"), "service": entry.get("service_name"),
+             "message": _t(entry.get("message"), 300), "trace_id": entry.get("trace_id") or None,
+             "span_id": entry.get("span_id") or None} for entry in out[:limit]]
     rows = _fit(rows)
     return _out({"matched": len(out), "returned": len(rows), "logs": rows,
                  "note": "output cap reached; narrow filters or lower limit" if len(rows) < min(limit, len(out)) else None})
@@ -620,11 +619,13 @@ def get_version_split(service: str, minutes: float = 10) -> str:
     end = time.time()
     # canonical service is the app label shared by every version; per-version backend Services (canary) have other names
     series = []
+    matched_attr = None
     for attr in ("destination_canonical_service", "destination_service_name"):
         d = _api("/api/metrics/query", name="istio_requests_total", start=end - minutes * 60, end=end,
                  **{f"attribute.{attr}": service})
         series = (d or {}).get("series") or []
         if series:
+            matched_attr = attr
             break
     if not series:
         return _out({"service": service, "minutes": minutes, "total_requests": 0, "versions": [],
@@ -647,17 +648,34 @@ def get_version_split(service: str, minutes: float = 10) -> str:
     if not by_version:
         return _out({"service": service, "minutes": minutes, "total_requests": 0, "versions": [],
                      "note": "no istio_requests_total data for this service (is the mesh metrics collector running?)"})
+    # average latency per version from the istio_request_duration_milliseconds histogram (same attribute filter)
+    latency: dict[str, dict] = {}
+    ld = _api("/api/metrics/query", name="istio_request_duration_milliseconds", start=end - minutes * 60, end=end,
+              **{f"attribute.{matched_attr}": service})
+    for s in (ld or {}).get("series") or []:
+        pts = [p["histogram"] for p in s.get("datapoints", []) if isinstance(p.get("histogram"), dict)]
+        if len(pts) < 2:
+            continue
+        count_delta = pts[-1]["count"] - pts[0]["count"]
+        sum_delta = pts[-1]["sum"] - pts[0]["sum"]
+        version = (s.get("attributes") or {}).get("destination_version") or "unknown"
+        g = latency.setdefault(version, {"sum": 0.0, "count": 0.0})
+        g["sum"] += sum_delta
+        g["count"] += count_delta
     total = sum(g["requests"] for g in by_version.values())
     versions = []
     for version, g in sorted(by_version.items(), key=lambda kv: -kv[1]["requests"]):
         req = int(g["requests"])
         err = int(g["errors"])
+        lat = latency.get(version)
+        avg_ms = round(lat["sum"] / lat["count"], 1) if lat and lat["count"] else None
         versions.append({
             "version": version,
             "requests": req,
             "share_pct": round(req / total * 100, 1) if total else 0.0,
             "errors": err,
             "error_rate_pct": round(err / req * 100, 1) if req else 0.0,
+            "avg_ms": avg_ms,
         })
     return _out({"service": service, "minutes": minutes, "total_requests": int(total), "versions": versions})
 
@@ -840,7 +858,7 @@ def _register_skill_prompts() -> None:
     for skill in SKILLS.values():
         def make(sk=skill):
             def prompt(focus: str = "") -> str:
-                head = f"Investigate with the TinyOlly MCP tools using this skill" + (f". Focus: {focus}" if focus else ".")
+                head = "Investigate with the TinyOlly MCP tools using this skill" + (f". Focus: {focus}" if focus else ".")
                 return f"{head}\n\n{sk.body}"
             return prompt
         mcp.prompt(name=skill.name, description=skill.description)(make())

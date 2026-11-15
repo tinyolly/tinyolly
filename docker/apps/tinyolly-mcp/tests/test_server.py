@@ -152,7 +152,7 @@ def test_query_logs_filters_and_truncates(api):
     assert call(server.query_logs, contains="hello 7")["matched"] == 1
     d = call(server.query_logs, limit=500)
     assert d["returned"] == 20 and d["logs"][0]["time"] == 20
-    assert max(len(l["message"]) for l in d["logs"]) < 340
+    assert max(len(entry["message"]) for entry in d["logs"]) < 340
 
 
 def test_query_metric_downsamples(api):
@@ -305,8 +305,9 @@ def test_get_version_split_shares_and_error_rates(api):
     seen = {}
 
     def fake(**params):
-        seen.update(params)
-        return {"name": "istio_requests_total", "series": [
+        if params["name"] == "istio_requests_total":
+            seen.update(params)
+        return {"name": params["name"], "series": [
             _vs("v1", "200", 0, 70), _vs("v1", "500", 0, 10),          # v1: 80 requests, 10 errors
             _vs("v2", "200", 5, 25),                                   # v2: 20 requests, no errors
             _vs("", "200", 0, 0)]}                                     # no traffic: dropped
@@ -329,7 +330,36 @@ def test_get_version_split_falls_back_to_service_name(api):
         return {"name": "istio_requests_total", "series": []}
     api["/api/metrics/query"] = fake
     d = call(server.get_version_split, "cart")
-    assert len(calls) == 2 and d["total_requests"] == 10
+    assert len([c for c in calls if c["name"] == "istio_requests_total"]) == 2 and d["total_requests"] == 10
+
+
+def test_get_version_split_includes_avg_latency(api):
+    def hist(count, total):
+        return {"count": count, "sum": total, "bucketCounts": [], "explicitBounds": []}
+
+    def lat(version, c0, s0, c1, s1):
+        return {"attributes": {"destination_version": version, "destination_canonical_service": "cart"},
+                "datapoints": [{"timestamp": 1.0, "value": None, "histogram": hist(c0, s0)},
+                               {"timestamp": 2.0, "value": None, "histogram": hist(c1, s1)}]}
+
+    def fake(**params):
+        if params["name"] == "istio_request_duration_milliseconds":
+            return {"name": params["name"], "series": [lat("v1", 0, 0, 90, 180), lat("v2", 5, 100, 15, 4100)]}
+        return {"name": "istio_requests_total", "series": [_vs("v1", "200", 0, 90), _vs("v2", "200", 0, 10)]}
+    api["/api/metrics/query"] = fake
+    d = call(server.get_version_split, "cart")
+    by = {v["version"]: v for v in d["versions"]}
+    assert by["v1"]["avg_ms"] == 2.0 and by["v2"]["avg_ms"] == 400.0
+
+
+def test_get_version_split_avg_latency_missing_is_none(api):
+    def fake(**params):
+        if params["name"] == "istio_request_duration_milliseconds":
+            return {"name": params["name"], "series": []}
+        return {"name": "istio_requests_total", "series": [_vs("v1", "200", 0, 10)]}
+    api["/api/metrics/query"] = fake
+    d = call(server.get_version_split, "cart")
+    assert d["versions"][0]["avg_ms"] is None
 
 
 def test_get_version_split_no_data(api):

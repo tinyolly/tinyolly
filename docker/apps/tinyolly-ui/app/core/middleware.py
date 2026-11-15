@@ -6,7 +6,6 @@ from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from ..config import settings
 from .telemetry import get_metrics
 
 

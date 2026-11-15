@@ -4,12 +4,13 @@ import asyncio
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from models import AlertRule
 
 from app.core.middleware import setup_middleware
 from app.managers import alerts as alerts_mod
 from app.managers.alerts import AlertManager
 from app.managers.websocket import ConnectionManager
-from models import AlertRule
+
 
 class _M:
     def add(self, *a, **k):
@@ -124,6 +125,7 @@ async def test_numeric_error_status_still_alerts(monkeypatch):
 async def test_admin_stats_serialises_fractional_percent_and_reset_clears(tmp_path):
     """Regression: /admin/stats 500'd as soon as any metric existed (percent_used is a float, model said int)."""
     import time
+
     from app.routers import admin
     from tinyolly_common.storage_sqlite import StorageSQLite
     st = StorageSQLite(db_path=str(tmp_path / "t.db"), ttl=60)

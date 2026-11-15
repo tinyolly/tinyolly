@@ -20,7 +20,15 @@ import orjson
 import zstandard as zstd
 from async_lru import alru_cache
 
-from .mesh_adapters import merge_graph, metric_edges, metric_namespaces, posture
+from .mesh_adapters import (
+    graph_node_list,
+    merge_graph,
+    metric_edges,
+    metric_namespaces,
+    metric_only_edge,
+    posture,
+    trace_edge,
+)
 from .otlp_utils import (
     exponential_to_explicit,
     extract_resource_attributes,
@@ -1680,24 +1688,8 @@ class StorageSQLite:
                 for name in (source, target):
                     if name not in nodes:
                         nodes[name] = {"type": "service", "metrics": {}}
-            graph_nodes = [
-                {"id": name, "label": name, "type": data.get("type", "service"), "metrics": data.get("metrics", {})}
-                for name, data in nodes.items()
-            ]
-            graph_edges = [
-                {
-                    "source": source,
-                    "target": target,
-                    "value": edge["count"],
-                    "p95": 0,
-                    "req_rate": 0,
-                    "error_count": edge["errors"],
-                    "denied_count": edge.get("denied", 0),
-                    "source_kind": "metrics",
-                    "mtls": edge["mtls"],
-                }
-                for (source, target), edge in metric_edges_map.items()
-            ]
+            graph_nodes = graph_node_list(nodes)
+            graph_edges = [metric_only_edge(source, target, edge) for (source, target), edge in metric_edges_map.items()]
             result = merge_graph({"nodes": graph_nodes, "edges": graph_edges}, namespaces if merge else set())
             await self._cache_set_json_safe(snapshot_key, result, SERVICE_SNAPSHOT_TTL_SECONDS)
             await self._cache_set_json_safe(cache_key, result, SERVICE_VIEW_CACHE_TTL)
@@ -1772,47 +1764,8 @@ class StorageSQLite:
                         edges[key]["durations"].append(duration_ms)
                         edges[key]["spans"].append((start, end, is_error))
 
-        graph_edges = []
-        for (source, target), data in edges.items():
-            durations = sorted(data["durations"])
-            p95 = 0
-            if durations:
-                idx = int(len(durations) * 0.95)
-                idx = min(idx, len(durations) - 1)
-                p95 = durations[idx]
-
-            error_count = sum(1 for s in data["spans"] if s[2])
-            if data["spans"]:
-                min_start = min(s[0] for s in data["spans"])
-                max_end = max(s[1] for s in data["spans"])
-                window = max((max_end - min_start) / 1_000_000_000, 1.0)
-                req_rate = round(data["count"] / window, 2)
-            else:
-                req_rate = 0
-
-            metric_edge = metric_edges_map.get((source, target))
-            if metric_edge:
-                source_kind = "traces+metrics"
-                mtls = metric_edge["mtls"]
-                denied_count = metric_edge.get("denied", 0)
-            else:
-                source_kind = "traces"
-                mtls = None
-                denied_count = 0
-
-            graph_edges.append(
-                {
-                    "source": source,
-                    "target": target,
-                    "value": data["count"],
-                    "p95": round(p95, 2),
-                    "req_rate": req_rate,
-                    "error_count": error_count,
-                    "denied_count": denied_count,
-                    "source_kind": source_kind,
-                    "mtls": mtls,
-                }
-            )
+        graph_edges = [trace_edge(source, target, data, metric_edges_map.get((source, target)))
+                       for (source, target), data in edges.items()]
 
         # Metric-only edges (no trace for the pair): add them, and any endpoint nodes they need.
         for (source, target), edge in metric_edges_map.items():
@@ -1821,24 +1774,9 @@ class StorageSQLite:
             for name in (source, target):
                 if name not in nodes:
                     nodes[name] = {"type": "service", "metrics": {}}
-            graph_edges.append(
-                {
-                    "source": source,
-                    "target": target,
-                    "value": edge["count"],
-                    "p95": 0,
-                    "req_rate": 0,
-                    "error_count": edge["errors"],
-                    "denied_count": edge.get("denied", 0),
-                    "source_kind": "metrics",
-                    "mtls": edge["mtls"],
-                }
-            )
+            graph_edges.append(metric_only_edge(source, target, edge))
 
-        graph_nodes = [
-            {"id": name, "label": name, "type": data.get("type", "service"), "metrics": data.get("metrics", {})}
-            for name, data in nodes.items()
-        ]
+        graph_nodes = graph_node_list(nodes)
 
         result = merge_graph({"nodes": graph_nodes, "edges": graph_edges}, namespaces if merge else set())
         await self._cache_set_json_safe(snapshot_key, result, SERVICE_SNAPSHOT_TTL_SECONDS)

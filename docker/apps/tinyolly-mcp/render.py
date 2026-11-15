@@ -100,8 +100,8 @@ def spans_table(spans: list[dict]) -> str:
 
 
 def logs_table(logs: list[dict]) -> str:
-    rows = [[SEVERITY_ICON.get(str(l.get("severity") or "").lower(), "⚪"), fmt_time(l.get("timestamp")), l.get("severity"),
-             l.get("service_name"), l.get("message"), l.get("trace_id") or ""] for l in logs]
+    rows = [[SEVERITY_ICON.get(str(entry.get("severity") or "").lower(), "⚪"), fmt_time(entry.get("timestamp")), entry.get("severity"),
+             entry.get("service_name"), entry.get("message"), entry.get("trace_id") or ""] for entry in logs]
     return md_table(["", "Time", "Level", "Service", "Message", "Trace id"], rows, [2, 12, 8, 24, 90, 32])
 
 
@@ -237,8 +237,9 @@ def _series_labels(series: list[dict]) -> list[str]:
 
 def metric_chart(name: str, unit: str, mtype: str, series: list[dict], max_series: int = 8) -> bytes:
     """Line chart of a metric's series. Histograms: per-datapoint mean (solid) and p95 estimate (dashed), same colour."""
-    import matplotlib.dates as mdates
     from datetime import datetime
+
+    import matplotlib.dates as mdates
     plt = _plt()
     fig, ax = plt.subplots(figsize=(10, 4.2))
     palette = plt.get_cmap("tab10").colors
@@ -323,7 +324,7 @@ INK, MUTED, LINE = "#0f172a", "#64748b", "#cbd5e1"
 
 def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bool = False) -> None:
     """Card at (x, y): role icon, service name, error/p95 line, and a stripe on the left coloured by health."""
-    from matplotlib.patches import FancyBboxPatch, Rectangle
+    from matplotlib.patches import FancyBboxPatch
     color = _node_color(m, isolated=role == "isolated")
     x0, y0 = x - CARD_W / 2, y - CARD_H / 2
     ax.add_patch(FancyBboxPatch((x0, y0), CARD_W, CARD_H, boxstyle="round,pad=0,rounding_size=0.18", fc="white",
@@ -342,12 +343,13 @@ LEGEND_ROW = 0.62
 
 def _legend_rows(mesh: bool) -> list[list[tuple]]:
     rows: list[list[tuple]] = [[("role", "client", "client (no callers)"), ("role", "server", "service"),
-                                ("role", "external", "external (no callees)")],
+                                ("role", "external", "leaf (no callees)")],
                                [("role", "isolated", "no connections")] + ([("role", "waypoint", "waypoint / ztunnel"), ("role", "gateway", "gateway")] if mesh else []),
                                [("node", COLOR_OK, "node: healthy"), ("node", COLOR_WARN, "node: >1% errors"), ("node", COLOR_ERR, "node: >5% errors")]]
     if mesh:
         rows.append([("edge", ("#16a34a", "-"), "edge: mTLS"), ("edge", ("#f59e0b", "--"), "edge: plaintext"),
                      ("edge", ("#ef4444", "-"), "edge: denied / errors")])
+        rows.append([("edge", ("#94a3b8", "-"), "edge: mTLS unknown (traces only)")])
     return rows
 
 
@@ -428,14 +430,14 @@ def posture_line(graph: dict) -> str:
     return f"mTLS {mtls / (mtls + plain) * 100:.0f}% · {plain} plaintext · {denied} denied"
 
 
-def _draw_edge(ax, e: dict, pos: dict, t: float = 0.55) -> None:
+def _draw_edge(ax, e: dict, pos: dict, t: float = 0.55, label: bool = True) -> None:
     (x1, y1), (x2, y2) = pos[e["source"]], pos[e["target"]]
     color, style = edge_style(e)
     ax.annotate("", xy=(x2 - CARD_W / 2 - 0.06, y2), xytext=(x1 + CARD_W / 2 + 0.06, y1), zorder=1,
                 arrowprops=dict(arrowstyle="-|>", color=color, linestyle=style,
                                 lw=1.4 + min(2.0, (e.get("value") or e.get("call_count") or 0) ** 0.25 / 3),
                                 connectionstyle="arc3,rad=0.05", shrinkA=0, shrinkB=0))
-    if e.get("p95"):                                   # metric-only edges have no latency; skip the "0" label
+    if label and e.get("p95"):                         # metric-only edges have no latency; skip the "0" label
         label = fmt_ms(e.get("p95")) + (f" · {e['req_rate']:g}/s" if e.get("req_rate") else "")
         xs, xe = x1 + CARD_W / 2 + 0.06, x2 - CARD_W / 2 - 0.06      # label along the visible part of the edge, never on a card
         ax.text(xs + (xe - xs) * t, y1 + (y2 - y1) * t + 0.12, label, ha="center", va="bottom", fontsize=9, color="#475569", zorder=5,
@@ -477,11 +479,9 @@ def ego_graph(graph: dict, service: str, depth: int = 1, max_per_column: int = 1
 
 def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
     """Callers -> service -> callees diagram for one service, nodes coloured by health, edges labelled with p95."""
-    from matplotlib.patches import FancyBboxPatch
     plt = _plt()
     g = ego_graph(graph, service, depth)
     cols = sorted(g["columns"])
-    rows = max(len(v) for v in g["columns"].values())
     roles = node_roles(graph)
     mesh = bool(posture_line(graph))
     xr = max((len(cols) - 1) * COL_X + CARD_W / 2 + 0.4, 2 * LEGEND_COL + 4.0)
@@ -515,7 +515,6 @@ def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
 
 def full_map_chart(graph: dict) -> bytes:
     """Whole service map: connected services in left-to-right layers (callers -> callees), unconnected ones in a compact grid below."""
-    from matplotlib.patches import FancyBboxPatch
     plt = _plt()
     roles = node_roles(graph)
     nodes = {n["id"]: n for n in graph.get("nodes", [])}
@@ -557,26 +556,29 @@ def full_map_chart(graph: dict) -> bytes:
 
     for n in linked:
         depth(n)
-    spans = lambda n: float(((nodes.get(n) or {}).get("metrics") or {}).get("span_count") or 0)
+    def spans(n: str) -> float:
+        return float(((nodes.get(n) or {}).get("metrics") or {}).get("span_count") or 0)
+
     by_layer: dict[int, list[str]] = defaultdict(list)
-    for n, l in layer.items():
-        by_layer[l].append(n)
+    for n, lay in layer.items():
+        by_layer[lay].append(n)
     X = COL_X
     rank = {n: float(i) for names in by_layer.values() for i, n in enumerate(sorted(names, key=lambda n: -spans(n)))}
     for sweep in range(4):                              # barycentre ordering: put nodes near their neighbours to cut crossings
         order = sorted(by_layer) if sweep % 2 == 0 else sorted(by_layer, reverse=True)
-        for l in order:
-            def bary(n):
-                nb = [rank[e["source"] if sweep % 2 == 0 else e["target"]] for e in edges
-                      if (e["target"] if sweep % 2 == 0 else e["source"]) == n]
+        fwd = sweep % 2 == 0
+        for lay in order:
+            def bary(n, fwd=fwd):
+                nb = [rank[e["source"] if fwd else e["target"]] for e in edges
+                      if (e["target"] if fwd else e["source"]) == n]
                 return sum(nb) / len(nb) if nb else rank[n]
-            for i, n in enumerate(sorted(by_layer[l], key=lambda n: (bary(n), -spans(n)))):
+            for i, n in enumerate(sorted(by_layer[lay], key=lambda n: (bary(n), -spans(n)))):
                 rank[n] = float(i)
     pos: dict[str, tuple[float, float]] = {}
-    for l, names in by_layer.items():
+    for lay, names in by_layer.items():
         names.sort(key=lambda n: rank[n])
         for i, n in enumerate(names):
-            pos[n] = (l * X, -(i - (len(names) - 1) / 2) * ROW)
+            pos[n] = (lay * X, -(i - (len(names) - 1) / 2) * ROW)
     ncols = (max(by_layer) + 1) if by_layer else 1
     rows = max((len(v) for v in by_layer.values()), default=1)
     alone = sorted((n for n in nodes if n not in linked), key=lambda n: -spans(n))
@@ -592,8 +594,10 @@ def full_map_chart(graph: dict) -> bytes:
     fig.patch.set_facecolor("#f8fafc")
     ax.set_facecolor("#f8fafc")
     ax.axis("off")
+    # a dense map: label only the busiest edges so the labels stay readable (the per-service chart labels all of them)
+    busiest = {id(e) for e in sorted(edges, key=lambda e: -(e.get('value') or 0))[:6]}
     for i, e in enumerate(edges):
-        _draw_edge(ax, e, pos, 0.25 + 0.17 * (i % 4))
+        _draw_edge(ax, e, pos, 0.25 + 0.17 * (i % 4), label=id(e) in busiest)
     for n, (x, y) in pos.items():
         _draw_node(ax, x, y, n, (nodes.get(n) or {}).get("metrics") or {}, roles.get(n, "server"))
     ys = [y for _, y in pos.values()] or [0]

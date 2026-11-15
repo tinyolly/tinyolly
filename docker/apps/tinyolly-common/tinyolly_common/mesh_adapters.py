@@ -181,3 +181,33 @@ def posture(graph: Dict[str, Any]) -> Dict[str, Any]:
         "plaintext": plaintext,
         "denied": denied,
     }
+
+
+def graph_node_list(nodes: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Turn a `{name: {type, metrics}}` map into the node dicts of a service graph."""
+    return [{"id": name, "label": name, "type": data.get("type", "service"), "metrics": data.get("metrics", {})}
+            for name, data in nodes.items()]
+
+
+def metric_only_edge(source: str, target: str, edge: Dict[str, Any]) -> Dict[str, Any]:
+    """Graph edge for a pair seen only in mesh metrics (no trace): no latency, no request rate."""
+    return {"source": source, "target": target, "value": edge["count"], "p95": 0, "req_rate": 0,
+            "error_count": edge["errors"], "denied_count": edge.get("denied", 0),
+            "source_kind": "metrics", "mtls": edge["mtls"]}
+
+
+def trace_edge(source: str, target: str, data: Dict[str, Any], metric_edge: Dict[str, Any] | None) -> Dict[str, Any]:
+    """Graph edge from trace data (`count`, `durations` in ms, `spans` as (start_ns, end_ns, is_error)),
+    enriched with mTLS and denied state when the same pair also appears in mesh metrics."""
+    durations = sorted(data["durations"])
+    p95 = durations[min(int(len(durations) * 0.95), len(durations) - 1)] if durations else 0
+    spans = data["spans"]
+    req_rate = 0
+    if spans:
+        window = max((max(s[1] for s in spans) - min(s[0] for s in spans)) / 1_000_000_000, 1.0)
+        req_rate = round(data["count"] / window, 2)
+    return {"source": source, "target": target, "value": data["count"], "p95": round(p95, 2), "req_rate": req_rate,
+            "error_count": sum(1 for s in spans if s[2]),
+            "denied_count": metric_edge.get("denied", 0) if metric_edge else 0,
+            "source_kind": "traces+metrics" if metric_edge else "traces",
+            "mtls": metric_edge["mtls"] if metric_edge else None}

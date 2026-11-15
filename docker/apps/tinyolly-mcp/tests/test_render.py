@@ -62,7 +62,7 @@ def test_waterfall_small_and_large(api):
     assert "a: op-1" in w and "└ b: op-2" in w and "✗" in w and "hidden" not in w
     big = big_trace(3000)
     w = render.waterfall(big, max_rows=40)
-    rows = [l for l in w.splitlines() if "│" in l]
+    rows = [entry for entry in w.splitlines() if "│" in entry]
     assert 0 < len(rows) <= 40 and "spans hidden" in w and w.count("✗") == 8       # every error span survives
     api[f"/api/traces/{T}"] = {"trace_id": T, "spans": big}
     assert len(server.get_trace(T, format="waterfall", max_rows=30)) < 6000

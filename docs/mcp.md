@@ -81,7 +81,7 @@ How it works: the container runs `server.py --http` and reads TinyOlly over its 
 | `find_denied`, `find_plaintext` | Just the denied or the non-mTLS edges |
 | `get_edge` | One caller → callee edge in detail, with the RED numbers of both services |
 | `get_trace_mesh` | Mesh view of a trace: proxy time per hop (mesh time), retry attempts and decoded Envoy response flags |
-| `get_version_split` | Canary view: traffic share and error rate per destination version |
+| `get_version_split` | Canary view: traffic share, error rate and average latency (`avg_ms`) per destination version |
 | `compare_windows` | What changed in the last N minutes vs the N before: new, gone, more errors, slower services |
 | `search_traces` | Recent traces filtered by service, errors, min duration, root name (`format="table"`) |
 | `get_trace` | **Bounded summary** of a trace: duration, counts, per-service breakdown, error spans, slowest spans, depth. `format="waterfall"` draws a text waterfall |
@@ -107,7 +107,7 @@ The JSON tools are compact for agents. When you want something to show a person,
 
 Claude Desktop shows tool images as a small preview. Click it to enlarge, or ask for a full-size file: both chart tools take `save_to` (for example "show me the service map and save it to ~/Desktop/map.png").
 
-`chart_service_map` draws each service as a card: a small icon for its role (client, service, external, waypoint or ztunnel, gateway), the name and `err · p95` inside, and a stripe coloured by health (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green solid mTLS, amber dashed plaintext, red denied or errors. Every chart carries a legend. The whole map lays callers left of callees; pass a service name to draw just its neighbourhood (`depth=2` for two hops), which stays readable on large meshes.
+`chart_service_map` draws each service as a card: a small icon for its role (client, service, external, waypoint or ztunnel, gateway), the name and `err · p95` inside, and a stripe coloured by health (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green solid mTLS, amber dashed plaintext, red denied or errors. Every chart carries a legend. The whole map lays callers left of callees; pass a service name to draw just its neighbourhood (`depth=2` for two hops), which stays readable on large meshes. A grey edge means mTLS is unknown (the edge is known only from traces). On the whole-service map only the six busiest edges carry latency labels so the picture stays readable.
 
 Try asking: "chart http.server.duration for tinyolly-ui", "show me the service map", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "pretty print the service catalog".
 

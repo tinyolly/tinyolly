@@ -38,3 +38,6 @@ The same data is available from `GET /api/service-map` and `GET /api/mesh-postur
 - **Namespace merge:** a name like `waypoint.boutique` is merged into `waypoint` only when `boutique` appears as a workload namespace in the mesh metrics.
 - **Denial detection is heuristic:** a gRPC call denied by an authorization policy returns HTTP 200 with `grpc-status: 7`, and a waypoint local reply shows up with no upstream workload. TinyOlly treats both as denied, and also connections ztunnel marks `DENY`. Calls that fail upstream with a response flag (for example `UH`) count as errors, not denials.
 - **Plaintext edges** are normal for non-mesh traffic such as apps exporting telemetry to TinyOlly.
+- **History persists:** ztunnel counters count from when ztunnel started, so TinyOlly shows denied and plaintext history from before a demo began. Restart ztunnel and clear TinyOlly's stored telemetry (`POST /admin/reset`) for a clean start.
+- **Reconnect after adding a waypoint:** long-lived gRPC connections keep the path they were opened on, so a waypoint sees no traffic until callers reconnect (for example by restarting them).
+- **Timeouts and delays:** a route timeout does not cut off a fault delay injected by the mesh; it only cuts off real upstream slowness.

@@ -474,26 +474,49 @@ function renderAttributeFilters(metric, data, containerId, chartId) {
 
     if (attrKeys.size === 0) return;
 
-    let html = '<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">';
-    html += '<span style="font-size: 12px; font-weight: 600;">Filter by:</span>';
-
-    for (const key of attrKeys) {
-        // Get unique values for this attribute
+    // Only attributes with more than one value can filter anything; single-valued ones are summarised in a note.
+    const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const fields = [];
+    const constants = [];
+    for (const key of Array.from(attrKeys).sort()) {
         const values = new Set();
         data.series.forEach(s => {
             const val = s.attributes?.[key];
             if (val !== undefined) values.add(String(val));
         });
-
-        html += `
-            <select onchange="window.applyAttributeFilter('${chartId}', '${key}', this.value)" style="padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); font-size: 11px;">
-                <option value="">All ${key}</option>
-                ${Array.from(values).map(v => `<option value="${v}">${v}</option>`).join('')}
-            </select>
-        `;
+        if (values.size > 1) fields.push([key, Array.from(values).sort()]);
+        else if (values.size === 1) constants.push([key, Array.from(values)[0]]);
     }
 
+    let html = '<div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px;">';
+    html += '<span style="font-size: 12px; font-weight: 600;">Filter by</span>';
+    if (fields.length === 0) html += '<span style="font-size: 11px; color: var(--text-muted);">no attribute varies across the series</span>';
     html += '</div>';
+
+    if (fields.length) {
+        html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 12px;">';
+        for (const [key, values] of fields) {
+            html += `
+                <label style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${esc(key)}">${esc(key.replace(/_/g, ' '))}</span>
+                    <select onchange="window.applyAttributeFilter('${chartId}', '${esc(key)}', this.value)" style="width: 100%; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); color: inherit; font-size: 12px;">
+                        <option value="">All (${values.length})</option>
+                        ${values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+                    </select>
+                </label>`;
+        }
+        html += '</div>';
+    }
+
+    if (constants.length) {
+        html += `<details style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
+            <summary style="cursor: pointer;">${constants.length} attributes with a single value</summary>
+            <div style="margin-top: 4px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2px 12px;">
+                ${constants.map(([k, v]) => `<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${esc(k)}=${esc(v)}">${esc(k)} = ${esc(v)}</span>`).join('')}
+            </div>
+        </details>`;
+    }
+
     container.innerHTML = html;
 }
 

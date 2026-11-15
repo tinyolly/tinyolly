@@ -4,7 +4,7 @@ import datetime
 import time
 
 import psutil
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from models import AdminStatsResponse, AlertConfig, AlertRule
 
 from tinyolly_common import Storage
