@@ -40,6 +40,7 @@ Visualize and correlate logs, metrics, and traces without sending data to the cl
 
 *Demos*
 - Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags ([docs](docs/otel-demo.md))
+- Istio ambient mesh demo: Online Boutique on Istio ambient, with scenarios for waypoints, fault injection, retries and authorization policy, in its own repo ([istio-ambient-demo](https://github.com/stevelerner/istio-ambient-demo), guide in [docs](docs/istio.md))
 
 *Built with* Python (FastAPI), SQLite and JavaScript.
 
@@ -371,7 +372,7 @@ For building and publishing Docker images, see [build/README.md](build/README.md
 - Interactive graph with zoom/pan
 - Call counts between services
 - Real-time topology updates
-- Istio service mesh support: topology from mesh metrics even with no traces (ambient ztunnel), waypoint/gateway node shapes, mTLS / plaintext / denied edge styling, an mTLS posture bar, and a Merged vs Layered view of proxy and app nodes (see [Istio ambient](docs/istio.md))
+- Istio service mesh support: topology from mesh metrics even with no traces (ambient ztunnel), waypoint/gateway node shapes, mTLS / plaintext / denied edge styling, an mTLS posture bar, and a Merged vs Layered view of proxy and app nodes (see [Istio ambient](docs/istio.md); runnable demo in the separate [istio-ambient-demo](https://github.com/stevelerner/istio-ambient-demo) repo)
 
 ### Cardinality Protection
 - Hard limit of 1000 unique metric names (configurable via `MAX_METRIC_CARDINALITY`)

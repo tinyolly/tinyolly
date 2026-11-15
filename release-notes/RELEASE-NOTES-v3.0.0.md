@@ -33,4 +33,4 @@
 
 - [Istio Ambient Mesh guide](../docs/istio.md)
 - [MCP server](../docs/mcp.md)
-- Try the end-to-end demo: [istio-demo](https://github.com/stevelerner/istio-demo) (Istio ambient + Online Boutique + TinyOlly)
+- Try the end-to-end demo: [istio-ambient-demo](https://github.com/stevelerner/istio-ambient-demo) (Istio ambient + Online Boutique + TinyOlly)
