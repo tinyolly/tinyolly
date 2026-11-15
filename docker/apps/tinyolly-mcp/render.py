@@ -281,7 +281,7 @@ def _node_color(m: dict, isolated: bool = False) -> str:
     e = float((m or {}).get("error_rate") or 0)
     if e > 5:
         return COLOR_ERR
-    if e > 0:
+    if e > 1:
         return COLOR_WARN
     return COLOR_IDLE if isolated else COLOR_OK
 
@@ -316,64 +316,90 @@ def node_roles(graph: dict) -> dict:
     return roles
 
 
+CARD_W, CARD_H = 3.6, 0.95   # node cards: name and stats live inside, so edges and labels never cross text
+COL_X = 5.8                  # column pitch
+INK, MUTED, LINE = "#0f172a", "#64748b", "#cbd5e1"
+
+
 def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bool = False) -> None:
-    """Shape at (x, y) with the service name and error/p95 line underneath."""
-    from matplotlib.patches import Ellipse, FancyBboxPatch, Polygon, Rectangle
+    """Card at (x, y): role icon, service name, error/p95 line, and a stripe on the left coloured by health."""
+    from matplotlib.patches import FancyBboxPatch, Rectangle
     color = _node_color(m, isolated=role == "isolated")
-    kw = dict(fc=color, ec="#0f172a" if center else "none", lw=2.4 if center else 0, alpha=0.95, zorder=3)
-    hw, hh = 0.5, 0.3
-    if role == "client":
-        ax.add_patch(Polygon([(x - hw, y), (x, y + hh * 1.3), (x + hw, y), (x, y - hh * 1.3)], **kw))
-    elif role == "external":
-        w = hh * 1.1547
-        ax.add_patch(Polygon([(x - w * 1.0, y), (x - w * 0.5, y + hh), (x + w * 0.5, y + hh), (x + w * 1.0, y),
-                              (x + w * 0.5, y - hh), (x - w * 0.5, y - hh)], **kw))
-    elif role == "isolated":
-        ax.add_patch(Ellipse((x, y), hw * 1.6, hh * 2, **kw))
-    elif role in ("waypoint", "ztunnel"):                       # cut-corner box
-        c = 0.16
-        ax.add_patch(Polygon([(x - hw + c, y + hh), (x + hw - c, y + hh), (x + hw, y + hh - c), (x + hw, y - hh + c),
-                              (x + hw - c, y - hh), (x - hw + c, y - hh), (x - hw, y - hh + c), (x - hw, y + hh - c)], **kw))
-    elif role == "gateway":                                     # pentagon
-        ax.add_patch(Polygon([(x - hw, y + hh * 0.2), (x, y + hh * 1.2), (x + hw, y + hh * 0.2),
-                              (x + hw * 0.65, y - hh), (x - hw * 0.65, y - hh)], **kw))
-    elif role == "database":
-        ax.add_patch(Rectangle((x - hw * 0.8, y - hh), hw * 1.6, hh * 2, **kw))
-        ax.add_patch(Ellipse((x, y + hh), hw * 1.6, hh * 0.7, fc=color, ec="white", lw=1.2, zorder=4))
-        ax.add_patch(Ellipse((x, y - hh), hw * 1.6, hh * 0.7, fc=color, ec="none", zorder=3))
-    elif role == "messaging":
-        k = 0.22
-        ax.add_patch(Polygon([(x - hw + k, y + hh), (x + hw + k, y + hh), (x + hw - k, y - hh), (x - hw - k, y - hh)], **kw))
-    else:
-        ax.add_patch(FancyBboxPatch((x - hw, y - hh), hw * 2, hh * 2, boxstyle="round,pad=0.02,rounding_size=0.12", **kw))
-    ax.text(x, y - 0.5, name if len(name) <= 26 else name[:25] + "…", ha="center", va="center", fontsize=9,
-            fontweight="bold" if center else "normal", color="#0f172a")
-    ax.text(x, y - 0.72, f"{m.get('error_rate', 0):g}% err · p95 {fmt_ms(m.get('duration_p95'))}", ha="center", va="center",
-            fontsize=7, color="#64748b")
+    x0, y0 = x - CARD_W / 2, y - CARD_H / 2
+    ax.add_patch(FancyBboxPatch((x0, y0), CARD_W, CARD_H, boxstyle="round,pad=0,rounding_size=0.18", fc="white",
+                                ec=INK if center else LINE, lw=2.6 if center else 1.2, zorder=3))
+    ax.add_patch(FancyBboxPatch((x0, y0), 0.2, CARD_H, boxstyle="round,pad=0,rounding_size=0.1", fc=color, ec="none", zorder=4))
+    _draw_node_icon(ax, x0 + 0.62, y, role)
+    ax.text(x0 + 1.05, y + 0.17, name if len(name) <= 22 else name[:21] + "…", ha="left", va="center", fontsize=10.5,
+            fontweight="bold", color=INK, zorder=5)
+    ax.text(x0 + 1.05, y - 0.2, f"{m.get('error_rate', 0):g}% err · p95 {fmt_ms(m.get('duration_p95'))}", ha="left", va="center",
+            fontsize=8.5, color=MUTED, zorder=5)
+
+
+LEGEND_COL = 4.6   # horizontal spacing between legend items (data units)
+LEGEND_ROW = 0.62
+
+
+def _legend_rows(mesh: bool) -> list[list[tuple]]:
+    rows: list[list[tuple]] = [[("role", "client", "client (no callers)"), ("role", "server", "service"),
+                                ("role", "external", "external (no callees)")],
+                               [("role", "isolated", "no connections")] + ([("role", "waypoint", "waypoint / ztunnel"), ("role", "gateway", "gateway")] if mesh else []),
+                               [("node", COLOR_OK, "node: healthy"), ("node", COLOR_WARN, "node: >1% errors"), ("node", COLOR_ERR, "node: >5% errors")]]
+    if mesh:
+        rows.append([("edge", ("#16a34a", "-"), "edge: mTLS"), ("edge", ("#f59e0b", "--"), "edge: plaintext"),
+                     ("edge", ("#ef4444", "-"), "edge: denied / errors")])
+    return rows
+
+
+def legend_height(mesh: bool) -> float:
+    return LEGEND_ROW * len(_legend_rows(mesh)) + 0.5
 
 
 def _legend(ax, x: float, y: float, mesh: bool = False) -> None:
-    items = [("client", "client (no callers)"), ("server", "service"), ("external", "external (no callees)"),
-             ("isolated", "no connections")]
-    for i, (role, text) in enumerate(items):
-        _draw_node_icon(ax, x + i * 3.0, y, role)
-        ax.text(x + i * 3.0 + 0.45, y, text, fontsize=7, va="center", color="#64748b")
-    if mesh:
-        for i, (color, style, text) in enumerate([("#16a34a", "-", "mTLS"), ("#f59e0b", "--", "plaintext"), ("#ef4444", "-", "denied / errors")]):
-            ax.plot([x + i * 3.0, x + i * 3.0 + 0.35], [y - 0.4, y - 0.4], color=color, linestyle=style, lw=2)
-            ax.text(x + i * 3.0 + 0.45, y - 0.4, text, fontsize=7, va="center", color="#64748b")
+    """Shapes = role, node colour = health, edge colour = mesh security. Rows go downward from y."""
+    from matplotlib.patches import Rectangle
+    for ri, items in enumerate(_legend_rows(mesh)):
+        yy = y - ri * LEGEND_ROW
+        for i, (kind, key, text) in enumerate(items):
+            xx = x + i * LEGEND_COL
+            if kind == "role":
+                _draw_node_icon(ax, xx, yy, key)
+            elif kind == "node":
+                ax.add_patch(Rectangle((xx - 0.2, yy - 0.13), 0.4, 0.26, fc=key, ec="none", zorder=3))
+            else:
+                ax.plot([xx - 0.22, xx + 0.22], [yy, yy], color=key[0], linestyle=key[1], lw=2.4)
+            ax.text(xx + 0.42, yy, text, fontsize=10, va="center", color="#475569")
+
+
+def _finalize(fig, ax, scale: float = 0.9) -> None:
+    """Size the figure to the axes' data extents so one data unit is the same length in x and y: shapes keep their proportions."""
+    (x0, x1), (y0, y1) = ax.get_xlim(), ax.get_ylim()
+    top = 0.94
+    fig.set_size_inches((x1 - x0) * scale, (y1 - y0) * scale / top)
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=top)
 
 
 def _draw_node_icon(ax, x: float, y: float, role: str) -> None:
-    from matplotlib.patches import Ellipse, FancyBboxPatch, Polygon
-    kw = dict(fc="#2563eb" if role != "isolated" else "#94a3b8", ec="none", zorder=3)
-    r = 0.14
+    """Small role glyph (shape = role; health is the card stripe)."""
+    from matplotlib.patches import Ellipse, FancyBboxPatch, Polygon, Rectangle
+    kw = dict(fc="#475569" if role != "isolated" else "#94a3b8", ec="none", zorder=5)
+    r = 0.2
     if role == "client":
         ax.add_patch(Polygon([(x - r, y), (x, y + r), (x + r, y), (x, y - r)], **kw))
     elif role == "external":
-        ax.add_patch(Polygon([(x - r, y), (x - r / 2, y + r), (x + r / 2, y + r), (x + r, y), (x + r / 2, y - r), (x - r / 2, y - r)], **kw))
+        ax.add_patch(Polygon([(x - r, y), (x - r / 2, y + r * 0.87), (x + r / 2, y + r * 0.87), (x + r, y), (x + r / 2, y - r * 0.87), (x - r / 2, y - r * 0.87)], **kw))
     elif role == "isolated":
         ax.add_patch(Ellipse((x, y), 2 * r, 2 * r, **kw))
+    elif role in ("waypoint", "ztunnel"):
+        c = r * 0.5
+        ax.add_patch(Polygon([(x - r + c, y + r), (x + r - c, y + r), (x + r, y + r - c), (x + r, y - r + c),
+                              (x + r - c, y - r), (x - r + c, y - r), (x - r, y - r + c), (x - r, y + r - c)], **kw))
+    elif role == "gateway":
+        ax.add_patch(Polygon([(x - r, y + r * 0.2), (x, y + r * 1.1), (x + r, y + r * 0.2), (x + r * 0.65, y - r), (x - r * 0.65, y - r)], **kw))
+    elif role == "database":
+        ax.add_patch(Rectangle((x - r * 0.8, y - r), r * 1.6, r * 2, **kw))
+    elif role == "messaging":
+        ax.add_patch(Polygon([(x - r + 0.08, y + r * 0.8), (x + r + 0.08, y + r * 0.8), (x + r - 0.08, y - r * 0.8), (x - r - 0.08, y - r * 0.8)], **kw))
     else:
         ax.add_patch(FancyBboxPatch((x - r, y - r * 0.8), 2 * r, 1.6 * r, boxstyle="round,pad=0,rounding_size=0.05", **kw))
 
@@ -405,13 +431,14 @@ def posture_line(graph: dict) -> str:
 def _draw_edge(ax, e: dict, pos: dict, t: float = 0.55) -> None:
     (x1, y1), (x2, y2) = pos[e["source"]], pos[e["target"]]
     color, style = edge_style(e)
-    ax.annotate("", xy=(x2 - 0.72, y2), xytext=(x1 + 0.72, y1), zorder=1,
+    ax.annotate("", xy=(x2 - CARD_W / 2 - 0.06, y2), xytext=(x1 + CARD_W / 2 + 0.06, y1), zorder=1,
                 arrowprops=dict(arrowstyle="-|>", color=color, linestyle=style,
                                 lw=1.4 + min(2.0, (e.get("value") or e.get("call_count") or 0) ** 0.25 / 3),
-                                connectionstyle="arc3,rad=0.06", shrinkA=0, shrinkB=0))
+                                connectionstyle="arc3,rad=0.05", shrinkA=0, shrinkB=0))
     if e.get("p95"):                                   # metric-only edges have no latency; skip the "0" label
         label = fmt_ms(e.get("p95")) + (f" · {e['req_rate']:g}/s" if e.get("req_rate") else "")
-        ax.text(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t + 0.12, label, ha="center", va="bottom", fontsize=7.5, color="#475569", zorder=5,
+        xs, xe = x1 + CARD_W / 2 + 0.06, x2 - CARD_W / 2 - 0.06      # label along the visible part of the edge, never on a card
+        ax.text(xs + (xe - xs) * t, y1 + (y2 - y1) * t + 0.12, label, ha="center", va="bottom", fontsize=9, color="#475569", zorder=5,
                 bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="#e2e8f0", lw=0.6))
 
 
@@ -456,28 +483,33 @@ def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
     cols = sorted(g["columns"])
     rows = max(len(v) for v in g["columns"].values())
     roles = node_roles(graph)
-    fig, ax = plt.subplots(figsize=(3.6 * len(cols) + 1, max(3.6, 1.3 * rows + 2.0)))
+    mesh = bool(posture_line(graph))
+    xr = max((len(cols) - 1) * COL_X + CARD_W / 2 + 0.4, 2 * LEGEND_COL + 4.0)
+    # figure size proportional to the data extents so shapes keep their aspect ratio
+    fig, ax = plt.subplots(figsize=(8, 8))
     fig.patch.set_facecolor("#f8fafc")
     ax.axis("off")
     pos: dict[str, tuple[float, float]] = {}
     for ci, c in enumerate(cols):
         names = g["columns"][c]
         for ri, n in enumerate(names):
-            pos[n] = (ci * 3.4, -(ri - (len(names) - 1) / 2) * ROW)
+            pos[n] = (ci * COL_X, -(ri - (len(names) - 1) / 2) * ROW)
     for i, e in enumerate(g["edges"]):
-        _draw_edge(ax, e, pos, 0.5)
+        _draw_edge(ax, e, pos, 0.25 + 0.17 * (i % 4))
     for n, (x, y) in pos.items():
         _draw_node(ax, x, y, n, (g["nodes"].get(n) or {}).get("metrics") or {}, roles.get(n, "server"), center=n == service)
     for c, k in g["hidden"].items():
-        x = cols.index(c) * 3.4
-        ax.text(x, min(y for (px, y) in pos.values() if px == x) - 0.75, f"+{k} more", ha="center", fontsize=8, color="#64748b")
-    ax.set_xlim(-1.4, (len(cols) - 1) * 3.4 + 1.4)
+        x = cols.index(c) * COL_X
+        ax.text(x, min(y for (px, y) in pos.values() if px == x) - 0.75, f"+{k} more", ha="center", fontsize=10, color="#64748b")
+    ax.set_xlim(-CARD_W / 2 - 0.4, xr)
     ys = [y for _, y in pos.values()]
-    ax.set_ylim(min(ys) - 1.1, max(ys) + 1.0)
+    _legend(ax, -CARD_W / 2 - 0.1, min(ys) - 1.3, mesh)
+    ax.set_ylim(min(ys) - 1.3 - legend_height(mesh), max(ys) + 1.0)
     titles = {-2: "callers (2 hops)", -1: "callers", 0: "service", 1: "callees", 2: "callees (2 hops)"}
     for ci, c in enumerate(cols):
-        ax.text(ci * 3.4, max(ys) + 0.75, titles.get(c, f"hop {c}"), ha="center", fontsize=8, color="#94a3b8")
-    ax.set_title(f"{service}: dependencies", loc="left", fontsize=12, fontweight="bold")
+        ax.text(ci * COL_X, max(ys) + 0.75, titles.get(c, f"hop {c}"), ha="center", fontsize=10, color="#94a3b8")
+    ax.set_title(f"{service}: dependencies", loc="left", fontsize=14, fontweight="bold")
+    _finalize(fig, ax)
     return _png(fig)
 
 
@@ -489,32 +521,47 @@ def full_map_chart(graph: dict) -> bytes:
     nodes = {n["id"]: n for n in graph.get("nodes", [])}
     edges = [e for e in graph.get("edges", []) if e["source"] in nodes and e["target"] in nodes and e["source"] != e["target"]]
     linked = {e["source"] for e in edges} | {e["target"] for e in edges}
-    # Layers = shortest distance from the roots (nodes nobody calls). Unlike longest-path layering this stays compact
-    # when the mesh has two-way edges (cycles, e.g. waypoint <-> frontend); back edges are simply drawn as curves.
+    # Layers = longest path from the roots after dropping back edges (found by DFS), so every caller sits left of its callees
+    # and no edge runs inside a column. Back edges (cycles such as waypoint <-> frontend) are drawn as curves.
     callees: dict[str, list[str]] = defaultdict(list)
     called = set()
     for e in edges:
         callees[e["source"]].append(e["target"])
         called.add(e["target"])
+    roots = sorted(n for n in linked if n not in called)
+    state: dict[str, int] = {}
+    back: set[tuple[str, str]] = set()
+
+    def dfs(u: str) -> None:
+        state[u] = 1
+        for v in sorted(callees[u]):
+            if state.get(v) == 1:
+                back.add((u, v))
+            elif v not in state:
+                dfs(v)
+        state[u] = 2
+
+    for root in roots + sorted(linked - set(roots), key=lambda n: -len(callees[n])):
+        if root not in state:
+            dfs(root)
+    preds: dict[str, list[str]] = defaultdict(list)
+    for e in edges:
+        if (e["source"], e["target"]) not in back:
+            preds[e["target"]].append(e["source"])
     layer: dict[str, int] = {}
-    roots = sorted((n for n in linked if n not in called), key=lambda n: n)
-    pending = list(roots) + sorted(linked - set(roots), key=lambda n: -len(callees[n]))
-    for root in pending:
-        if root in layer:
-            continue
-        layer[root] = 0
-        queue = [root]
-        while queue:
-            cur = queue.pop(0)
-            for nxt in callees[cur]:
-                if nxt not in layer:
-                    layer[nxt] = layer[cur] + 1
-                    queue.append(nxt)
+
+    def depth(n: str) -> int:
+        if n not in layer:
+            layer[n] = 0 if not preds[n] else 1 + max(depth(q) for q in preds[n])
+        return layer[n]
+
+    for n in linked:
+        depth(n)
     spans = lambda n: float(((nodes.get(n) or {}).get("metrics") or {}).get("span_count") or 0)
     by_layer: dict[int, list[str]] = defaultdict(list)
     for n, l in layer.items():
         by_layer[l].append(n)
-    X = 4.2
+    X = COL_X
     rank = {n: float(i) for names in by_layer.values() for i, n in enumerate(sorted(names, key=lambda n: -spans(n)))}
     for sweep in range(4):                              # barycentre ordering: put nodes near their neighbours to cut crossings
         order = sorted(by_layer) if sweep % 2 == 0 else sorted(by_layer, reverse=True)
@@ -546,23 +593,25 @@ def full_map_chart(graph: dict) -> bytes:
     ax.set_facecolor("#f8fafc")
     ax.axis("off")
     for i, e in enumerate(edges):
-        _draw_edge(ax, e, pos, 0.5)
+        _draw_edge(ax, e, pos, 0.25 + 0.17 * (i % 4))
     for n, (x, y) in pos.items():
         _draw_node(ax, x, y, n, (nodes.get(n) or {}).get("metrics") or {}, roles.get(n, "server"))
     ys = [y for _, y in pos.values()] or [0]
     xs = [x for x, _ in pos.values()] or [0]
     if linked:
-        ax.text(-0.7, top + 0.95, "CALLERS  →  CALLEES", ha="left", fontsize=7.5, color="#94a3b8", fontweight="bold")
+        ax.text(-CARD_W / 2, top + 1.0, "CALLERS  →  CALLEES", ha="left", fontsize=9, color="#94a3b8", fontweight="bold")
     if alone and linked:
-        ax.plot([-0.9, max(max(xs), (width_units - 1) * X) + 0.9], [strip_top + 1.2, strip_top + 1.2], color="#e2e8f0", lw=1, zorder=0)
-        ax.text(-0.7, strip_top + 1.4, "NO CONNECTIONS", ha="left", fontsize=7.5, color="#94a3b8", fontweight="bold")
-    right = max(max(xs) + 1.2, (width_units - 1) * X + 1.2)
+        ax.plot([-CARD_W / 2 - 0.2, max(max(xs), (width_units - 1) * X) + 0.9], [strip_top + 1.2, strip_top + 1.2], color="#e2e8f0", lw=1, zorder=0)
+        ax.text(-CARD_W / 2, strip_top + 1.4, "NO CONNECTIONS", ha="left", fontsize=9, color="#94a3b8", fontweight="bold")
+    right = max(max(xs), (width_units - 1) * X) + CARD_W / 2 + 0.4
     mesh = bool(posture_line(graph))
-    _legend(ax, -0.7, min(ys) - 1.25, mesh)
-    ax.set_xlim(-1.2, right)
-    ax.set_ylim(min(ys) - (2.1 if mesh else 1.7), max(ys) + 1.35)
+    right = max(right, 2 * LEGEND_COL + 3.0)
+    _legend(ax, -CARD_W / 2 - 0.1, min(ys) - 1.25, mesh)
+    ax.set_xlim(-CARD_W / 2 - 0.4, right)
+    ax.set_ylim(min(ys) - 1.25 - legend_height(mesh), max(ys) + 1.35)
     errs = sum(1 for n in nodes.values() if float(((n.get("metrics") or {}).get("error_rate")) or 0) > 5)
     ax.set_title(f"Service map  ·  {len(nodes)} services  ·  {len(edges)} connections" + (f"  ·  {errs} unhealthy" if errs else "")
                  + (f"  ·  {posture_line(graph)}" if mesh else ""),
-                 loc="left", fontsize=13, fontweight="bold", color="#0f172a", pad=14)
+                 loc="left", fontsize=15, fontweight="bold", color="#0f172a", pad=14)
+    _finalize(fig, ax)
     return _png(fig)

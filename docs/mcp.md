@@ -38,11 +38,26 @@ The MCP server is a small separate service. Besides the per-client **stdio** set
 | **Docker Compose** | A `tinyolly-mcp` service in the core compose files (`docker/` and `docker-core-only/`). It starts and stops with the stack. | `http://localhost:8765/mcp` |
 | **Kubernetes (kind)** | A `tinyolly-mcp` Deployment and NodePort Service (`k8s/tinyolly-mcp.yaml`, `k8s-core-only/tinyolly-mcp.yaml`). The kind config maps host port 8765 to it. | `http://localhost:8765/mcp` |
 
-Register the URL once (Claude Code only; Claude Desktop and Zed keep using the stdio command):
+Register the URL once per client:
 
 ```bash
+# Claude Code
 claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp
 ```
+
+```json
+// Claude Desktop (claude_desktop_config.json): it cannot call a local URL directly, so bridge with mcp-remote.
+// Use the absolute path to npx (for nvm: ~/.nvm/versions/node/<version>/bin/npx) and set PATH, because the app does not load your shell profile.
+"tinyolly": {
+  "command": "/absolute/path/to/npx",
+  "args": ["-y", "mcp-remote", "http://127.0.0.1:8765/mcp"],
+  "env": { "PATH": "/directory/containing/node:/usr/bin:/bin" }
+}
+```
+
+Quit (Cmd+Q) and reopen Claude Desktop after editing. Zed can keep using the stdio command.
+
+Docker and Kubernetes use the same port and URL, so client config is identical for both. Run one at a time: stop one stack before starting the other. When moving from Kubernetes to Docker on an existing cluster, also run `docker rm -f tinyolly-mcp-bridge` (colima context), the helper that forwards 8765 to the cluster. Clients do not reconnect on their own after a switch: restart them. Prefer this over per-client stdio, which keeps a stale copy of the server running until the client restarts.
 
 How it works: the container runs `server.py --http` and reads TinyOlly over its REST API (`TINYOLLY_URL`, `http://tinyolly-ui:5002` inside the stack). It is read-only, bundles the TinyOlly docs and the investigation skills, and binds to `127.0.0.1` on the host in Docker.
 
@@ -91,6 +106,8 @@ The same pages are also exposed as MCP resources: `tinyolly-docs://<name>` (for 
 The JSON tools are compact for agents. When you want something to show a person, pass `format="table"` (catalog, traces, spans, logs: markdown tables with health and severity icons, readable durations and times) or `format="waterfall"` on `get_trace` (indented span tree with timing bars; big traces keep every error span plus the slowest spans, up to `max_rows`). `chart_metric` and `chart_service_map` return PNG images, so the client must display image results (Claude Desktop and Claude Code do). Charts are drawn with matplotlib, which `install.sh` installs into the server's venv.
 
 Claude Desktop shows tool images as a small preview. Click it to enlarge, or ask for a full-size file: both chart tools take `save_to` (for example "show me the service map and save it to ~/Desktop/map.png").
+
+`chart_service_map` draws each service as a card: a small icon for its role (client, service, external, waypoint or ztunnel, gateway), the name and `err · p95` inside, and a stripe coloured by health (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green solid mTLS, amber dashed plaintext, red denied or errors. Every chart carries a legend. The whole map lays callers left of callees; pass a service name to draw just its neighbourhood (`depth=2` for two hops), which stays readable on large meshes.
 
 Try asking: "chart http.server.duration for tinyolly-ui", "show me the service map", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "pretty print the service catalog".
 
