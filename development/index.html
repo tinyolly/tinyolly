@@ -601,6 +601,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../otel-demo-ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ask an AI about the OTel Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ebpf/" class="md-nav__link">
         
   
@@ -1322,7 +1350,12 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python3<span class="w"> </span>scripts/e2e.py
 </code></pre></div>
 <p>Drives OTLP through the collector, applies every preset via OpAMP, and checks results through the UI API. Test hooks: <code>POST /admin/reset</code>, <code>POST /api/opamp/config?wait=N</code>.
-- Collector configs: <code>./scripts/test-collector-configs.sh</code> (validate + start every preset); after editing them run <code>./scripts/sync-k8s-configs.sh</code>.</p>
+- OpenTelemetry Demo (needs TinyOlly plus the demo running on Docker or kind, about 12 min; see <a href="../otel-demo/">the demo page</a>): checks the data TinyOlly shows, the MCP tools, failure flags and the PII preset:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>scripts/test-otel-demo.py<span class="w"> </span>--mode<span class="w"> </span>docker<span class="w">      </span><span class="c1"># or --mode k8s</span>
+</code></pre></div>
+</li>
+<li>
+<p>Collector configs: <code>./scripts/test-collector-configs.sh</code> (validate + start every preset); after editing them run <code>./scripts/sync-k8s-configs.sh</code>.</p>
 </li>
 </ul>
 <h2 id="technical-details">Technical details</h2>
@@ -1345,24 +1378,24 @@
 <h2 id="testing-mesh-features-without-istio">Testing mesh features without Istio</h2>
 <p>Docker Compose has no Istio, so <code>scripts/seed_mesh.py</code> posts synthetic Istio metrics (OTLP/JSON) for the Online Boutique mesh: scenarios <code>baseline</code>, <code>flaky</code>, <code>fault</code>, <code>canary</code>, <code>deny</code> and <code>multicluster</code>, plus <code>--trace</code> (a trace through a gateway and a waypoint), <code>--l7 &lt;service&gt;</code> (request metrics for one destination only) and <code>--ui &lt;url&gt;</code> (records a change marker).</p>
 <p>To run the Compose stack next to the kind cluster, use the second Colima VM and shifted ports (UI 5105, MCP 8865, OTLP 4418):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>scripts/docker-alt.sh<span class="w">                      </span><span class="c1"># rebuild python-base and every service, then start (docker/docker-compose.altports.yml)</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>python3<span class="w"> </span>scripts/seed_mesh.py<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4418<span class="w"> </span>--scenario<span class="w"> </span>flaky<span class="w"> </span>--ui<span class="w"> </span>http://localhost:5105
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nv">MCP_URL</span><span class="o">=</span>http://localhost:8865/mcp<span class="w"> </span>...<span class="w">      </span><span class="c1"># then ask the MCP server (get_edge, what_changed, chart_map_diff)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>scripts/docker-alt.sh<span class="w">                      </span><span class="c1"># rebuild python-base and every service, then start (docker/docker-compose.altports.yml)</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>python3<span class="w"> </span>scripts/seed_mesh.py<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4418<span class="w"> </span>--scenario<span class="w"> </span>flaky<span class="w"> </span>--ui<span class="w"> </span>http://localhost:5105
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nv">MCP_URL</span><span class="o">=</span>http://localhost:8865/mcp<span class="w"> </span>...<span class="w">      </span><span class="c1"># then ask the MCP server (get_edge, what_changed, chart_map_diff)</span>
 </code></pre></div>
 <h2 id="agent-eval">Agent eval</h2>
 <p><code>scripts/agent_eval/eval.py</code> injects a known fault, lets a local model investigate through the MCP tools, and grades the answer against ground truth (service, cause, evidence). It has five scenarios including a healthy control, and runs against Compose (seeded metrics) or kind (real faults from the demo repo):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>docker<span class="w"> </span>--repeat<span class="w"> </span><span class="m">3</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>kind<span class="w"> </span>--scenarios<span class="w"> </span>flaky,deny<span class="w"> </span>--no-skill-hint
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>docker<span class="w"> </span>--repeat<span class="w"> </span><span class="m">3</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>kind<span class="w"> </span>--scenarios<span class="w"> </span>flaky,deny<span class="w"> </span>--no-skill-hint
 </code></pre></div>
 <p>Needs Ollama (<code>LOCAL_BASE</code>, <code>LOCAL_MODEL</code>). Results go to <code>eval-results.json</code>. Unit tests for the loop and grader:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pytest<span class="w"> </span>scripts/agent_eval
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pytest<span class="w"> </span>scripts/agent_eval
 </code></pre></div>
 <h2 id="documentation-images">Documentation images</h2>
 <p>Screenshots in the README and docs are generated, not hand-pasted, so they can be refreshed in one command. <code>scripts/make-doc-images.py</code> takes headless-Chrome screenshots of the UI tabs and saves the PNGs the MCP chart tools return, and writes each twice: a preview at most 900 px wide in <code>docs/images/</code> (what the docs show) and the full-size file in <code>docs/images/full/</code> (what a click opens).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>scripts/make-doc-images.py<span class="w">                       </span><span class="c1"># all shots from the running stack (UI :5005, MCP :8765)</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>scripts/make-doc-images.py<span class="w"> </span>--only<span class="w"> </span>mesh-map-diff<span class="w">  </span><span class="c1"># one shot</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>scripts/make-doc-images.py<span class="w"> </span>--seed<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4318<span class="w">   </span><span class="c1"># post a fault scenario first (diff and trace path)</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>scripts/make-doc-images.py<span class="w"> </span>--check<span class="w">               </span><span class="c1"># no stack needed; also runs in test-all.sh</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>scripts/make-doc-images.py<span class="w">                       </span><span class="c1"># all shots from the running stack (UI :5005, MCP :8765)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>scripts/make-doc-images.py<span class="w"> </span>--only<span class="w"> </span>mesh-map-diff<span class="w">  </span><span class="c1"># one shot</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>scripts/make-doc-images.py<span class="w"> </span>--seed<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4318<span class="w">   </span><span class="c1"># post a fault scenario first (diff and trace path)</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>scripts/make-doc-images.py<span class="w"> </span>--check<span class="w">               </span><span class="c1"># no stack needed; also runs in test-all.sh</span>
 </code></pre></div>
 <p>To add a screenshot, add a line to <code>SHOTS</code> in the script, run it, and embed it as <code>[![alt](images/&lt;name&gt;.png)](images/full/&lt;name&gt;.png)</code>, or, where a width is needed, <code>&lt;a href="../images/full/&lt;name&gt;.png"&gt;&lt;img src="../images/&lt;name&gt;.png" width="400"&gt;&lt;/a&gt;</code>. The path prefix depends on the syntax: MkDocs resolves markdown links from the source file and rewrites them, so markdown under <code>docs/</code> uses <code>images/</code>; raw HTML is not rewritten and the page is served at <code>/&lt;page&gt;/</code>, so HTML under <code>docs/</code> uses <code>../images/</code> (except <code>docs/index.md</code>, which is the site root: <code>images/</code>). The README uses <code>docs/images/</code> for both. <code>--check</code> fails when a shot is missing, a preview is over 300 KB, or a doc embeds a generated shot without the click-to-expand link. The shots come from whatever is running: use a stack with mesh data (the seeder, or the Istio demo) for the <code>mesh-*</code> shots, and set <code>TINYOLLY_UI</code>, <code>TINYOLLY_MCP</code> for another port. It needs Chrome (<code>CHROME=</code> overrides the path) and Pillow or macOS <code>sips</code>.</p>
 <p><strong>Before publishing the docs site</strong> (<code>./mkdocs-deploy.sh</code> pushes to <code>gh-pages</code>):</p>
@@ -1370,8 +1403,8 @@
 <li><code>scripts/make-doc-images.py --check</code> passes (it also runs in <code>test-all.sh</code>).</li>
 <li>
 <p>Build with warnings as errors and read the result, not a grep of it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">source</span><span class="w"> </span>~/.venv/mkdocs/bin/activate
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>python3<span class="w"> </span>-m<span class="w"> </span>mkdocs<span class="w"> </span>build<span class="w"> </span>--strict<span class="w"> </span>-d<span class="w"> </span>/tmp/site
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">source</span><span class="w"> </span>~/.venv/mkdocs/bin/activate
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>python3<span class="w"> </span>-m<span class="w"> </span>mkdocs<span class="w"> </span>build<span class="w"> </span>--strict<span class="w"> </span>-d<span class="w"> </span>/tmp/site
 </code></pre></div>
 <p>Any <code>WARNING</code> about a link whose "target is not found" means a wrong image path (MkDocs prints <code>WARNING -</code> with one space, so a search for two spaces finds nothing). <code>--strict</code> exits non-zero on warnings, so a clean exit is the proof.
 3. Open the built page, not just the markdown: <code>python3 -m http.server -d /tmp/site 8000</code>, then check the page you touched at <code>http://localhost:8000/&lt;page&gt;/</code> and click an image.</p>
@@ -1388,8 +1421,8 @@
 <h2 id="service-catalog-actions-ui-layout-easy-revert">Service catalog actions (UI layout, easy revert)</h2>
 <p>In the APM Service Catalog, per-service actions (Traces, Spans, Logs, Metrics, Service map) are a popover menu opened by clicking the service name. The original layout, a row of buttons on every service, is still in the code.</p>
 <p>To revert, set <code>ACTIONS_STYLE = 'buttons'</code> at the top of <code>docker/apps/tinyolly-ui/static/serviceCatalog.js</code> and rebuild the UI image:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nv">DOCKER_CONTEXT</span><span class="o">=</span>colima-tinyolly<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose-tinyolly-core-local.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>--no-deps<span class="w"> </span>tinyolly-ui
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">cd</span><span class="w"> </span>docker
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="nv">DOCKER_CONTEXT</span><span class="o">=</span>colima-tinyolly<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose-tinyolly-core-local.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>--no-deps<span class="w"> </span>tinyolly-ui
 </code></pre></div>
 <p>To remove the menu code entirely, delete <code>SERVICE_ACTIONS</code>, <code>openServiceMenu</code>, <code>closeServiceMenu</code>, the <code>data-service-menu</code> click handler and the two <code>document.addEventListener</code> lines.
 Map and Service Catalog cross-links (<code>window.viewServiceMap</code>, <code>window.viewServiceCatalog</code>) are independent of this setting.</p>

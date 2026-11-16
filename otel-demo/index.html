@@ -18,7 +18,7 @@
         <link rel="prev" href="../mcp-deploy/">
       
       
-        <link rel="next" href="../ebpf/">
+        <link rel="next" href="../otel-demo-ai/">
       
       
         
@@ -633,6 +633,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#what-you-will-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you will see
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#failure-injection-with-feature-flags" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -654,10 +665,60 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#kubernetes-kind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes (kind)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test it
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo-ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ask an AI about the OTel Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1098,6 +1159,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#what-you-will-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you will see
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#failure-injection-with-feature-flags" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1113,6 +1185,28 @@
     <span class="md-ellipsis">
       
         Notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-kind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes (kind)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test it
       
     </span>
   </a>
@@ -1171,11 +1265,19 @@ own collector, Jaeger, Grafana, Prometheus, OpenSearch, Kafka and its consumers 
 <a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="c1"># 6. Stop</span>
 <a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>./02-stop-otel-demo.sh<span class="w">                  </span><span class="c1"># demo only; add --purge to delete the .demo/ clone</span>
 </code></pre></div>
+<h2 id="what-you-will-see">What you will see</h2>
+<p>TinyOlly's service map, drawn from the demo's traces. Frontend proxy, frontend, checkout, payment, cart, shipping and the rest appear within a minute or two of the load generator starting:</p>
+<p><a href="../images/full/ui-otel-service-map.png"><img alt="TinyOlly APM Service Map for the OpenTelemetry Demo" src="../images/ui-otel-service-map.png" /></a></p>
+<p>The service catalog lists every service with rate, error rate and latency percentiles. Click a screenshot to enlarge it:</p>
+<p><a href="../images/full/ui-otel-catalog.png"><img alt="TinyOlly service catalog for the OpenTelemetry Demo" src="../images/ui-otel-catalog.png" /></a></p>
+<p><strong>Ask an AI about it:</strong> with the <a href="../mcp-deploy/">MCP server</a> connected, an assistant can draw the same map, find failing orders and explain them. See <a href="../otel-demo-ai/">Ask an AI about the OpenTelemetry Demo</a> for prompts and a worked example.</p>
 <p><strong>No config edits are needed.</strong> The script clones the demo at the pinned version and points every service at TinyOlly's collector (<code>host.docker.internal:4317</code>).</p>
 <p>Options: <code>LOADGEN=0</code> (no load generator), <code>LOCUST_USERS=3</code>, <code>SERVICES="..."</code> (custom service list).</p>
 <h2 id="failure-injection-with-feature-flags">Failure injection with feature flags</h2>
 <p>The demo reads feature flags from flagd. <code>./03-set-flag.sh &lt;flag&gt; &lt;variant&gt;</code> edits the flag file (flagd hot-reloads it);
 <code>./03-set-flag.sh --reset</code> turns everything off. Flags with a <em>Preset</em> column pair with a <a href="../collector-presets/">collector preset</a>.</p>
+<p>With <code>paymentFailure</code> at 50%, <code>checkout</code> and <code>payment</code> turn red in the catalog within a couple of minutes:</p>
+<p><a href="../images/full/ui-otel-failure-catalog.png"><img alt="Service catalog with checkout and payment at 15% errors after paymentFailure 50%" src="../images/ui-otel-failure-catalog.png" /></a></p>
 <table>
 <thead>
 <tr>
@@ -1237,9 +1339,26 @@ Flags that depend on Kafka (<code>kafkaQueueProblems</code>), the AI agent (<cod
 <li><strong>Image tags:</strong> the demo's <code>.env</code> defaults <code>DEMO_VERSION=latest</code> (images from <code>main</code>), which does not match the checked-out
   compose file (the newer <code>recommendation</code> image has no <code>nc</code>, so its healthcheck fails). The script pins <code>DEMO_VERSION</code> to the git tag.</li>
 <li>The demo is cloned to <code>docker-otel-demo/.demo/</code> (git-ignored); <code>./02-stop-otel-demo.sh --purge</code> removes it.</li>
-<li><strong>Kubernetes:</strong> <code>k8s-otel-demo/01-deploy-otel-demo-helm.sh</code> installs chart 0.42.6 (app 3.1.0). The chart also deploys Kafka and its consumers
-  (checkout waits for Kafka), so it needs a VM of 6 GB or more. Not tested on kind yet.</li>
 </ul>
+<h2 id="kubernetes-kind">Kubernetes (kind)</h2>
+<p>The Helm chart (0.42.6, app 3.1.0) is deployed into the <code>default</code> namespace next to TinyOlly. Its services send OTLP to the host named <code>otel-collector</code>, which is TinyOlly's own collector Service, so no endpoint setting is needed. The script is <strong>lean by default</strong>, like the Docker version: no Kafka or its consumers (accounting, fraud-detection; checkout would otherwise wait for Kafka), no AI components (agent, chatbot, mcp), no telemetry-docs and no demo OpAMP server, which leaves 17 Deployments. The load generator's memory limit (which Kubernetes also uses as its request) is cut from 1500Mi to 512Mi.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">COLIMA_MEMORY</span><span class="o">=</span><span class="m">8</span><span class="w"> </span>./scripts/colima-up.sh<span class="w">                    </span><span class="c1"># the kind VM needs about 8 GB next to TinyOlly (stop the VM first to resize it)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./k8s-otel-demo/01-deploy-otel-demo-helm.sh<span class="w">               </span><span class="c1"># FULL=1 for every component (needs 10 GB or more)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>kubectl<span class="w"> </span>get<span class="w"> </span>deploy<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/part-of<span class="o">=</span>opentelemetry-demo
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>open<span class="w"> </span>http://localhost:5005<span class="w">                                </span><span class="c1"># TinyOlly</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>./k8s-otel-demo/02-cleanup-otel-demo-helm.sh
+</code></pre></div>
+<p><strong>Failure injection on kind:</strong> flagd reads a copy of the <code>flagd-config</code> ConfigMap made when its pod starts, so edit the ConfigMap and restart flagd (<code>scripts/test-otel-demo.py --mode k8s</code> does exactly this):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>edit<span class="w"> </span>configmap<span class="w"> </span>flagd-config<span class="w">                       </span><span class="c1"># set a flag&#39;s &quot;defaultVariant&quot;, for example paymentFailure to &quot;50%&quot;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/component<span class="o">=</span>flagd<span class="w">   </span><span class="c1"># a rolling restart can stall when the node is nearly out of memory</span>
+</code></pre></div>
+<h2 id="test-it">Test it</h2>
+<p><code>scripts/test-otel-demo.py</code> checks TinyOlly against a running demo on either platform: the 14 demo services in the catalog, the service map edges, multi-service traces, correlated logs, metrics (including the span-derived ones), the MCP tools, <code>paymentFailure</code> injection and recovery, and <code>emitRawPii</code> with the <code>pii-redaction</code> preset applied through OpAMP (raw values, then masked, then the default config restored).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>scripts/test-otel-demo.py<span class="w"> </span>--mode<span class="w"> </span>docker<span class="w">      </span><span class="c1"># flags via docker-otel-demo/03-set-flag.sh</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>scripts/test-otel-demo.py<span class="w"> </span>--mode<span class="w"> </span>k8s<span class="w">         </span><span class="c1"># flags via the flagd ConfigMap</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>scripts/test-otel-demo.py<span class="w"> </span>--mode<span class="w"> </span>docker<span class="w"> </span>--skip-flags<span class="w"> </span>--skip-preset<span class="w">   </span><span class="c1"># data checks only, about 2 minutes</span>
+</code></pre></div>
+<p>Set <code>TINYOLLY_UI</code> and <code>MCP_URL</code> if TinyOlly is not on the default ports (for example the shifted ports of <code>scripts/docker-alt.sh</code>). A full run takes about 12 minutes.</p>
 
 
 
