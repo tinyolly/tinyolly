@@ -1018,6 +1018,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#testing-mesh-features-without-istio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing mesh features without Istio
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-eval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent eval
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation images
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docker-contexts" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1148,6 +1181,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#testing-mesh-features-without-istio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing mesh features without Istio
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-eval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent eval
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation images
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docker-contexts" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1219,6 +1285,27 @@
 <li>OpAMP protocol support for remote collector configuration management</li>
 <li>No vendor lock-in</li>
 </ul>
+<h2 id="testing-mesh-features-without-istio">Testing mesh features without Istio</h2>
+<p>Docker Compose has no Istio, so <code>scripts/seed_mesh.py</code> posts synthetic Istio metrics (OTLP/JSON) for the Online Boutique mesh: scenarios <code>baseline</code>, <code>flaky</code>, <code>fault</code>, <code>canary</code>, <code>deny</code> and <code>multicluster</code>, plus <code>--trace</code> (a trace through a gateway and a waypoint), <code>--l7 &lt;service&gt;</code> (request metrics for one destination only) and <code>--ui &lt;url&gt;</code> (records a change marker).</p>
+<p>To run the Compose stack next to the kind cluster, use the second Colima VM and shifted ports (UI 5105, MCP 8865, OTLP 4418):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>scripts/docker-alt.sh<span class="w">                      </span><span class="c1"># rebuild python-base and every service, then start (docker/docker-compose.altports.yml)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python3<span class="w"> </span>scripts/seed_mesh.py<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4418<span class="w"> </span>--scenario<span class="w"> </span>flaky<span class="w"> </span>--ui<span class="w"> </span>http://localhost:5105
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nv">MCP_URL</span><span class="o">=</span>http://localhost:8865/mcp<span class="w"> </span>...<span class="w">      </span><span class="c1"># then ask the MCP server (get_edge, what_changed, chart_map_diff)</span>
+</code></pre></div>
+<h2 id="agent-eval">Agent eval</h2>
+<p><code>scripts/agent_eval/eval.py</code> injects a known fault, lets a local model investigate through the MCP tools, and grades the answer against ground truth (service, cause, evidence). It has five scenarios including a healthy control, and runs against Compose (seeded metrics) or kind (real faults from the demo repo):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>docker<span class="w"> </span>--repeat<span class="w"> </span><span class="m">3</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>kind<span class="w"> </span>--scenarios<span class="w"> </span>flaky,deny<span class="w"> </span>--no-skill-hint
+</code></pre></div>
+<p>Needs Ollama (<code>LOCAL_BASE</code>, <code>LOCAL_MODEL</code>). Results go to <code>eval-results.json</code>. Unit tests for the loop and grader: <code>pytest scripts/agent_eval</code>.</p>
+<h2 id="documentation-images">Documentation images</h2>
+<p>Screenshots in the README and docs are generated, not hand-pasted, so they can be refreshed in one command. <code>scripts/make-doc-images.py</code> takes headless-Chrome screenshots of the UI tabs and saves the PNGs the MCP chart tools return, and writes each twice: a preview at most 900 px wide in <code>docs/images/</code> (what the docs show) and the full-size file in <code>docs/images/full/</code> (what a click opens).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>scripts/make-doc-images.py<span class="w">                       </span><span class="c1"># all shots from the running stack (UI :5005, MCP :8765)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>scripts/make-doc-images.py<span class="w"> </span>--only<span class="w"> </span>mesh-map-diff<span class="w">  </span><span class="c1"># one shot</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>scripts/make-doc-images.py<span class="w"> </span>--seed<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4318<span class="w">   </span><span class="c1"># post a fault scenario first (diff and trace path)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>scripts/make-doc-images.py<span class="w"> </span>--check<span class="w">               </span><span class="c1"># no stack needed; also runs in test-all.sh</span>
+</code></pre></div>
+<p>To add a screenshot, add a line to <code>SHOTS</code> in the script, run it, and embed it as <code>[![alt](images/&lt;name&gt;.png)](images/full/&lt;name&gt;.png)</code> (or <code>&lt;a href="images/full/&lt;name&gt;.png"&gt;&lt;img src="images/&lt;name&gt;.png" width="400"&gt;&lt;/a&gt;</code> where a width is needed). <code>--check</code> fails when a shot is missing, a preview is over 300 KB, or a doc embeds a generated shot without the click-to-expand link. The shots come from whatever is running: use a stack with mesh data (the seeder, or the Istio demo) for the <code>mesh-*</code> shots, and set <code>TINYOLLY_UI</code>, <code>TINYOLLY_MCP</code> for another port. It needs Chrome (<code>CHROME=</code> overrides the path) and Pillow or macOS <code>sips</code>.</p>
 <h2 id="docker-contexts">Docker contexts</h2>
 <p>Two Colima VMs can coexist: <code>colima</code> (default) and <code>colima-tinyolly</code> (this project). Every script pins <code>DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}</code> at the top; new scripts that call <code>docker</code> must do the same (copy the 3-line block from any <code>0N-*.sh</code>). For ad hoc commands use <code>docker --context colima-tinyolly ...</code>.</p>
 <h2 id="service-catalog-actions-ui-layout-easy-revert">Service catalog actions (UI layout, easy revert)</h2>

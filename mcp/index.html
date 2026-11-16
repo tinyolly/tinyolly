@@ -1347,7 +1347,7 @@
 </tr>
 <tr>
 <td><code>get_edge</code></td>
-<td>One caller → callee edge in detail, with the RED numbers of both services</td>
+<td>One caller → callee edge in detail, with the RED numbers of both services and the Envoy/ztunnel response flags it carries (UC, UT, DI, DENY...), each with a plain meaning and a next step</td>
 </tr>
 <tr>
 <td><code>get_trace_mesh</code></td>
@@ -1355,7 +1355,23 @@
 </tr>
 <tr>
 <td><code>get_version_split</code></td>
-<td>Canary view: traffic share, error rate and average latency (<code>avg_ms</code>) per destination version</td>
+<td>Canary view: traffic share, error rate and average latency (<code>avg_ms</code>) per destination version, plus plain-language <code>findings</code> when a version is much slower or fails more than the best one</td>
+</tr>
+<tr>
+<td><code>what_changed</code></td>
+<td>Change markers (deploys, applied policies or scenarios, recorded with <code>POST /api/events</code>) and, for each, how request failures, response flags and traffic changed per service in the minutes before and after it</td>
+</tr>
+<tr>
+<td><code>suggest_authz</code></td>
+<td>Drafts a least-privilege ALLOW <code>AuthorizationPolicy</code> for a service from the callers actually seen (their SPIFFE identities), and lists plaintext callers it would block. A draft to review, not something to apply blindly</td>
+</tr>
+<tr>
+<td><code>chart_map_diff</code></td>
+<td>The service map coloured by what changed around the latest change marker (red: more failures, teal: fewer, blue: new or busier, grey: quieter or stopped)</td>
+</tr>
+<tr>
+<td><code>chart_trace_path</code></td>
+<td>One trace's journey over the service map: numbered hops with the time in each, and how much of it was spent in mesh proxies versus the apps</td>
 </tr>
 <tr>
 <td><code>compare_windows</code></td>
@@ -1428,6 +1444,10 @@
 <p>The JSON tools are compact for agents. When you want something to show a person, pass <code>format="table"</code> (catalog, traces, spans, logs: markdown tables with health and severity icons, readable durations and times) or <code>format="waterfall"</code> on <code>get_trace</code> (indented span tree with timing bars; big traces keep every error span plus the slowest spans, up to <code>max_rows</code>). <code>chart_metric</code> and <code>chart_service_map</code> return PNG images, so the client must display image results (Claude Desktop and Claude Code do). Charts are drawn with matplotlib, which <code>install.sh</code> installs into the server's venv.</p>
 <p>Claude Desktop shows tool images as a small preview. Click it to enlarge, or ask for a full-size file: both chart tools take <code>save_to</code> (for example "show me the service map and save it to ~/Desktop/map.png").</p>
 <p><code>chart_service_map</code> draws each service as a card: a small icon for its role (client, service, external, waypoint or ztunnel, gateway), the name and <code>err · p95</code> inside, and a stripe coloured by health (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green solid mTLS, amber dashed plaintext, red denied or errors. Every chart carries a legend. The whole map lays callers left of callees; pass a service name to draw just its neighbourhood (<code>depth=2</code> for two hops), which stays readable on large meshes. A grey edge means mTLS is unknown (the edge is known only from traces). On the whole-service map only the six busiest edges carry latency labels so the picture stays readable.</p>
+<p><a href="../images/full/mesh-service-map.png"><img alt="Service map drawn by chart_service_map" src="../images/mesh-service-map.png" /></a></p>
+<p><code>chart_map_diff</code> colours the same map by what changed around a change marker (red: failures rose), and <code>chart_trace_path</code> draws one request's journey over it with the time spent in mesh proxies:</p>
+<p><a href="../images/full/mesh-map-diff.png"><img alt="chart_map_diff after a fault was injected" src="../images/mesh-map-diff.png" /></a></p>
+<p><a href="../images/full/mesh-trace-path.png"><img alt="chart_trace_path for one request through the waypoint" src="../images/mesh-trace-path.png" /></a></p>
 <p>Try asking: "chart http.server.duration for tinyolly-ui", "show me the service map", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "pretty print the service catalog".</p>
 <h2 id="investigation-skills">Investigation skills</h2>
 <p>Seven short skills teach an agent how to investigate with these tools. They live only inside the MCP server (<code>docker/apps/tinyolly-mcp/skills/</code>); nothing is installed into Claude Code or any other client.</p>
