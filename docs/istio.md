@@ -25,7 +25,7 @@ Because ztunnel produces only metrics, TinyOlly builds map edges from Istio metr
 | Mesh roles | Waypoint (cut box) and gateway (pentagon) node shapes |
 | Merged vs Layered | `waypoint.boutique` (trace identity) and `waypoint` (metric identity) merge into one node; untick **Merge proxy and app nodes** to see both |
 
-<p align="center"><a href="images/full/ui-service-map.png"><img src="images/ui-service-map.png" alt="APM Service Map showing mTLS and plaintext edges" width="800"></a></p>
+<p align="center"><a href="../images/full/ui-service-map.png"><img src="../images/ui-service-map.png" alt="APM Service Map showing mTLS and plaintext edges" width="800"></a></p>
 
 The same data is available from `GET /api/service-map` and `GET /api/mesh-posture` ([API reference](api.md)) and the `get_service_map` / `get_mesh_posture` MCP tools ([MCP](mcp.md)).
 

@@ -43,3 +43,16 @@ def test_missing_full_and_big_preview_fail(tmp_path, monkeypatch):
     (mdi.IMAGES / "ui-logs.png").write_bytes(b"x" * (mdi.MAX_PREVIEW_BYTES + 1))
     problems = mdi.check()
     assert any("missing" in p for p in problems) and any("previews must stay under" in p for p in problems)
+
+
+def test_prefix_rules_for_docs_pages(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch, "")
+    page = tmp_path / "docs" / "mcp.md"
+    page.write_text("[![x](../images/ui-logs.png)](../images/full/ui-logs.png)")  # markdown must not use ../
+    assert any("markdown path" in p for p in mdi.check())
+    page.write_text("[![x](images/ui-logs.png)](images/full/ui-logs.png)")
+    assert mdi.check() == []
+    page.write_text('<a href="images/full/ui-logs.png"><img src="images/ui-logs.png"></a>')  # HTML needs ../
+    assert any("HTML path" in p for p in mdi.check())
+    page.write_text('<a href="../images/full/ui-logs.png"><img src="../images/ui-logs.png"></a>')
+    assert mdi.check() == []
