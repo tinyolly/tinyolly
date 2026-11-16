@@ -69,9 +69,9 @@ nav:
       - eBPF Zero-Code Tracing: ebpf.md
       - AI Agent with Ollama: ai-agent.md
       - Istio Ambient Mesh: istio.md
-  - API Reference:
-      - REST API & Examples: api.md
+  - MCP & API:
       - MCP Tools and Playbooks: mcp.md
+      - REST API & Examples: api.md
   - Advanced:
       - Architecture: technical.md
       - Metrics Explorer: metrics.md

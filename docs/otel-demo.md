@@ -113,4 +113,6 @@ scripts/test-otel-demo.py --mode k8s         # flags via the flagd ConfigMap
 scripts/test-otel-demo.py --mode docker --skip-flags --skip-preset   # data checks only, about 2 minutes
 ```
 
+To see what is running before or after (both platforms, the VMs, other demos) use `scripts/status.sh`; `scripts/teardown.sh --level demos` removes the demo from Docker and kind ([details](development.md#tear-everything-down)).
+
 Set `TINYOLLY_UI` and `MCP_URL` if TinyOlly is not on the default ports (for example the shifted ports of `scripts/docker-alt.sh`). A full run takes about 12 minutes.

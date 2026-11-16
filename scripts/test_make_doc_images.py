@@ -16,7 +16,7 @@ def _setup(tmp_path, monkeypatch, readme):
     monkeypatch.setattr(mdi, "IMAGES", tmp_path / "docs" / "images")
     monkeypatch.setattr(mdi, "FULL", tmp_path / "docs" / "images" / "full")
     monkeypatch.setattr(mdi, "SHOTS", [("ui-logs", "ui", "logs")])
-    monkeypatch.setattr(mdi, "OTEL_SHOTS", [])
+    monkeypatch.setattr(mdi, "EXTERNAL_SHOTS", [])
     for d in (mdi.IMAGES, mdi.FULL):
         (d / "ui-logs.png").write_bytes(_png(2000 if d == mdi.IMAGES else 3000))
     (tmp_path / "README.md").write_text(readme)
