@@ -477,6 +477,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-deploy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -762,7 +790,7 @@
   <span class="md-ellipsis">
     
   
-    MCP Server (AI agents)
+    MCP Tools and Playbooks
   
 
     
@@ -780,7 +808,7 @@
   <span class="md-ellipsis">
     
   
-    MCP Server (AI agents)
+    MCP Tools and Playbooks
   
 
     
@@ -1275,65 +1303,7 @@
 <p>Claude Desktop's URL connectors are called from Anthropic's cloud, which cannot reach <code>localhost</code>. A local server is started by the client instead.</p>
 </div>
 <h3 id="always-on-server-docker-or-kubernetes">Always-on server (Docker or Kubernetes)</h3>
-<p>The MCP server is a small separate service. Besides the per-client <strong>stdio</strong> setup above, TinyOlly can run it for you as a container, so nothing has to be started on your machine and every client shares one server over <strong>streamable HTTP</strong>:</p>
-<table>
-<thead>
-<tr>
-<th>Where</th>
-<th>How it runs</th>
-<th>URL</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Docker Compose</strong></td>
-<td>A <code>tinyolly-mcp</code> service in the core compose files (<code>docker/</code> and <code>docker-core-only/</code>). It starts and stops with the stack.</td>
-<td><code>http://localhost:8765/mcp</code></td>
-</tr>
-<tr>
-<td><strong>Kubernetes (kind)</strong></td>
-<td>A <code>tinyolly-mcp</code> Deployment and NodePort Service (<code>k8s/tinyolly-mcp.yaml</code>, <code>k8s-core-only/tinyolly-mcp.yaml</code>). The kind config maps host port 8765 to it.</td>
-<td><code>http://localhost:8765/mcp</code></td>
-</tr>
-</tbody>
-</table>
-<p>Register the URL once per client:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Claude Code</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>tinyolly<span class="w"> </span>http://127.0.0.1:8765/mcp
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// Claude Desktop (claude_desktop_config.json): it cannot call a local URL directly, so bridge with mcp-remote.</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1">// Use the absolute path to npx (for nvm: ~/.nvm/versions/node/&lt;version&gt;/bin/npx) and set PATH, because the app does not load your shell profile.</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">&quot;tinyolly&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/absolute/path/to/npx&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;-y&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mcp-remote&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;http://127.0.0.1:8765/mcp&quot;</span><span class="p">],</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;PATH&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/directory/containing/node:/usr/bin:/bin&quot;</span><span class="w"> </span><span class="p">}</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">}</span>
-</code></pre></div>
-<p>Quit (Cmd+Q) and reopen Claude Desktop after editing. Zed can keep using the stdio command.</p>
-<p>Docker and Kubernetes use the same port and URL, so client config is identical for both. Run one at a time: stop one stack before starting the other. When moving from Kubernetes to Docker on an existing cluster, also remove the helper that forwards 8765 to the cluster (colima context):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>rm<span class="w"> </span>-f<span class="w"> </span>tinyolly-mcp-bridge
-</code></pre></div>
-<p>Clients do not reconnect on their own after a switch: restart them. Prefer this over per-client stdio, which keeps a stale copy of the server running until the client restarts.</p>
-<p>How it works: the container runs <code>server.py --http</code> and reads TinyOlly over its REST API (<code>TINYOLLY_URL</code>, <code>http://tinyolly-ui:5002</code> inside the stack). It is read-only, bundles the TinyOlly docs and the investigation skills, and binds to <code>127.0.0.1</code> on the host in Docker.</p>
-<p><strong>Updating it after you change <code>docker/apps/tinyolly-mcp</code> or <code>docs/</code>:</strong></p>
-<ul>
-<li>
-<p>Docker:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose-tinyolly-core-local.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>tinyolly-mcp
-</code></pre></div>
-</li>
-<li>
-<p>Kubernetes: <code>k8s/05-rebuild+deploy-mcp.sh</code></p>
-</li>
-<li>Then restart your MCP client so it reloads the tool list.</li>
-</ul>
-<p><strong>Kubernetes cluster created before the 8765 mapping existed</strong> (<code>scripts/kind-config.yaml</code>): kind cannot add a host port to a running cluster, so bridge it instead of recreating the cluster. With the Colima docker context:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--restart<span class="o">=</span>always<span class="w"> </span>--network<span class="w"> </span>kind<span class="w"> </span>-p<span class="w"> </span><span class="m">8765</span>:8765<span class="w"> </span>alpine/socat<span class="w"> </span>tcp-listen:8765,fork,reuseaddr<span class="w"> </span>tcp:tinyolly-control-plane:30876
-</code></pre></div>
-<p><strong>Without containers:</strong> run the server yourself and register the same URL:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python<span class="w"> </span>server.py<span class="w"> </span>--http<span class="w"> </span>--port<span class="w"> </span><span class="m">8765</span>
-</code></pre></div>
-<p>To point at a TinyOlly on another address, set <code>TINYOLLY_URL</code> (default <code>http://localhost:5005</code>).</p>
+<p>TinyOlly's Docker and Kubernetes deployments run the MCP server for you as a container on <code>http://localhost:8765/mcp</code>, shared by every client. Setup, client configuration, rebuilding and troubleshooting are on the <a href="../mcp-deploy/">MCP Server deployment page</a>.</p>
 <h2 id="tools">Tools</h2>
 <table>
 <thead>

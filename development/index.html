@@ -477,6 +477,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-deploy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -753,7 +781,7 @@
   <span class="md-ellipsis">
     
   
-    MCP Server (AI agents)
+    MCP Tools and Playbooks
   
 
     
@@ -1337,13 +1365,31 @@
 <a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>scripts/make-doc-images.py<span class="w"> </span>--check<span class="w">               </span><span class="c1"># no stack needed; also runs in test-all.sh</span>
 </code></pre></div>
 <p>To add a screenshot, add a line to <code>SHOTS</code> in the script, run it, and embed it as <code>[![alt](images/&lt;name&gt;.png)](images/full/&lt;name&gt;.png)</code>, or, where a width is needed, <code>&lt;a href="../images/full/&lt;name&gt;.png"&gt;&lt;img src="../images/&lt;name&gt;.png" width="400"&gt;&lt;/a&gt;</code>. The path prefix depends on the syntax: MkDocs resolves markdown links from the source file and rewrites them, so markdown under <code>docs/</code> uses <code>images/</code>; raw HTML is not rewritten and the page is served at <code>/&lt;page&gt;/</code>, so HTML under <code>docs/</code> uses <code>../images/</code> (except <code>docs/index.md</code>, which is the site root: <code>images/</code>). The README uses <code>docs/images/</code> for both. <code>--check</code> fails when a shot is missing, a preview is over 300 KB, or a doc embeds a generated shot without the click-to-expand link. The shots come from whatever is running: use a stack with mesh data (the seeder, or the Istio demo) for the <code>mesh-*</code> shots, and set <code>TINYOLLY_UI</code>, <code>TINYOLLY_MCP</code> for another port. It needs Chrome (<code>CHROME=</code> overrides the path) and Pillow or macOS <code>sips</code>.</p>
+<p><strong>Before publishing the docs site</strong> (<code>./mkdocs-deploy.sh</code> pushes to <code>gh-pages</code>):</p>
+<ol>
+<li><code>scripts/make-doc-images.py --check</code> passes (it also runs in <code>test-all.sh</code>).</li>
+<li>
+<p>Build with warnings as errors and read the result, not a grep of it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">source</span><span class="w"> </span>~/.venv/mkdocs/bin/activate
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>python3<span class="w"> </span>-m<span class="w"> </span>mkdocs<span class="w"> </span>build<span class="w"> </span>--strict<span class="w"> </span>-d<span class="w"> </span>/tmp/site
+</code></pre></div>
+<p>Any <code>WARNING</code> about a link whose "target is not found" means a wrong image path (MkDocs prints <code>WARNING -</code> with one space, so a search for two spaces finds nothing). <code>--strict</code> exits non-zero on warnings, so a clean exit is the proof.
+3. Open the built page, not just the markdown: <code>python3 -m http.server -d /tmp/site 8000</code>, then check the page you touched at <code>http://localhost:8000/&lt;page&gt;/</code> and click an image.</p>
+</li>
+</ol>
+<p>Common mistakes:</p>
+<ul>
+<li>A markdown image written with <code>../images/</code> (MkDocs resolves it from the source file and warns), or an HTML <code>&lt;img&gt;</code> written with <code>images/</code> (not rewritten, so it breaks at <code>/&lt;page&gt;/</code>). The path prefix rules are above.</li>
+<li>Adding an image to <code>docs/</code> but not committing <code>docs/images/full/&lt;name&gt;.png</code>, so the click opens a 404.</li>
+<li>Editing a generated preview by hand. Re-run the script instead.</li>
+</ul>
 <h2 id="docker-contexts">Docker contexts</h2>
 <p>Two Colima VMs can coexist: <code>colima</code> (default) and <code>colima-tinyolly</code> (this project). Every script pins <code>DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}</code> at the top; new scripts that call <code>docker</code> must do the same (copy the 3-line block from any <code>0N-*.sh</code>). For ad hoc commands use <code>docker --context colima-tinyolly ...</code>.</p>
 <h2 id="service-catalog-actions-ui-layout-easy-revert">Service catalog actions (UI layout, easy revert)</h2>
 <p>In the APM Service Catalog, per-service actions (Traces, Spans, Logs, Metrics, Service map) are a popover menu opened by clicking the service name. The original layout, a row of buttons on every service, is still in the code.</p>
 <p>To revert, set <code>ACTIONS_STYLE = 'buttons'</code> at the top of <code>docker/apps/tinyolly-ui/static/serviceCatalog.js</code> and rebuild the UI image:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nv">DOCKER_CONTEXT</span><span class="o">=</span>colima-tinyolly<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose-tinyolly-core-local.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>--no-deps<span class="w"> </span>tinyolly-ui
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">cd</span><span class="w"> </span>docker
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nv">DOCKER_CONTEXT</span><span class="o">=</span>colima-tinyolly<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose-tinyolly-core-local.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>--no-deps<span class="w"> </span>tinyolly-ui
 </code></pre></div>
 <p>To remove the menu code entirely, delete <code>SERVICE_ACTIONS</code>, <code>openServiceMenu</code>, <code>closeServiceMenu</code>, the <code>data-service-menu</code> click handler and the two <code>document.addEventListener</code> lines.
 Map and Service Catalog cross-links (<code>window.viewServiceMap</code>, <code>window.viewServiceCatalog</code>) are independent of this setting.</p>

@@ -612,6 +612,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-deploy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -888,7 +916,7 @@
   <span class="md-ellipsis">
     
   
-    MCP Server (AI agents)
+    MCP Tools and Playbooks
   
 
     
@@ -1263,7 +1291,7 @@
 - <strong>OTel Collector</strong>: Listening on <code>localhost:4317</code> (gRPC) and <code>localhost:4318</code> (HTTP)<br />
 - <strong>OpAMP Server</strong>: <code>ws://localhost:4320/v1/opamp</code> (WebSocket), <code>localhost:4321</code> (HTTP REST API)<br />
 - <strong>TinyOlly UI</strong>: <code>http://localhost:5005</code><br />
-- <strong>TinyOlly MCP server</strong>: <code>http://localhost:8765/mcp</code> (read-only, for AI agents; see <a href="../mcp/">MCP</a>)<br />
+- <strong>TinyOlly MCP server</strong>: <code>http://localhost:8765/mcp</code> (read-only, for AI agents; <a href="../mcp-deploy/">set up and connect it</a>)<br />
 - <strong>TinyOlly OTLP Receiver and its SQLite storage</strong>: OTLP observability back end and storage<br />
 - Pulls images from Docker Hub (use <code>./01-start-core-local.sh</code> to build from your checkout instead)  </p>
 <p><strong>Open the UI:</strong> <code>http://localhost:5005</code> (empty until you send data)</p>
@@ -1353,7 +1381,7 @@ Colima forwards container ports to <code>localhost</code>. Point your OpenTeleme
 - <strong>TinyOlly OTLP Receiver</strong>: Listening on <code>localhost:4343</code> (gRPC only)
 - <strong>OpAMP Server</strong>: <code>ws://localhost:4320/v1/opamp</code> (WebSocket), <code>localhost:4321</code> (HTTP REST API)
 - <strong>TinyOlly UI</strong>: <code>http://localhost:5005</code>
-- <strong>TinyOlly MCP server</strong>: <code>http://localhost:8765/mcp</code> (see <a href="../mcp/">MCP</a>)</p>
+- <strong>TinyOlly MCP server</strong>: <code>http://localhost:8765/mcp</code> (<a href="../mcp-deploy/">set up and connect it</a>)</p>
 <p>Swap out the included Otel Collector for any distro of Otel Collector.</p>
 <p><strong>Point your OpenTelemetry exporters to tinyolly-otlp-receiver:4343:</strong>
 i.e.<br />

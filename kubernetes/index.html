@@ -629,6 +629,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-deploy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -905,7 +933,7 @@
   <span class="md-ellipsis">
     
   
-    MCP Server (AI agents)
+    MCP Tools and Playbooks
   
 
     
@@ -1320,7 +1348,7 @@
 <li>
 <p><strong>Access the UI:</strong></p>
 <p>The UI is a NodePort service mapped to the host by <code>scripts/kind-config.yaml</code> (no tunnel needed). Access the TinyOlly UI at: <a href="http://localhost:5005">http://localhost:5005</a></p>
-<p>The deploy also starts <code>tinyolly-mcp</code>, a read-only <a href="../mcp/">MCP server</a> for AI agents, on NodePort 30876 mapped to <code>http://localhost:8765/mcp</code>. After changing it, rebuild with <code>k8s/05-rebuild+deploy-mcp.sh</code>.</p>
+<p>The deploy also starts <code>tinyolly-mcp</code>, a read-only <a href="../mcp-deploy/">MCP server</a> for AI agents, on NodePort 30876 mapped to <code>http://localhost:8765/mcp</code>. After changing it, rebuild with <code>k8s/05-rebuild+deploy-mcp.sh</code>.</p>
 <p><strong>OpenTelemetry Collector + OpAMP Config Page:</strong> Navigate to the "OpenTelemetry Collector + OpAMP Config" tab in the UI to view and manage collector configurations remotely. See the <a href="#opamp-configuration-optional">OpAMP Configuration</a> section below for setup instructions.</p>
 </li>
 <li>
