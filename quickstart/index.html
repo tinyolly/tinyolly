@@ -1543,19 +1543,26 @@
 <hr />
 <h2 id="prerequisites">Prerequisites</h2>
 <ul>
-<li>Colima + docker CLI installed and running (<code>brew install colima docker docker-compose docker-buildx docker-credential-helper</code>, then <code>./scripts/colima-up.sh</code>). The scripts use the <code>colima-tinyolly</code> Docker context, so they work even if another Docker context or VM is active</li>
-<li>Git (to clone the repository)</li>
+<li>
+<p>Colima + docker CLI installed and running. The scripts use the <code>colima-tinyolly</code> Docker context, so they work even if another Docker context or VM is active:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>brew<span class="w"> </span>install<span class="w"> </span>colima<span class="w"> </span>docker<span class="w"> </span>docker-compose<span class="w"> </span>docker-buildx<span class="w"> </span>docker-credential-helper
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./scripts/colima-up.sh
+</code></pre></div>
+</li>
+<li>
+<p>Git (to clone the repository)</p>
+</li>
 <li>5 minutes of your time</li>
 </ul>
 <hr />
 <h2 id="step-1-clone-the-repository">Step 1: Clone the Repository</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tinyolly/tinyolly
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>tinyolly
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tinyolly/tinyolly
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>tinyolly
 </code></pre></div>
 <hr />
 <h2 id="step-2-start-tinyolly-core">Step 2: Start TinyOlly Core</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./01-start-core.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>docker
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./01-start-core.sh
 </code></pre></div>
 <p>This pulls pre-built images from Docker Hub and starts:</p>
 <ul>
@@ -1571,8 +1578,8 @@
 <hr />
 <h2 id="step-3-deploy-demo-apps-optional-but-recommended">Step 3: Deploy Demo Apps (Optional but Recommended)</h2>
 <p>In a new terminal:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./01-deploy-demo.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>./01-deploy-demo.sh
 </code></pre></div>
 <p>This pulls demo images from Docker Hub and deploys two Flask microservices that automatically generate traffic.</p>
 <p><strong>Wait 30 seconds</strong> for telemetry to appear!</p>
@@ -1661,21 +1668,21 @@
 <h2 id="step-6-use-your-own-application">Step 6: Use Your Own Application</h2>
 <p>Point your application's OpenTelemetry exporter to:</p>
 <p><strong>For apps running on your host machine (outside Docker):</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://localhost:4318
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://localhost:4318
 </code></pre></div></p>
 <p><strong>For apps running inside Docker:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://otel-collector:4318
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://otel-collector:4318
 </code></pre></div></p>
 <p>TinyOlly will automatically capture and display your telemetry!</p>
 <hr />
 <h2 id="cleanup">Cleanup</h2>
 <p>Stop demo apps (keeps TinyOlly running):
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>./02-cleanup-demo.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>./02-cleanup-demo.sh
 </code></pre></div></p>
 <p>Stop everything:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>./02-stop-core.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>docker
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>./02-stop-core.sh
 </code></pre></div></p>
 <hr />
 <h2 id="next-steps">Next Steps</h2>
@@ -1690,8 +1697,16 @@
 <h3 id="ui-shows-no-traceslogsmetrics">UI shows "No traces/logs/metrics"</h3>
 <ul>
 <li>Wait 30 seconds after starting demo apps</li>
-<li>Check containers are running in the TinyOlly VM: <code>docker --context colima-tinyolly ps</code> (plain <code>docker ps</code> shows whichever context is active, possibly another Colima VM)</li>
-<li>Check demo app logs: <code>docker compose -f docker-demo/docker-compose-demo.yml logs</code></li>
+<li>
+<p>Check containers are running in the TinyOlly VM (plain <code>docker ps</code> shows whichever context is active, possibly another Colima VM):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>--context<span class="w"> </span>colima-tinyolly<span class="w"> </span>ps
+</code></pre></div>
+</li>
+<li>
+<p>Check demo app logs:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-demo/docker-compose-demo.yml<span class="w"> </span>logs
+</code></pre></div>
+</li>
 </ul>
 <h3 id="port-conflicts">Port conflicts</h3>
 <ul>
@@ -1700,8 +1715,18 @@
 </ul>
 <h3 id="demo-apps-not-generating-traffic">Demo apps not generating traffic</h3>
 <ul>
-<li>Restart demo: <code>cd docker-demo &amp;&amp; ./02-cleanup-demo.sh &amp;&amp; ./01-deploy-demo.sh</code></li>
-<li>Check logs: <code>docker compose -f docker-demo/docker-compose-demo.yml logs demo-frontend</code></li>
+<li>
+<p>Restart demo:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>./02-cleanup-demo.sh
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>./01-deploy-demo.sh
+</code></pre></div>
+</li>
+<li>
+<p>Check logs:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-demo/docker-compose-demo.yml<span class="w"> </span>logs<span class="w"> </span>demo-frontend
+</code></pre></div>
+</li>
 </ul>
 <p>For more help, <a href="https://github.com/tinyolly/tinyolly/issues">open an issue on GitHub</a>.</p>
 

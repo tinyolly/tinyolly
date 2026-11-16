@@ -1361,14 +1361,30 @@
 <p><strong>No AI traces appearing?</strong></p>
 <ul>
 <li>Ensure TinyOlly core is running</li>
-<li>Check agent logs: <code>cd docker-ai-agent-demo &amp;&amp; docker compose logs ai-agent</code></li>
-<li>Verify Ollama is ready: <code>docker compose logs ollama</code></li>
+<li>
+<p>Check agent logs:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">cd</span><span class="w"> </span>docker-ai-agent-demo
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>ai-agent
+</code></pre></div>
+</li>
+<li>
+<p>Verify Ollama is ready:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>ollama
+</code></pre></div>
+</li>
 </ul>
 <p><strong>Model download taking long?</strong></p>
 <ul>
 <li>TinyLlama is ~600MB, first download may take a few minutes</li>
-<li>The Ollama container is limited to 4 GB of RAM, so the default 4 GB Colima VM is too small: restart it larger, e.g. <code>colima stop -p tinyolly &amp;&amp; COLIMA_MEMORY=8 ./scripts/colima-up.sh</code></li>
-<li>Check Ollama logs for download progress</li>
+<li>
+<p>The Ollama container is limited to 4 GB of RAM, so the default 4 GB Colima VM is too small. Restart it larger, for example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>colima<span class="w"> </span>stop<span class="w"> </span>-p<span class="w"> </span>tinyolly
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">COLIMA_MEMORY</span><span class="o">=</span><span class="m">8</span><span class="w"> </span>./scripts/colima-up.sh
+</code></pre></div>
+</li>
+<li>
+<p>Check Ollama logs for download progress</p>
+</li>
 </ul>
 <p><strong>Agent errors?</strong></p>
 <ul>

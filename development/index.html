@@ -1257,16 +1257,45 @@
 
 <h1 id="development-and-testing">Development and testing</h1>
 <ul>
-<li>Python dependencies are locked: edit <code>requirements.in</code> in a service directory, then regenerate with
-  <code>uv pip compile requirements.in --universal --python-version 3.13 -o requirements.txt</code>.</li>
-<li>Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in <code>versions.env</code>; the Dockerfiles carry matching <code>ARG</code> defaults. Update both together.</li>
+<li>
+<p>Python dependencies are locked: edit <code>requirements.in</code> in a service directory, then regenerate with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>pip<span class="w"> </span>compile<span class="w"> </span>requirements.in<span class="w"> </span>--universal<span class="w"> </span>--python-version<span class="w"> </span><span class="m">3</span>.13<span class="w"> </span>-o<span class="w"> </span>requirements.txt
+</code></pre></div>
+</li>
+<li>
+<p>Pinned versions (collector, supervisor, Ollama, OBI, Python, Go) are listed in <code>versions.env</code>; the Dockerfiles carry matching <code>ARG</code> defaults. Update both together.</p>
+</li>
 <li>Architecture diagram (<code>docs/images/architecture.png</code>) is generated: edit <code>scripts/make-architecture-diagram.py</code> and run <code>docker/apps/tinyolly-mcp/.venv/bin/python scripts/make-architecture-diagram.py</code> (needs matplotlib and Pillow).</li>
-<li>Lint: <code>pip install ruff==0.17.4 &amp;&amp; ruff check docker/apps/</code> (rules are in <code>ruff.toml</code>; keep the ruff version pinned, its defaults change between releases). There is no CI; run the checks locally.</li>
-<li><strong>All local tests:</strong> <code>./scripts/test-all.sh</code> (fast suites; <code>--stack</code> adds the e2e run against the running stack, <code>--kind</code> adds the kind smoke test, which briefly stops the compose stack). Nothing runs in CI. Docs pages need <code>title</code>/<code>description</code> front matter (the MCP server lists them). Suites: common, UI/API, receiver, MCP server, frontend JS (<code>node --test</code>), Go, collector configs, kubectl guard. Individually:</li>
-<li>Tests: <code>cd docker/apps/tinyolly-common &amp;&amp; pip install -r requirements-test.txt . &amp;&amp; pytest tests</code>.</li>
-<li>Go (OpAMP server): <code>./scripts/test-go.sh</code> (gofmt, vet, <code>go test -race</code> in the pinned golang image). UI tests: <code>cd docker/apps/tinyolly-ui &amp;&amp; pytest tests</code>. k8s safety guard: <code>./scripts/test-kubectx-guard.sh</code>.</li>
-<li>End-to-end (needs the stack up, ~8 min): <code>python3 scripts/e2e.py</code> (<code>--up</code> starts it, <code>--only a,b</code> picks scenarios, <code>--list</code>). Drives OTLP through the collector, applies every preset via OpAMP, and checks results through the UI API. Test hooks: <code>POST /admin/reset</code>, <code>POST /api/opamp/config?wait=N</code>.</li>
-<li>Collector configs: <code>./scripts/test-collector-configs.sh</code> (validate + start every preset); after editing them run <code>./scripts/sync-k8s-configs.sh</code>.</li>
+<li>
+<p>Lint (rules are in <code>ruff.toml</code>; keep the ruff version pinned, its defaults change between releases). There is no CI; run the checks locally:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">ruff</span><span class="o">==</span><span class="m">0</span>.17.4
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>ruff<span class="w"> </span>check<span class="w"> </span>docker/apps/
+</code></pre></div>
+</li>
+<li>
+<p><strong>All local tests</strong> (fast suites; <code>--stack</code> adds the e2e run against the running stack, <code>--kind</code> adds the kind smoke test, which briefly stops the compose stack). Nothing runs in CI. Docs pages need <code>title</code>/<code>description</code> front matter (the MCP server lists them). Suites: common, UI/API, receiver, MCP server, frontend JS (<code>node --test</code>), Go, collector configs, kubectl guard:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./scripts/test-all.sh
+</code></pre></div>
+</li>
+<li>
+<p>Individual suites. Common library:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="o">(</span><span class="nb">cd</span><span class="w"> </span>docker/apps/tinyolly-common<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements-test.txt<span class="w"> </span>.<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>pytest<span class="w"> </span>tests<span class="o">)</span>
+</code></pre></div>
+</li>
+<li>
+<p>Go (OpAMP server: gofmt, vet, <code>go test -race</code> in the pinned golang image), UI tests, and the k8s safety guard:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./scripts/test-go.sh
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">(</span><span class="nb">cd</span><span class="w"> </span>docker/apps/tinyolly-ui<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>pytest<span class="w"> </span>tests<span class="o">)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>./scripts/test-kubectx-guard.sh
+</code></pre></div>
+</li>
+<li>
+<p>End-to-end (needs the stack up, ~8 min; <code>--up</code> starts it, <code>--only a,b</code> picks scenarios, <code>--list</code> shows them):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python3<span class="w"> </span>scripts/e2e.py
+</code></pre></div>
+<p>Drives OTLP through the collector, applies every preset via OpAMP, and checks results through the UI API. Test hooks: <code>POST /admin/reset</code>, <code>POST /api/opamp/config?wait=N</code>.
+- Collector configs: <code>./scripts/test-collector-configs.sh</code> (validate + start every preset); after editing them run <code>./scripts/sync-k8s-configs.sh</code>.</p>
+</li>
 </ul>
 <h2 id="technical-details">Technical details</h2>
 <h3 id="stack">Stack</h3>
@@ -1288,31 +1317,35 @@
 <h2 id="testing-mesh-features-without-istio">Testing mesh features without Istio</h2>
 <p>Docker Compose has no Istio, so <code>scripts/seed_mesh.py</code> posts synthetic Istio metrics (OTLP/JSON) for the Online Boutique mesh: scenarios <code>baseline</code>, <code>flaky</code>, <code>fault</code>, <code>canary</code>, <code>deny</code> and <code>multicluster</code>, plus <code>--trace</code> (a trace through a gateway and a waypoint), <code>--l7 &lt;service&gt;</code> (request metrics for one destination only) and <code>--ui &lt;url&gt;</code> (records a change marker).</p>
 <p>To run the Compose stack next to the kind cluster, use the second Colima VM and shifted ports (UI 5105, MCP 8865, OTLP 4418):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>scripts/docker-alt.sh<span class="w">                      </span><span class="c1"># rebuild python-base and every service, then start (docker/docker-compose.altports.yml)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python3<span class="w"> </span>scripts/seed_mesh.py<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4418<span class="w"> </span>--scenario<span class="w"> </span>flaky<span class="w"> </span>--ui<span class="w"> </span>http://localhost:5105
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nv">MCP_URL</span><span class="o">=</span>http://localhost:8865/mcp<span class="w"> </span>...<span class="w">      </span><span class="c1"># then ask the MCP server (get_edge, what_changed, chart_map_diff)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>scripts/docker-alt.sh<span class="w">                      </span><span class="c1"># rebuild python-base and every service, then start (docker/docker-compose.altports.yml)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>python3<span class="w"> </span>scripts/seed_mesh.py<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4418<span class="w"> </span>--scenario<span class="w"> </span>flaky<span class="w"> </span>--ui<span class="w"> </span>http://localhost:5105
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nv">MCP_URL</span><span class="o">=</span>http://localhost:8865/mcp<span class="w"> </span>...<span class="w">      </span><span class="c1"># then ask the MCP server (get_edge, what_changed, chart_map_diff)</span>
 </code></pre></div>
 <h2 id="agent-eval">Agent eval</h2>
 <p><code>scripts/agent_eval/eval.py</code> injects a known fault, lets a local model investigate through the MCP tools, and grades the answer against ground truth (service, cause, evidence). It has five scenarios including a healthy control, and runs against Compose (seeded metrics) or kind (real faults from the demo repo):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>docker<span class="w"> </span>--repeat<span class="w"> </span><span class="m">3</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>kind<span class="w"> </span>--scenarios<span class="w"> </span>flaky,deny<span class="w"> </span>--no-skill-hint
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>docker<span class="w"> </span>--repeat<span class="w"> </span><span class="m">3</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>kind<span class="w"> </span>--scenarios<span class="w"> </span>flaky,deny<span class="w"> </span>--no-skill-hint
 </code></pre></div>
-<p>Needs Ollama (<code>LOCAL_BASE</code>, <code>LOCAL_MODEL</code>). Results go to <code>eval-results.json</code>. Unit tests for the loop and grader: <code>pytest scripts/agent_eval</code>.</p>
+<p>Needs Ollama (<code>LOCAL_BASE</code>, <code>LOCAL_MODEL</code>). Results go to <code>eval-results.json</code>. Unit tests for the loop and grader:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pytest<span class="w"> </span>scripts/agent_eval
+</code></pre></div>
 <h2 id="documentation-images">Documentation images</h2>
 <p>Screenshots in the README and docs are generated, not hand-pasted, so they can be refreshed in one command. <code>scripts/make-doc-images.py</code> takes headless-Chrome screenshots of the UI tabs and saves the PNGs the MCP chart tools return, and writes each twice: a preview at most 900 px wide in <code>docs/images/</code> (what the docs show) and the full-size file in <code>docs/images/full/</code> (what a click opens).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>scripts/make-doc-images.py<span class="w">                       </span><span class="c1"># all shots from the running stack (UI :5005, MCP :8765)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>scripts/make-doc-images.py<span class="w"> </span>--only<span class="w"> </span>mesh-map-diff<span class="w">  </span><span class="c1"># one shot</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>scripts/make-doc-images.py<span class="w"> </span>--seed<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4318<span class="w">   </span><span class="c1"># post a fault scenario first (diff and trace path)</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>scripts/make-doc-images.py<span class="w"> </span>--check<span class="w">               </span><span class="c1"># no stack needed; also runs in test-all.sh</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>scripts/make-doc-images.py<span class="w">                       </span><span class="c1"># all shots from the running stack (UI :5005, MCP :8765)</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>scripts/make-doc-images.py<span class="w"> </span>--only<span class="w"> </span>mesh-map-diff<span class="w">  </span><span class="c1"># one shot</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>scripts/make-doc-images.py<span class="w"> </span>--seed<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4318<span class="w">   </span><span class="c1"># post a fault scenario first (diff and trace path)</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>scripts/make-doc-images.py<span class="w"> </span>--check<span class="w">               </span><span class="c1"># no stack needed; also runs in test-all.sh</span>
 </code></pre></div>
 <p>To add a screenshot, add a line to <code>SHOTS</code> in the script, run it, and embed it as <code>[![alt](images/&lt;name&gt;.png)](images/full/&lt;name&gt;.png)</code> (or <code>&lt;a href="images/full/&lt;name&gt;.png"&gt;&lt;a href="images/&lt;name&gt;.png"&gt;&lt;img src="images/&lt;name&gt;.png" width="400"&gt;&lt;/a&gt;&lt;/a&gt;</code> where a width is needed). <code>--check</code> fails when a shot is missing, a preview is over 300 KB, or a doc embeds a generated shot without the click-to-expand link. The shots come from whatever is running: use a stack with mesh data (the seeder, or the Istio demo) for the <code>mesh-*</code> shots, and set <code>TINYOLLY_UI</code>, <code>TINYOLLY_MCP</code> for another port. It needs Chrome (<code>CHROME=</code> overrides the path) and Pillow or macOS <code>sips</code>.</p>
 <h2 id="docker-contexts">Docker contexts</h2>
 <p>Two Colima VMs can coexist: <code>colima</code> (default) and <code>colima-tinyolly</code> (this project). Every script pins <code>DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}</code> at the top; new scripts that call <code>docker</code> must do the same (copy the 3-line block from any <code>0N-*.sh</code>). For ad hoc commands use <code>docker --context colima-tinyolly ...</code>.</p>
 <h2 id="service-catalog-actions-ui-layout-easy-revert">Service catalog actions (UI layout, easy revert)</h2>
 <p>In the APM Service Catalog, per-service actions (Traces, Spans, Logs, Metrics, Service map) are a popover menu opened by clicking the service name. The original layout, a row of buttons on every service, is still in the code.</p>
-<p>To revert, set <code>ACTIONS_STYLE = 'buttons'</code> at the top of <code>docker/apps/tinyolly-ui/static/serviceCatalog.js</code> and rebuild the UI image
-(<code>cd docker &amp;&amp; DOCKER_CONTEXT=colima-tinyolly docker compose -f docker-compose-tinyolly-core-local.yml up -d --build --no-deps tinyolly-ui</code>).
-To remove the menu code entirely, delete <code>SERVICE_ACTIONS</code>, <code>openServiceMenu</code>, <code>closeServiceMenu</code>, the <code>data-service-menu</code> click handler and the two <code>document.addEventListener</code> lines.
+<p>To revert, set <code>ACTIONS_STYLE = 'buttons'</code> at the top of <code>docker/apps/tinyolly-ui/static/serviceCatalog.js</code> and rebuild the UI image:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd</span><span class="w"> </span>docker
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nv">DOCKER_CONTEXT</span><span class="o">=</span>colima-tinyolly<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose-tinyolly-core-local.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>--no-deps<span class="w"> </span>tinyolly-ui
+</code></pre></div>
+<p>To remove the menu code entirely, delete <code>SERVICE_ACTIONS</code>, <code>openServiceMenu</code>, <code>closeServiceMenu</code>, the <code>data-service-menu</code> click handler and the two <code>document.addEventListener</code> lines.
 Map and Service Catalog cross-links (<code>window.viewServiceMap</code>, <code>window.viewServiceCatalog</code>) are independent of this setting.</p>
 
 

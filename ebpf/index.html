@@ -1745,9 +1745,21 @@
 </ul>
 <h2 id="troubleshooting">Troubleshooting</h2>
 <p><strong>No traces appearing?</strong>
-- Ensure TinyOlly core is running (<code>docker ps | grep otel-collector</code>)
-- Check eBPF agent logs: <code>docker logs otel-ebpf-instrumentation</code> (run against the <code>colima-tinyolly</code> context: <code>DOCKER_CONTEXT=colima-tinyolly docker logs ...</code>)
-- Verify the agent can access <code>/sys/kernel/debug</code></p>
+- Ensure TinyOlly core is running:</p>
+<div class="highlight"><pre><span></span><code>```bash
+docker ps | grep otel-collector
+```
+</code></pre></div>
+<ul>
+<li>
+<p>Check eBPF agent logs (against the <code>colima-tinyolly</code> context):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nv">DOCKER_CONTEXT</span><span class="o">=</span>colima-tinyolly<span class="w"> </span>docker<span class="w"> </span>logs<span class="w"> </span>otel-ebpf-instrumentation
+</code></pre></div>
+</li>
+<li>
+<p>Verify the agent can access <code>/sys/kernel/debug</code></p>
+</li>
+</ul>
 <p><strong>Traces have wrong service name?</strong>
 - OBI discovers service names from process info
 - Set <code>OTEL_EBPF_SERVICE_NAME</code> for explicit naming</p>
