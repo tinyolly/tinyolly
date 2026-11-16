@@ -13,7 +13,7 @@ TinyOlly can show an [Istio ambient](https://istio.io/latest/docs/ambient/) mesh
 Because ztunnel produces only metrics, TinyOlly builds map edges from Istio metrics as well as from traces.
 
 !!! tip "Runnable demo"
-    The [istio-ambient-demo](https://github.com/stevelerner/istio-ambient-demo) repo installs Istio ambient on a local kind cluster, deploys Online Boutique, and has scenarios for waypoint, fault injection, retries and authorization policy. It is a separate repo so TinyOlly stays small.
+    The [istio-ambient-demo](https://github.com/stevelerner/istio-ambient-demo) repo installs Istio ambient on a local kind cluster, deploys Online Boutique, and has scenarios for waypoint, canary, fault injection, retries and authorization policy. Its guide has a screenshot at each step and prompts for asking an AI assistant about the mesh through the [MCP server](mcp.md). It is a separate repo so TinyOlly stays small.
 
 ## What you get on the map
 

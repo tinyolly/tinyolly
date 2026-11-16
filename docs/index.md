@@ -46,6 +46,7 @@ TinyOlly is a **lightweight OpenTelemetry-native observability platform** built 
 
 *Demos*
 - Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags ([docs](otel-demo.md))
+- Istio ambient mesh demo: Online Boutique on a sidecar-less mesh, with scenarios for waypoints, canary, faults and authorization policy, and an AI assistant that investigates them through MCP ([demo repo](https://github.com/stevelerner/istio-ambient-demo), [mesh features](istio.md))
 
 *Built with* Python (FastAPI), SQLite and JavaScript.
 

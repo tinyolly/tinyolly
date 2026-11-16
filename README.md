@@ -40,7 +40,7 @@ Visualize and correlate logs, metrics, and traces without sending data to the cl
 
 *Demos*
 - Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags ([docs](docs/otel-demo.md))
-- Istio ambient mesh demo: Online Boutique on Istio ambient, with scenarios for waypoints, fault injection, retries and authorization policy, in its own repo ([istio-ambient-demo](https://github.com/stevelerner/istio-ambient-demo), guide in [docs](docs/istio.md))
+- Istio ambient mesh demo: Online Boutique on Istio ambient with no sidecars, a step-by-step guide with screenshots, scenarios for waypoints, canary, fault injection, retries and authorization policy, and an AI assistant that investigates the faults through the MCP server, in its own repo ([istio-ambient-demo](https://github.com/stevelerner/istio-ambient-demo), mesh features in [docs](docs/istio.md))
 
 *Built with* Python (FastAPI), SQLite and JavaScript.
 
@@ -437,6 +437,7 @@ All responses return OpenTelemetry-native JSON with full trace/span context.
 ## More
 
 - [MCP server for AI agents](docs/mcp.md): let Claude Code or Zed query your telemetry (read-only)
+- [Istio ambient demo](https://github.com/stevelerner/istio-ambient-demo): a runnable sidecar-less mesh on kind that TinyOlly draws live, with scenarios and AI prompts ([mesh features](docs/istio.md))
 - [Development and testing](docs/development.md)
 - [Technical details](docs/development.md#technical-details)
 
