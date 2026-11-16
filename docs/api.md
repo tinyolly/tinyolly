@@ -6,7 +6,7 @@ description: "REST endpoints for traces, spans, logs, metrics, service catalog a
 # REST API & OpenAPI
 
 <div align="center">
-  <img src="../images/api.png" alt="TinyOlly REST API" width="700">
+  <a href="../images/api.png"><img src="../images/api.png" alt="TinyOlly REST API" width="700"></a>
   <p><em>OpenAPI documentation with interactive Swagger UI</em></p>
 </div>
 

@@ -11,11 +11,11 @@ TinyOlly provides a powerful interface for analyzing OpenTelemetry metrics, with
 
 The metrics table offers a dense, high-information view of all ingested metrics.
 
-![Metrics Table](images/metrics.png)
+[![Metrics Table](images/metrics.png)](images/metrics.png)
 
 Click the **Chart** button to visualize metric data over time:
 
-![Metrics Chart](images/metrics2.png)
+[![Metrics Chart](images/metrics2.png)](images/metrics2.png)
 
 ### Key Columns
 

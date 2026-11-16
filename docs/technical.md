@@ -8,7 +8,7 @@ description: "Architecture, storage and retention, OTLP compatibility, UI featur
 ## Architecture
 
 <div align="center">
-  <img src="../images/architecture.png" alt="TinyOlly Architecture" width="700">
+  <a href="../images/architecture.png"><img src="../images/architecture.png" alt="TinyOlly Architecture" width="700"></a>
 </div>
 
 ---

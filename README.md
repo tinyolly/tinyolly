@@ -116,7 +116,13 @@ echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.do
 
 - Colima creates one Docker context per profile: `colima` (the default VM) and `colima-tinyolly` (this project's VM).
 - All TinyOlly scripts pin themselves to `colima-tinyolly` (override with `COLIMA_PROFILE`), so they work whichever context your shell has active.
-- For your own `docker` commands against the TinyOlly stack, use `docker --context colima-tinyolly ...` or `export DOCKER_CONTEXT=colima-tinyolly`.
+- For your own `docker` commands against the TinyOlly stack, pass the context or export it once:
+
+    ```bash
+    docker --context colima-tinyolly ps
+    export DOCKER_CONTEXT=colima-tinyolly
+    ```
+
 - A plain `docker` uses your active context (`docker context show`), which may be the other VM.
 
 ## Docker Deployment
@@ -398,7 +404,13 @@ A read-only [MCP](https://modelcontextprotocol.io) server lets Claude Code, Zed 
 docker/apps/tinyolly-mcp/install.sh   # prints copy-paste setup for Claude Code, Claude Desktop and Zed
 ```
 
-The Docker and Kubernetes deployments also run it for you as a container (`tinyolly-mcp`, port 8765, streamable HTTP), so there is nothing to start by hand: `claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp`. Claude Desktop connects to the same URL through `mcp-remote`, and the same config works for Docker or Kubernetes (run one at a time); see [MCP docs](docs/mcp.md).
+The Docker and Kubernetes deployments also run it for you as a container (`tinyolly-mcp`, port 8765, streamable HTTP), so there is nothing to start by hand. Register it with Claude Code:
+
+```bash
+claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp
+```
+
+Claude Desktop connects to the same URL through `mcp-remote`, and the same config works for Docker or Kubernetes (run one at a time); see [MCP docs](docs/mcp.md).
 
 Details, the tool list and how the containerized server works: [docs/mcp.md](docs/mcp.md).
 

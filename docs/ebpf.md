@@ -214,8 +214,18 @@ spec:
 ## Troubleshooting
 
 **No traces appearing?**
-- Ensure TinyOlly core is running (`docker ps | grep otel-collector`)
-- Check eBPF agent logs: `docker logs otel-ebpf-instrumentation` (run against the `colima-tinyolly` context: `DOCKER_CONTEXT=colima-tinyolly docker logs ...`)
+- Ensure TinyOlly core is running:
+
+    ```bash
+    docker ps | grep otel-collector
+    ```
+
+- Check eBPF agent logs (against the `colima-tinyolly` context):
+
+    ```bash
+    DOCKER_CONTEXT=colima-tinyolly docker logs otel-ebpf-instrumentation
+    ```
+
 - Verify the agent can access `/sys/kernel/debug`
 
 **Traces have wrong service name?**

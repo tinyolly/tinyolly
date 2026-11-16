@@ -111,13 +111,29 @@ ai-agent:
 **No AI traces appearing?**
 
 - Ensure TinyOlly core is running
-- Check agent logs: `cd docker-ai-agent-demo && docker compose logs ai-agent`
-- Verify Ollama is ready: `docker compose logs ollama`
+- Check agent logs:
+
+    ```bash
+    cd docker-ai-agent-demo
+    docker compose logs ai-agent
+    ```
+
+- Verify Ollama is ready:
+
+    ```bash
+    docker compose logs ollama
+    ```
 
 **Model download taking long?**
 
 - TinyLlama is ~600MB, first download may take a few minutes
-- The Ollama container is limited to 4 GB of RAM, so the default 4 GB Colima VM is too small: restart it larger, e.g. `colima stop -p tinyolly && COLIMA_MEMORY=8 ./scripts/colima-up.sh`
+- The Ollama container is limited to 4 GB of RAM, so the default 4 GB Colima VM is too small. Restart it larger, for example:
+
+    ```bash
+    colima stop -p tinyolly
+    COLIMA_MEMORY=8 ./scripts/colima-up.sh
+    ```
+
 - Check Ollama logs for download progress
 
 **Agent errors?**

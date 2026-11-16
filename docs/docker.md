@@ -8,7 +8,7 @@ description: "Start TinyOlly with Docker (core, demo apps, AI agent demo, OTel d
 Get TinyOlly running on Docker in minutes!
 
 <div align="center">
-  <img src="../images/traces.png" alt="TinyOlly Running on Docker" width="600">
+  <a href="../images/traces.png"><img src="../images/traces.png" alt="TinyOlly Running on Docker" width="600"></a>
   <p><em>TinyOlly UI showing distributed traces</em></p>
 </div>
 
@@ -39,7 +39,11 @@ This starts:
 **Open the UI:** `http://localhost:5005` (empty until you send data)
 
 !!! note
-    `01-start-core.sh` starts from a clean slate: it removes the SQLite data volume and the supervisor's cached collector config on every run. Use `docker compose -f docker-compose-tinyolly-core.yml restart` to keep data.
+    `01-start-core.sh` starts from a clean slate: it removes the SQLite data volume and the supervisor's cached collector config on every run. To keep data, restart instead:
+
+    ```bash
+    docker compose -f docker-compose-tinyolly-core.yml restart
+    ```
 
 **OpenTelemetry Collector + OpAMP Config Page:** Navigate to the "OpenTelemetry Collector + OpAMP Config" tab in the UI to view and manage collector configurations remotely. See the [OpAMP Configuration](#opamp-configuration-optional) section below for setup instructions.
 

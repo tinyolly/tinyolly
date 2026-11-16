@@ -57,19 +57,40 @@ claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp
 
 Quit (Cmd+Q) and reopen Claude Desktop after editing. Zed can keep using the stdio command.
 
-Docker and Kubernetes use the same port and URL, so client config is identical for both. Run one at a time: stop one stack before starting the other. When moving from Kubernetes to Docker on an existing cluster, also run `docker rm -f tinyolly-mcp-bridge` (colima context), the helper that forwards 8765 to the cluster. Clients do not reconnect on their own after a switch: restart them. Prefer this over per-client stdio, which keeps a stale copy of the server running until the client restarts.
+Docker and Kubernetes use the same port and URL, so client config is identical for both. Run one at a time: stop one stack before starting the other. When moving from Kubernetes to Docker on an existing cluster, also remove the helper that forwards 8765 to the cluster (colima context):
+
+```bash
+docker rm -f tinyolly-mcp-bridge
+```
+
+Clients do not reconnect on their own after a switch: restart them. Prefer this over per-client stdio, which keeps a stale copy of the server running until the client restarts.
 
 How it works: the container runs `server.py --http` and reads TinyOlly over its REST API (`TINYOLLY_URL`, `http://tinyolly-ui:5002` inside the stack). It is read-only, bundles the TinyOlly docs and the investigation skills, and binds to `127.0.0.1` on the host in Docker.
 
 **Updating it after you change `docker/apps/tinyolly-mcp` or `docs/`:**
 
-- Docker: `docker compose -f docker/docker-compose-tinyolly-core-local.yml up -d --build tinyolly-mcp`
+- Docker:
+
+    ```bash
+    docker compose -f docker/docker-compose-tinyolly-core-local.yml up -d --build tinyolly-mcp
+    ```
+
 - Kubernetes: `k8s/05-rebuild+deploy-mcp.sh`
 - Then restart your MCP client so it reloads the tool list.
 
-**Kubernetes cluster created before the 8765 mapping existed** (`scripts/kind-config.yaml`): kind cannot add a host port to a running cluster, so bridge it instead of recreating the cluster. With the Colima docker context: `docker run -d --restart=always --network kind -p 8765:8765 alpine/socat tcp-listen:8765,fork,reuseaddr tcp:tinyolly-control-plane:30876`.
+**Kubernetes cluster created before the 8765 mapping existed** (`scripts/kind-config.yaml`): kind cannot add a host port to a running cluster, so bridge it instead of recreating the cluster. With the Colima docker context:
 
-**Without containers:** run `python server.py --http --port 8765` yourself and register the same URL. To point at a TinyOlly on another address, set `TINYOLLY_URL` (default `http://localhost:5005`).
+```bash
+docker run -d --restart=always --network kind -p 8765:8765 alpine/socat tcp-listen:8765,fork,reuseaddr tcp:tinyolly-control-plane:30876
+```
+
+**Without containers:** run the server yourself and register the same URL:
+
+```bash
+python server.py --http --port 8765
+```
+
+To point at a TinyOlly on another address, set `TINYOLLY_URL` (default `http://localhost:5005`).
 
 ## Tools
 

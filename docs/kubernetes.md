@@ -8,7 +8,7 @@ description: "Run TinyOlly on kind (Kubernetes on Colima): core, demo apps, OTel
 Deploy TinyOlly on Kubernetes (kind on Colima) for local development!
 
 <div align="center">
-  <img src="../images/servicemap.png" alt="TinyOlly on Kubernetes" width="600">
+  <a href="../images/servicemap.png"><img src="../images/servicemap.png" alt="TinyOlly on Kubernetes" width="600"></a>
   <p><em>Service map showing microservices running on Kubernetes</em></p>
 </div>
 
@@ -44,7 +44,11 @@ brew install colima docker docker-compose docker-buildx docker-credential-helper
     ./k8s/02-deploy-tinyolly.sh
     ```
 
-    Alternatively, you can manually apply all manifests with `kubectl apply -f k8s/`
+    Alternatively, you can manually apply all manifests:
+
+    ```bash
+    kubectl apply -f k8s/
+    ```
 
     !!! note "Local Development Build (Optional)"
         To build images locally and load them into kind instead of pulling from Docker Hub:

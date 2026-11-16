@@ -6,7 +6,7 @@ description: "Limit on unique metric names, environment variables, Docker and Ku
 # Cardinality Protection
 
 <div align="center">
-  <img src="../images/spans.png" alt="Cardinality Protection" width="600">
+  <a href="../images/spans.png"><img src="../images/spans.png" alt="Cardinality Protection" width="600"></a>
   <p><em>Span waterfall showing distributed trace complexity</em></p>
 </div>
 

@@ -18,7 +18,13 @@ Get TinyOlly running in under 5 minutes!
 
 ## Prerequisites
 
-- Colima + docker CLI installed and running (`brew install colima docker docker-compose docker-buildx docker-credential-helper`, then `./scripts/colima-up.sh`). The scripts use the `colima-tinyolly` Docker context, so they work even if another Docker context or VM is active
+- Colima + docker CLI installed and running. The scripts use the `colima-tinyolly` Docker context, so they work even if another Docker context or VM is active:
+
+    ```bash
+    brew install colima docker docker-compose docker-buildx docker-credential-helper
+    ./scripts/colima-up.sh
+    ```
+
 - Git (to clone the repository)
 - 5 minutes of your time
 
@@ -79,7 +85,7 @@ Open your browser to: **`http://localhost:5005`**
 You should see:
 
 <div align="center">
-  <img src="../images/traces.png" alt="TinyOlly Traces View" width="700">
+  <a href="../images/traces.png"><img src="../images/traces.png" alt="TinyOlly Traces View" width="700"></a>
   <p><em>Trace waterfall with correlated logs and span timing</em></p>
 </div>
 
@@ -91,14 +97,14 @@ You should see:
 View distributed traces across microservices with timing waterfall.
 
 <div align="center">
-  <img src="../images/spans.png" alt="Span Waterfall" width="700">
+  <a href="../images/spans.png"><img src="../images/spans.png" alt="Span Waterfall" width="700"></a>
   <p><em>Span waterfall showing request timing breakdown with correlated logs</em></p>
 </div>
 
 Click on a span to view detailed JSON data:
 
 <div align="center">
-  <img src="../images/traces1.png" alt="Span Details" width="700">
+  <a href="../images/traces1.png"><img src="../images/traces1.png" alt="Span Details" width="700"></a>
   <p><em>Span detail view with full OpenTelemetry attributes</em></p>
 </div>
 
@@ -106,21 +112,21 @@ Click on a span to view detailed JSON data:
 Browse logs with trace/span correlation. Filter by severity (Error, Warn, Info, Debug).
 
 <div align="center">
-  <img src="../images/logs.png" alt="Logs View" width="700">
+  <a href="../images/logs.png"><img src="../images/logs.png" alt="Logs View" width="700"></a>
   <p><em>Real-time logs with trace and span correlation</em></p>
 </div>
 
 Click on a log entry to view full details:
 
 <div align="center">
-  <img src="../images/logs2.png" alt="Log Details" width="700">
+  <a href="../images/logs2.png"><img src="../images/logs2.png" alt="Log Details" width="700"></a>
   <p><em>Log detail view with full attributes and resource info</em></p>
 </div>
 
 Filter to show only errors:
 
 <div align="center">
-  <img src="../images/logs3.png" alt="Error Logs" width="700">
+  <a href="../images/logs3.png"><img src="../images/logs3.png" alt="Error Logs" width="700"></a>
   <p><em>Filtered error logs with trace correlation</em></p>
 </div>
 
@@ -128,7 +134,7 @@ Filter to show only errors:
 Visualize metrics with automatic charting.
 
 <div align="center">
-  <img src="../images/metrics.png" alt="Metrics View" width="700">
+  <a href="../images/metrics.png"><img src="../images/metrics.png" alt="Metrics View" width="700"></a>
   <p><em>Time-series metrics visualization with rate charts</em></p>
 </div>
 
@@ -136,7 +142,7 @@ Visualize metrics with automatic charting.
 View all services with RED metrics (Rate, Errors, Duration). Click a service name for a menu that jumps to its map node, traces, spans, logs or metrics.
 
 <div align="center">
-  <img src="../images/servicecatalog.png" alt="Service Catalog" width="700">
+  <a href="../images/servicecatalog.png"><img src="../images/servicecatalog.png" alt="Service Catalog" width="700"></a>
   <p><em>Service catalog with RED metrics for all services</em></p>
 </div>
 
@@ -144,7 +150,7 @@ View all services with RED metrics (Rate, Errors, Duration). Click a service nam
 Visualize service dependencies with an interactive graph. Shape shows the service type and color shows health (see the legend above the map); click a node for latency and a link to the Service Catalog, and use the checkbox to hide TinyOlly's own services.
 
 <div align="center">
-  <img src="../images/servicemap.png" alt="Service Map" width="700">
+  <a href="../images/servicemap.png"><img src="../images/servicemap.png" alt="Service Map" width="700"></a>
   <p><em>Interactive service dependency map with latency information</em></p>
 </div>
 
@@ -152,7 +158,7 @@ Visualize service dependencies with an interactive graph. Shape shows the servic
 View and manage your OpenTelemetry Collector configuration remotely via the OpAMP protocol.
 
 <div align="center">
-  <img src="../images/collector.png" alt="OpAMP Config" width="700">
+  <a href="../images/collector.png"><img src="../images/collector.png" alt="OpAMP Config" width="700"></a>
   <p><em>OpenTelemetry Collector configuration management via OpAMP</em></p>
 </div>
 
@@ -215,15 +221,35 @@ cd docker
 
 ### UI shows "No traces/logs/metrics"
 - Wait 30 seconds after starting demo apps
-- Check containers are running in the TinyOlly VM: `docker --context colima-tinyolly ps` (plain `docker ps` shows whichever context is active, possibly another Colima VM)
-- Check demo app logs: `docker compose -f docker-demo/docker-compose-demo.yml logs`
+- Check containers are running in the TinyOlly VM (plain `docker ps` shows whichever context is active, possibly another Colima VM):
+
+    ```bash
+    docker --context colima-tinyolly ps
+    ```
+
+- Check demo app logs:
+
+    ```bash
+    docker compose -f docker-demo/docker-compose-demo.yml logs
+    ```
 
 ### Port conflicts
 - TinyOlly uses ports 4317, 4318, 4320, 4321, 4343, 5005, 8765, 19291
 - Stop conflicting services or modify ports in `docker-compose-tinyolly-core.yml`
 
 ### Demo apps not generating traffic
-- Restart demo: `cd docker-demo && ./02-cleanup-demo.sh && ./01-deploy-demo.sh`
-- Check logs: `docker compose -f docker-demo/docker-compose-demo.yml logs demo-frontend`
+- Restart demo:
+
+    ```bash
+    cd docker-demo
+    ./02-cleanup-demo.sh
+    ./01-deploy-demo.sh
+    ```
+
+- Check logs:
+
+    ```bash
+    docker compose -f docker-demo/docker-compose-demo.yml logs demo-frontend
+    ```
 
 For more help, [open an issue on GitHub](https://github.com/tinyolly/tinyolly/issues).
