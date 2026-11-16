@@ -6,14 +6,19 @@ mdi = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mdi)
 
 
+def _png(width):
+    return b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + width.to_bytes(4, "big") + b"\x00\x00\x03\xe8" + b"\x00" * 20
+
+
 def _setup(tmp_path, monkeypatch, readme):
     (tmp_path / "docs" / "images" / "full").mkdir(parents=True)
     monkeypatch.setattr(mdi, "ROOT", tmp_path)
     monkeypatch.setattr(mdi, "IMAGES", tmp_path / "docs" / "images")
     monkeypatch.setattr(mdi, "FULL", tmp_path / "docs" / "images" / "full")
     monkeypatch.setattr(mdi, "SHOTS", [("ui-logs", "ui", "logs")])
+    monkeypatch.setattr(mdi, "OTEL_SHOTS", [])
     for d in (mdi.IMAGES, mdi.FULL):
-        (d / "ui-logs.png").write_bytes(b"x")
+        (d / "ui-logs.png").write_bytes(_png(2000 if d == mdi.IMAGES else 3000))
     (tmp_path / "README.md").write_text(readme)
 
 
@@ -40,7 +45,7 @@ def test_bare_html_img_fails(tmp_path, monkeypatch):
 def test_missing_full_and_big_preview_fail(tmp_path, monkeypatch):
     _setup(tmp_path, monkeypatch, "")
     (mdi.FULL / "ui-logs.png").unlink()
-    (mdi.IMAGES / "ui-logs.png").write_bytes(b"x" * (mdi.MAX_PREVIEW_BYTES + 1))
+    (mdi.IMAGES / "ui-logs.png").write_bytes(_png(2000) + b"x" * (mdi.MAX_PREVIEW_BYTES + 1))
     problems = mdi.check()
     assert any("missing" in p for p in problems) and any("previews must stay under" in p for p in problems)
 
@@ -56,3 +61,9 @@ def test_prefix_rules_for_docs_pages(tmp_path, monkeypatch):
     assert any("HTML path" in p for p in mdi.check())
     page.write_text('<a href="../images/full/ui-logs.png"><img src="../images/ui-logs.png"></a>')
     assert mdi.check() == []
+
+
+def test_small_preview_fails(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch, "")
+    (mdi.IMAGES / "ui-logs.png").write_bytes(_png(900))
+    assert any("only 900 px wide" in p for p in mdi.check())

@@ -60,7 +60,7 @@ brew install colima docker docker-compose docker-buildx docker-credential-helper
 
     The UI is a NodePort service mapped to the host by `scripts/kind-config.yaml` (no tunnel needed). Access the TinyOlly UI at: [http://localhost:5005](http://localhost:5005)
 
-    The deploy also starts `tinyolly-mcp`, a read-only [MCP server](mcp.md) for AI agents, on NodePort 30876 mapped to `http://localhost:8765/mcp`. After changing it, rebuild with `k8s/05-rebuild+deploy-mcp.sh`.
+    The deploy also starts `tinyolly-mcp`, a read-only [MCP server](mcp-deploy.md) for AI agents, on NodePort 30876 mapped to `http://localhost:8765/mcp`. After changing it, rebuild with `k8s/05-rebuild+deploy-mcp.sh`.
 
     **OpenTelemetry Collector + OpAMP Config Page:** Navigate to the "OpenTelemetry Collector + OpAMP Config" tab in the UI to view and manage collector configurations remotely. See the [OpAMP Configuration](#opamp-configuration-optional) section below for setup instructions.
 

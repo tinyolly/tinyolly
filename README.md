@@ -410,7 +410,7 @@ The Docker and Kubernetes deployments also run it for you as a container (`tinyo
 claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp
 ```
 
-Claude Desktop connects to the same URL through `mcp-remote`, and the same config works for Docker or Kubernetes (run one at a time); see [MCP docs](docs/mcp.md).
+Claude Desktop connects to the same URL through `mcp-remote`, and the same config works for Docker or Kubernetes (run one at a time); setup and client config are on the [MCP Server deployment page](docs/mcp-deploy.md), and the tools and playbooks in [MCP docs](docs/mcp.md).
 
 Details, the tool list and how the containerized server works: [docs/mcp.md](docs/mcp.md).
 
@@ -436,7 +436,8 @@ All responses return OpenTelemetry-native JSON with full trace/span context.
 
 ## More
 
-- [MCP server for AI agents](docs/mcp.md): let Claude Code or Zed query your telemetry (read-only)
+- [MCP server: run and connect it](docs/mcp-deploy.md): Docker, Kubernetes or standalone, with Claude Code, Claude Desktop and Zed
+- [MCP tools and playbooks](docs/mcp.md): let Claude Code or Zed query your telemetry (read-only)
 - [Istio ambient demo](https://github.com/stevelerner/istio-ambient-demo): a runnable sidecar-less mesh on kind that TinyOlly draws live, with scenarios and AI prompts ([mesh features](docs/istio.md))
 - [Development and testing](docs/development.md)
 - [Technical details](docs/development.md#technical-details)

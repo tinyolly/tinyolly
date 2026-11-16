@@ -31,66 +31,7 @@ The client starts the server itself, so there is nothing else to run. Ask it "pr
 
 ### Always-on server (Docker or Kubernetes)
 
-The MCP server is a small separate service. Besides the per-client **stdio** setup above, TinyOlly can run it for you as a container, so nothing has to be started on your machine and every client shares one server over **streamable HTTP**:
-
-| Where | How it runs | URL |
-|---|---|---|
-| **Docker Compose** | A `tinyolly-mcp` service in the core compose files (`docker/` and `docker-core-only/`). It starts and stops with the stack. | `http://localhost:8765/mcp` |
-| **Kubernetes (kind)** | A `tinyolly-mcp` Deployment and NodePort Service (`k8s/tinyolly-mcp.yaml`, `k8s-core-only/tinyolly-mcp.yaml`). The kind config maps host port 8765 to it. | `http://localhost:8765/mcp` |
-
-Register the URL once per client:
-
-```bash
-# Claude Code
-claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp
-```
-
-```json
-// Claude Desktop (claude_desktop_config.json): it cannot call a local URL directly, so bridge with mcp-remote.
-// Use the absolute path to npx (for nvm: ~/.nvm/versions/node/<version>/bin/npx) and set PATH, because the app does not load your shell profile.
-"tinyolly": {
-  "command": "/absolute/path/to/npx",
-  "args": ["-y", "mcp-remote", "http://127.0.0.1:8765/mcp"],
-  "env": { "PATH": "/directory/containing/node:/usr/bin:/bin" }
-}
-```
-
-Quit (Cmd+Q) and reopen Claude Desktop after editing. Zed can keep using the stdio command.
-
-Docker and Kubernetes use the same port and URL, so client config is identical for both. Run one at a time: stop one stack before starting the other. When moving from Kubernetes to Docker on an existing cluster, also remove the helper that forwards 8765 to the cluster (colima context):
-
-```bash
-docker rm -f tinyolly-mcp-bridge
-```
-
-Clients do not reconnect on their own after a switch: restart them. Prefer this over per-client stdio, which keeps a stale copy of the server running until the client restarts.
-
-How it works: the container runs `server.py --http` and reads TinyOlly over its REST API (`TINYOLLY_URL`, `http://tinyolly-ui:5002` inside the stack). It is read-only, bundles the TinyOlly docs and the investigation skills, and binds to `127.0.0.1` on the host in Docker.
-
-**Updating it after you change `docker/apps/tinyolly-mcp` or `docs/`:**
-
-- Docker:
-
-    ```bash
-    docker compose -f docker/docker-compose-tinyolly-core-local.yml up -d --build tinyolly-mcp
-    ```
-
-- Kubernetes: `k8s/05-rebuild+deploy-mcp.sh`
-- Then restart your MCP client so it reloads the tool list.
-
-**Kubernetes cluster created before the 8765 mapping existed** (`scripts/kind-config.yaml`): kind cannot add a host port to a running cluster, so bridge it instead of recreating the cluster. With the Colima docker context:
-
-```bash
-docker run -d --restart=always --network kind -p 8765:8765 alpine/socat tcp-listen:8765,fork,reuseaddr tcp:tinyolly-control-plane:30876
-```
-
-**Without containers:** run the server yourself and register the same URL:
-
-```bash
-python server.py --http --port 8765
-```
-
-To point at a TinyOlly on another address, set `TINYOLLY_URL` (default `http://localhost:5005`).
+TinyOlly's Docker and Kubernetes deployments run the MCP server for you as a container on `http://localhost:8765/mcp`, shared by every client. Setup, client configuration, rebuilding and troubleshooting are on the [MCP Server deployment page](mcp-deploy.md).
 
 ## Tools
 
@@ -108,7 +49,7 @@ To point at a TinyOlly on another address, set `TINYOLLY_URL` (default `http://l
 | `chart_map_diff` | The service map coloured by what changed around the latest change marker (red: more failures, teal: fewer, blue: new or busier, grey: quieter or stopped) |
 | `chart_trace_path` | One trace's journey over the service map: numbered hops with the time in each, and how much of it was spent in mesh proxies versus the apps |
 | `compare_windows` | What changed in the last N minutes vs the N before: new, gone, more errors, slower services |
-| `search_traces` | Recent traces filtered by service, errors, min duration, root name (`format="table"`) |
+| `search_traces` | Recent traces filtered by service (any trace with a span from it, not only traces that start there), errors, min duration, root name (`format="table"`) |
 | `get_trace` | **Bounded summary** of a trace: duration, counts, per-service breakdown, error spans, slowest spans, depth. `format="waterfall"` draws a text waterfall |
 | `get_trace_spans` | Page through a trace's spans (offset/limit, service/error/duration filters) |
 | `get_span` | Full detail of one span (attributes, events, links, resource) |

@@ -242,14 +242,17 @@ def get_edge(source: str, target: str, minutes: float = 10) -> str:
 def search_traces(service: str | None = None, errors_only: bool = False,
                   min_duration_ms: float = 0, name_contains: str | None = None,
                   limit: int = 20, format: str = "json") -> str:
-    """Find recent traces (newest first). Filters: service, errors_only, min_duration_ms,
-    name_contains (root span name). Returns one-line summaries; use get_trace for details.
+    """Find recent traces (newest first). Filters: service (any trace with a span from that service, not only
+    traces that start there), errors_only, min_duration_ms, name_contains (root span name). Returns one-line
+    summaries ("service" is the root span's service); use get_trace for details.
     format="table" returns a pretty markdown table to show the user."""
     limit = max(1, min(limit, 100))
     rows = _api("/api/traces", limit=5000) or []
+    # Most services are never a trace's root, so also match traces that merely contain a span from the service.
+    members = {sp["trace_id"] for sp in (_api("/api/spans", limit=5000, service=service) or [])} if service else set()
     out = []
     for t in rows:
-        if service and t.get("service_name") != service:
+        if service and t.get("service_name") != service and t["trace_id"] not in members:
             continue
         if errors_only and not t.get("has_error"):
             continue

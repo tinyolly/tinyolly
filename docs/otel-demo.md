@@ -40,6 +40,18 @@ open http://localhost:5005              # TinyOlly
 ./02-stop-otel-demo.sh                  # demo only; add --purge to delete the .demo/ clone
 ```
 
+## What you will see
+
+TinyOlly's service map, drawn from the demo's traces. Frontend proxy, frontend, checkout, payment, cart, shipping and the rest appear within a minute or two of the load generator starting:
+
+[![TinyOlly APM Service Map for the OpenTelemetry Demo](images/ui-otel-service-map.png)](images/full/ui-otel-service-map.png)
+
+The service catalog lists every service with rate, error rate and latency percentiles. Click a screenshot to enlarge it:
+
+[![TinyOlly service catalog for the OpenTelemetry Demo](images/ui-otel-catalog.png)](images/full/ui-otel-catalog.png)
+
+**Ask an AI about it:** with the [MCP server](mcp-deploy.md) connected, an assistant can draw the same map, find failing orders and explain them. See [Ask an AI about the OpenTelemetry Demo](otel-demo-ai.md) for prompts and a worked example.
+
 **No config edits are needed.** The script clones the demo at the pinned version and points every service at TinyOlly's collector (`host.docker.internal:4317`).
 
 Options: `LOADGEN=0` (no load generator), `LOCUST_USERS=3`, `SERVICES="..."` (custom service list).
@@ -48,6 +60,10 @@ Options: `LOADGEN=0` (no load generator), `LOCUST_USERS=3`, `SERVICES="..."` (cu
 
 The demo reads feature flags from flagd. `./03-set-flag.sh <flag> <variant>` edits the flag file (flagd hot-reloads it);
 `./03-set-flag.sh --reset` turns everything off. Flags with a *Preset* column pair with a [collector preset](collector-presets.md).
+
+With `paymentFailure` at 50%, `checkout` and `payment` turn red in the catalog within a couple of minutes:
+
+[![Service catalog with checkout and payment at 15% errors after paymentFailure 50%](images/ui-otel-failure-catalog.png)](images/full/ui-otel-failure-catalog.png)
 
 | Flag | Try | What to look at | Preset |
 |---|---|---|---|
@@ -67,5 +83,34 @@ Flags that depend on Kafka (`kafkaQueueProblems`), the AI agent (`ai*`) or `flag
 * **Image tags:** the demo's `.env` defaults `DEMO_VERSION=latest` (images from `main`), which does not match the checked-out
   compose file (the newer `recommendation` image has no `nc`, so its healthcheck fails). The script pins `DEMO_VERSION` to the git tag.
 * The demo is cloned to `docker-otel-demo/.demo/` (git-ignored); `./02-stop-otel-demo.sh --purge` removes it.
-* **Kubernetes:** `k8s-otel-demo/01-deploy-otel-demo-helm.sh` installs chart 0.42.6 (app 3.1.0). The chart also deploys Kafka and its consumers
-  (checkout waits for Kafka), so it needs a VM of 6 GB or more. Not tested on kind yet.
+
+## Kubernetes (kind)
+
+The Helm chart (0.42.6, app 3.1.0) is deployed into the `default` namespace next to TinyOlly. Its services send OTLP to the host named `otel-collector`, which is TinyOlly's own collector Service, so no endpoint setting is needed. The script is **lean by default**, like the Docker version: no Kafka or its consumers (accounting, fraud-detection; checkout would otherwise wait for Kafka), no AI components (agent, chatbot, mcp), no telemetry-docs and no demo OpAMP server, which leaves 17 Deployments. The load generator's memory limit (which Kubernetes also uses as its request) is cut from 1500Mi to 512Mi.
+
+```bash
+COLIMA_MEMORY=8 ./scripts/colima-up.sh                    # the kind VM needs about 8 GB next to TinyOlly (stop the VM first to resize it)
+./k8s-otel-demo/01-deploy-otel-demo-helm.sh               # FULL=1 for every component (needs 10 GB or more)
+kubectl get deploy -l app.kubernetes.io/part-of=opentelemetry-demo
+open http://localhost:5005                                # TinyOlly
+./k8s-otel-demo/02-cleanup-otel-demo-helm.sh
+```
+
+**Failure injection on kind:** flagd reads a copy of the `flagd-config` ConfigMap made when its pod starts, so edit the ConfigMap and restart flagd (`scripts/test-otel-demo.py --mode k8s` does exactly this):
+
+```bash
+kubectl edit configmap flagd-config                       # set a flag's "defaultVariant", for example paymentFailure to "50%"
+kubectl delete pod -l app.kubernetes.io/component=flagd   # a rolling restart can stall when the node is nearly out of memory
+```
+
+## Test it
+
+`scripts/test-otel-demo.py` checks TinyOlly against a running demo on either platform: the 14 demo services in the catalog, the service map edges, multi-service traces, correlated logs, metrics (including the span-derived ones), the MCP tools, `paymentFailure` injection and recovery, and `emitRawPii` with the `pii-redaction` preset applied through OpAMP (raw values, then masked, then the default config restored).
+
+```bash
+scripts/test-otel-demo.py --mode docker      # flags via docker-otel-demo/03-set-flag.sh
+scripts/test-otel-demo.py --mode k8s         # flags via the flagd ConfigMap
+scripts/test-otel-demo.py --mode docker --skip-flags --skip-preset   # data checks only, about 2 minutes
+```
+
+Set `TINYOLLY_UI` and `MCP_URL` if TinyOlly is not on the default ports (for example the shifted ports of `scripts/docker-alt.sh`). A full run takes about 12 minutes.

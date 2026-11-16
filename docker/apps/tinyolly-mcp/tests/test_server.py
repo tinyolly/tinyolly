@@ -95,6 +95,20 @@ def test_search_traces_filters(api):
     assert d["showing"] == 3 and d["traces"][0]["start"] == 30          # newest first
 
 
+def test_search_traces_matches_services_that_are_not_the_root(api):
+    rows = [{"trace_id": f"{i:032x}", "service_name": "frontend", "duration_ms": i, "span_count": 4, "error_count": 0,
+             "has_error": False, "root_span_name": "GET /", "start_time": i} for i in range(1, 7)]
+    api["/api/traces"] = rows
+    # checkout has spans in traces 2 and 5 but is never the root
+    api["/api/spans"] = lambda **kw: ([{"trace_id": f"{2:032x}", "service_name": "checkout"}, {"trace_id": f"{5:032x}", "service_name": "checkout"}]
+                                      if kw.get("service") == "checkout" else [])
+    d = call(server.search_traces, service="checkout")
+    assert d["matched"] == 2 and {t["start"] for t in d["traces"]} == {2, 5}
+    assert d["traces"][0]["service"] == "frontend"                      # "service" stays the root's service
+    assert call(server.search_traces, service="frontend")["matched"] == 6
+    assert call(server.search_traces, service="nobody")["matched"] == 0
+
+
 def test_list_services_and_map(api):
     api["/api/service-catalog"] = [{"name": "ok", "error_rate": 0}, {"name": "bad", "error_rate": 50}]
     assert [s["service"] for s in call(server.list_services)] == ["bad", "ok"]   # worst first

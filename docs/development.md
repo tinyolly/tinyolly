@@ -47,6 +47,12 @@ description: "Developer notes: pinned versions, lint, local test suites, Docker 
     ```
 
     Drives OTLP through the collector, applies every preset via OpAMP, and checks results through the UI API. Test hooks: `POST /admin/reset`, `POST /api/opamp/config?wait=N`.
+- OpenTelemetry Demo (needs TinyOlly plus the demo running on Docker or kind, about 12 min; see [the demo page](otel-demo.md)): checks the data TinyOlly shows, the MCP tools, failure flags and the PII preset:
+
+    ```bash
+    scripts/test-otel-demo.py --mode docker      # or --mode k8s
+    ```
+
 - Collector configs: `./scripts/test-collector-configs.sh` (validate + start every preset); after editing them run `./scripts/sync-k8s-configs.sh`.
 
 ## Technical details
@@ -104,6 +110,25 @@ scripts/make-doc-images.py --check               # no stack needed; also runs in
 ```
 
 To add a screenshot, add a line to `SHOTS` in the script, run it, and embed it as `[![alt](images/<name>.png)](images/full/<name>.png)`, or, where a width is needed, `<a href="../images/full/<name>.png"><img src="../images/<name>.png" width="400"></a>`. The path prefix depends on the syntax: MkDocs resolves markdown links from the source file and rewrites them, so markdown under `docs/` uses `images/`; raw HTML is not rewritten and the page is served at `/<page>/`, so HTML under `docs/` uses `../images/` (except `docs/index.md`, which is the site root: `images/`). The README uses `docs/images/` for both. `--check` fails when a shot is missing, a preview is over 300 KB, or a doc embeds a generated shot without the click-to-expand link. The shots come from whatever is running: use a stack with mesh data (the seeder, or the Istio demo) for the `mesh-*` shots, and set `TINYOLLY_UI`, `TINYOLLY_MCP` for another port. It needs Chrome (`CHROME=` overrides the path) and Pillow or macOS `sips`.
+
+**Before publishing the docs site** (`./mkdocs-deploy.sh` pushes to `gh-pages`):
+
+1. `scripts/make-doc-images.py --check` passes (it also runs in `test-all.sh`).
+2. Build with warnings as errors and read the result, not a grep of it:
+
+    ```bash
+    source ~/.venv/mkdocs/bin/activate
+    python3 -m mkdocs build --strict -d /tmp/site
+    ```
+
+    Any `WARNING` about a link whose "target is not found" means a wrong image path (MkDocs prints `WARNING -` with one space, so a search for two spaces finds nothing). `--strict` exits non-zero on warnings, so a clean exit is the proof.
+3. Open the built page, not just the markdown: `python3 -m http.server -d /tmp/site 8000`, then check the page you touched at `http://localhost:8000/<page>/` and click an image.
+
+Common mistakes:
+
+- A markdown image written with `../images/` (MkDocs resolves it from the source file and warns), or an HTML `<img>` written with `images/` (not rewritten, so it breaks at `/<page>/`). The path prefix rules are above.
+- Adding an image to `docs/` but not committing `docs/images/full/<name>.png`, so the click opens a 404.
+- Editing a generated preview by hand. Re-run the script instead.
 
 ## Docker contexts
 
