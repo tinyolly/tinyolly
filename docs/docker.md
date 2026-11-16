@@ -181,22 +181,23 @@ exporters:
     endpoint: "tinyolly-otlp-receiver:4343"
     tls:
       insecure: true
+    # Batching lives in the exporter's queue; the batch processor is deprecated (removed in collector v0.177.0).
+    sending_queue:
+      batch:
+        enabled: true
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [debug, otlp, spanmetrics]
     
     metrics:
       receivers: [otlp,spanmetrics]
-      processors: [batch]
       exporters: [debug, otlp]
     
     logs:
       receivers: [otlp]
-      processors: [batch]
       exporters: [debug, otlp]
 ```
 
@@ -217,7 +218,7 @@ service:
   extensions: [opamp]
 ```
 
-The default configuration template (located at `docker/otelcol-configs/config.yaml`) shows a complete example with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.
+The default configuration template (located at `docker/otelcol-configs/config.yaml`) shows a complete example with OTLP receivers, OpAMP extension, exporter-side batching, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.
 
 **Stop core-only services:**
 ```bash

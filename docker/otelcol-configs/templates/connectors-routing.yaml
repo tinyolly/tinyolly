@@ -29,9 +29,6 @@ processors:
     detectors: [env, system]
     timeout: 2s
     override: false
-  batch:
-    timeout: 1s
-    send_batch_size: 1024
   # --- preset: routing ---
   attributes/errors:
     actions:
@@ -73,6 +70,18 @@ exporters:
     endpoint: "tinyolly-otlp-receiver:4343"
     tls:
       insecure: true
+    # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+    # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+    # requests cannot fill it the way they would with the default request-based size.
+    sending_queue:
+      enabled: true
+      sizer: items
+      queue_size: 100000
+      batch:
+        enabled: true
+        sizer: items
+        flush_timeout: 1s
+        min_size: 1024
   # Failover only switches when the primary exporter returns an error to the pipeline. The default exporter queue
   # and retries accept data and retry in the background, so the failover exporter must not queue or retry.
   otlp/primary:
@@ -99,13 +108,14 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, resourcedetection]
       exporters: [routing, spanmetrics]
+    # No batching on the failover path: failover needs the primary exporter to report errors synchronously, so that
+    # exporter has no queue (and an exporter's queue is where batching lives now). Each request is exported as it arrives.
     traces/normal:
       receivers: [routing]
-      processors: [batch]
       exporters: [failover]
     traces/errors:
       receivers: [routing]
-      processors: [attributes/errors, batch]
+      processors: [attributes/errors]
       exporters: [failover]
     traces/primary:
       receivers: [failover]
@@ -115,9 +125,9 @@ service:
       exporters: [file/backup]
     metrics:
       receivers: [otlp, spanmetrics]
-      processors: [memory_limiter, resourcedetection, batch]
+      processors: [memory_limiter, resourcedetection]
       exporters: [debug, otlp]
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, batch]
+      processors: [memory_limiter, resourcedetection]
       exporters: [debug, otlp]

@@ -34,9 +34,6 @@ data:
         detectors: [env, system]
         timeout: 2s
         override: false
-      batch:
-        timeout: 1s
-        send_batch_size: 1024
 
 
     connectors:
@@ -94,21 +91,33 @@ data:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
           insecure: true
+        # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+        # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+        # requests cannot fill it the way they would with the default request-based size.
+        sending_queue:
+          enabled: true
+          sizer: items
+          queue_size: 100000
+          batch:
+            enabled: true
+            sizer: items
+            flush_timeout: 1s
+            min_size: 1024
 
     service:
       extensions: [opamp]
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp, spanmetrics, servicegraph, count, signaltometrics]
         metrics:
           receivers: [otlp, spanmetrics, servicegraph, count, signaltometrics]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp, count]
   connectors-routing.yaml: |
     # Connectors (routing): routing sends error spans down their own pipeline; failover falls back to a local file if TinyOlly is unreachable
@@ -142,9 +151,6 @@ data:
         detectors: [env, system]
         timeout: 2s
         override: false
-      batch:
-        timeout: 1s
-        send_batch_size: 1024
       # --- preset: routing ---
       attributes/errors:
         actions:
@@ -186,6 +192,18 @@ data:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
           insecure: true
+        # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+        # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+        # requests cannot fill it the way they would with the default request-based size.
+        sending_queue:
+          enabled: true
+          sizer: items
+          queue_size: 100000
+          batch:
+            enabled: true
+            sizer: items
+            flush_timeout: 1s
+            min_size: 1024
       # Failover only switches when the primary exporter returns an error to the pipeline. The default exporter queue
       # and retries accept data and retry in the background, so the failover exporter must not queue or retry.
       otlp/primary:
@@ -212,13 +230,14 @@ data:
           receivers: [otlp]
           processors: [memory_limiter, resourcedetection]
           exporters: [routing, spanmetrics]
+        # No batching on the failover path: failover needs the primary exporter to report errors synchronously, so that
+        # exporter has no queue (and an exporter's queue is where batching lives now). Each request is exported as it arrives.
         traces/normal:
           receivers: [routing]
-          processors: [batch]
           exporters: [failover]
         traces/errors:
           receivers: [routing]
-          processors: [attributes/errors, batch]
+          processors: [attributes/errors]
           exporters: [failover]
         traces/primary:
           receivers: [failover]
@@ -228,11 +247,11 @@ data:
           exporters: [file/backup]
         metrics:
           receivers: [otlp, spanmetrics]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp]
   enrichment.yaml: |
     # Enrichment: resource/attributes add deployment context; groupbyattrs compacts telemetry per service
@@ -266,9 +285,6 @@ data:
         detectors: [env, system]
         timeout: 2s
         override: false
-      batch:
-        timeout: 1s
-        send_batch_size: 1024
       # --- preset: enrichment ---
       resource/enrich:
         attributes:
@@ -306,21 +322,33 @@ data:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
           insecure: true
+        # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+        # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+        # requests cannot fill it the way they would with the default request-based size.
+        sending_queue:
+          enabled: true
+          sizer: items
+          queue_size: 100000
+          batch:
+            enabled: true
+            sizer: items
+            flush_timeout: 1s
+            min_size: 1024
 
     service:
       extensions: [opamp]
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service, batch]
+          processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service]
           exporters: [debug, otlp, spanmetrics]
         metrics:
           receivers: [otlp, spanmetrics]
-          processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service, batch]
+          processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service]
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service, batch]
+          processors: [memory_limiter, resourcedetection, resource/enrich, groupbyattrs/service]
           exporters: [debug, otlp]
   logs-dedup.yaml: |
     # Logs: logdedup collapses repeated identical logs into one record with a count; transform normalizes severity
@@ -355,9 +383,6 @@ data:
         detectors: [env, system]
         timeout: 2s
         override: false
-      batch:
-        timeout: 1s
-        send_batch_size: 1024
       # --- preset: logs ---
       transform/severity:
         error_mode: ignore
@@ -397,21 +422,33 @@ data:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
           insecure: true
+        # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+        # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+        # requests cannot fill it the way they would with the default request-based size.
+        sending_queue:
+          enabled: true
+          sizer: items
+          queue_size: 100000
+          batch:
+            enabled: true
+            sizer: items
+            flush_timeout: 1s
+            min_size: 1024
 
     service:
       extensions: [opamp]
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp, spanmetrics]
         metrics:
           receivers: [otlp, spanmetrics]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, transform/severity, logdedup, batch]
+          processors: [memory_limiter, resourcedetection, transform/severity, logdedup]
           exporters: [debug, otlp]
   metrics-shaping.yaml: |
     # Metrics shaping: temporality conversion, rate limiting, filtering and label dropping to cut cardinality
@@ -445,9 +482,6 @@ data:
         detectors: [env, system]
         timeout: 2s
         override: false
-      batch:
-        timeout: 1s
-        send_batch_size: 1024
       # --- preset: metrics shaping ---
       deltatocumulative:
         max_stale: 5m
@@ -491,21 +525,33 @@ data:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
           insecure: true
+        # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+        # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+        # requests cannot fill it the way they would with the default request-based size.
+        sending_queue:
+          enabled: true
+          sizer: items
+          queue_size: 100000
+          batch:
+            enabled: true
+            sizer: items
+            flush_timeout: 1s
+            min_size: 1024
 
     service:
       extensions: [opamp]
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp, spanmetrics]
         metrics:
           receivers: [otlp, spanmetrics]
-          processors: [memory_limiter, resourcedetection, deltatocumulative, filter/metrics, metricstransform/cardinality, interval, batch]
+          processors: [memory_limiter, resourcedetection, deltatocumulative, filter/metrics, metricstransform/cardinality, interval]
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp]
   pii-redaction.yaml: |
     # PII / security: redaction masks emails, card numbers and tokens; attributes hashes/deletes sensitive keys
@@ -540,9 +586,6 @@ data:
         detectors: [env, system]
         timeout: 2s
         override: false
-      batch:
-        timeout: 1s
-        send_batch_size: 1024
       # --- preset: pii / security ---
       attributes/pii:
         actions:
@@ -586,21 +629,33 @@ data:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
           insecure: true
+        # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+        # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+        # requests cannot fill it the way they would with the default request-based size.
+        sending_queue:
+          enabled: true
+          sizer: items
+          queue_size: 100000
+          batch:
+            enabled: true
+            sizer: items
+            flush_timeout: 1s
+            min_size: 1024
 
     service:
       extensions: [opamp]
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, attributes/pii, redaction, batch]
+          processors: [memory_limiter, resourcedetection, attributes/pii, redaction]
           exporters: [debug, otlp, spanmetrics]
         metrics:
           receivers: [otlp, spanmetrics]
-          processors: [memory_limiter, resourcedetection, redaction, batch]
+          processors: [memory_limiter, resourcedetection, redaction]
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, attributes/pii, redaction, batch]
+          processors: [memory_limiter, resourcedetection, attributes/pii, redaction]
           exporters: [debug, otlp]
   prometheus-remote-write.yaml: |
     # Configuration with Prometheus Remote Write receiver
@@ -652,9 +707,6 @@ data:
         detectors: [env, system]
         timeout: 2s
         override: false
-      batch:
-        timeout: 1s
-        send_batch_size: 1024
 
     connectors:
       spanmetrics:
@@ -680,24 +732,36 @@ data:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
           insecure: true
+        # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+        # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+        # requests cannot fill it the way they would with the default request-based size.
+        sending_queue:
+          enabled: true
+          sizer: items
+          queue_size: 100000
+          batch:
+            enabled: true
+            sizer: items
+            flush_timeout: 1s
+            min_size: 1024
 
     service:
       extensions: [opamp]
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp, spanmetrics]
 
         metrics:
           # Include both OTLP metrics and Prometheus remote write metrics
           receivers: [otlp, prometheusremotewrite, spanmetrics]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp]
 
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp]
   sampling.yaml: |
     # Sampling: tail_sampling keeps errors + slow traces + 10% of the rest; probabilistic_sampler thins INFO/DEBUG logs (WARN and above are always kept)
@@ -731,9 +795,6 @@ data:
         detectors: [env, system]
         timeout: 2s
         override: false
-      batch:
-        timeout: 1s
-        send_batch_size: 1024
       # --- preset: sampling ---
       tail_sampling:
         decision_wait: 5s
@@ -799,6 +860,18 @@ data:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
           insecure: true
+        # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+        # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+        # requests cannot fill it the way they would with the default request-based size.
+        sending_queue:
+          enabled: true
+          sizer: items
+          queue_size: 100000
+          batch:
+            enabled: true
+            sizer: items
+            flush_timeout: 1s
+            min_size: 1024
 
     service:
       extensions: [opamp]
@@ -809,15 +882,15 @@ data:
           exporters: [spanmetrics, forward/traces]
         traces/sampled:
           receivers: [forward/traces]
-          processors: [tail_sampling, batch]
+          processors: [tail_sampling]
           exporters: [debug, otlp]
         metrics:
           receivers: [otlp, spanmetrics]
-          processors: [memory_limiter, resourcedetection, batch]
+          processors: [memory_limiter, resourcedetection]
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, transform/log_priority, probabilistic_sampler/logs, transform/log_cleanup, batch]
+          processors: [memory_limiter, resourcedetection, transform/log_priority, probabilistic_sampler/logs, transform/log_cleanup]
           exporters: [debug, otlp]
   transform-ottl.yaml: |
     # Transform / OTTL: normalize routes, derive log severity, flatten JSON bodies, drop health checks and debug logs
@@ -850,9 +923,6 @@ data:
         detectors: [env, system]
         timeout: 2s
         override: false
-      batch:
-        timeout: 1s
-        send_batch_size: 1024
       # --- preset: transform / OTTL ---
       resource/env:
         attributes:
@@ -916,19 +986,31 @@ data:
         endpoint: "tinyolly-otlp-receiver:4343"
         tls:
           insecure: true
+        # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+        # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+        # requests cannot fill it the way they would with the default request-based size.
+        sending_queue:
+          enabled: true
+          sizer: items
+          queue_size: 100000
+          batch:
+            enabled: true
+            sizer: items
+            flush_timeout: 1s
+            min_size: 1024
 
     service:
       extensions: [opamp]
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, resource/env, filter/noise, transform/traces, batch]
+          processors: [memory_limiter, resourcedetection, resource/env, filter/noise, transform/traces]
           exporters: [debug, otlp, spanmetrics]
         metrics:
           receivers: [otlp, spanmetrics]
-          processors: [memory_limiter, resourcedetection, resource/env, batch]
+          processors: [memory_limiter, resourcedetection, resource/env]
           exporters: [debug, otlp]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, resourcedetection, resource/env, transform/logs, filter/noise, batch]
+          processors: [memory_limiter, resourcedetection, resource/env, transform/logs, filter/noise]
           exporters: [debug, otlp]

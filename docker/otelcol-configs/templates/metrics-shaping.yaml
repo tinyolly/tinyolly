@@ -29,9 +29,6 @@ processors:
     detectors: [env, system]
     timeout: 2s
     override: false
-  batch:
-    timeout: 1s
-    send_batch_size: 1024
   # --- preset: metrics shaping ---
   deltatocumulative:
     max_stale: 5m
@@ -75,19 +72,31 @@ exporters:
     endpoint: "tinyolly-otlp-receiver:4343"
     tls:
       insecure: true
+    # Batching lives in the exporter's queue (the batch processor is deprecated and leaves the collector in v0.177.0).
+    # Same settings as the old processor: flush after 1s or 1024 items. The queue is counted in items, so a few large
+    # requests cannot fill it the way they would with the default request-based size.
+    sending_queue:
+      enabled: true
+      sizer: items
+      queue_size: 100000
+      batch:
+        enabled: true
+        sizer: items
+        flush_timeout: 1s
+        min_size: 1024
 
 service:
   extensions: [opamp]
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, batch]
+      processors: [memory_limiter, resourcedetection]
       exporters: [debug, otlp, spanmetrics]
     metrics:
       receivers: [otlp, spanmetrics]
-      processors: [memory_limiter, resourcedetection, deltatocumulative, filter/metrics, metricstransform/cardinality, interval, batch]
+      processors: [memory_limiter, resourcedetection, deltatocumulative, filter/metrics, metricstransform/cardinality, interval]
       exporters: [debug, otlp]
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, batch]
+      processors: [memory_limiter, resourcedetection]
       exporters: [debug, otlp]

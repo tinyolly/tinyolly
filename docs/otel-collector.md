@@ -43,8 +43,7 @@ The default configuration includes:
 - **OTLP Receivers**: Accepts telemetry on ports 4317 (gRPC) and 4318 (HTTP)
 - **OpAMP Extension**: Enables remote configuration management via TinyOlly UI
 - **Span Metrics Connector**: Automatically generates RED metrics from traces
-- **Batch Processor**: Batches telemetry for efficient processing
-- **OTLP Exporter**: Forwards all telemetry to TinyOlly's OTLP receiver
+- **OTLP Exporter**: Forwards all telemetry to TinyOlly's OTLP receiver, batching it in the exporter's own `sending_queue` (the `batch` processor is deprecated; see [the OpenTelemetry migration guide](https://opentelemetry.io/blog/2026/collector-batching-migration/))
 
 ## Customization Examples
 
@@ -112,4 +111,4 @@ service:
   extensions: [opamp]
 ```
 
-The default configuration template (located at `docker/otelcol-configs/config.yaml`) shows a complete example with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.
+The default configuration template (located at `docker/otelcol-configs/config.yaml`) shows a complete example with OTLP receivers, OpAMP extension, exporter-side batching, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.

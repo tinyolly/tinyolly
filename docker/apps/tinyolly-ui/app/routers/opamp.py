@@ -351,7 +351,7 @@ async def opamp_list_templates():
             content = default_config_path.read_text()
             lines = content.split('\n')
             name = "Default Configuration"
-            description = "Default OpenTelemetry Collector configuration with OTLP receivers, OpAMP extension, batch processing, and spanmetrics connector"
+            description = "Default OpenTelemetry Collector configuration with OTLP receivers, OpAMP extension, exporter-side batching, and spanmetrics connector"
 
             # Extract description from first comment line
             for line in lines:
