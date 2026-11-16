@@ -130,6 +130,32 @@ Common mistakes:
 - Adding an image to `docs/` but not committing `docs/images/full/<name>.png`, so the click opens a 404.
 - Editing a generated preview by hand. Re-run the script instead.
 
+## What is running?
+
+Two Colima VMs, a kind cluster with Helm releases, and several demos make it easy to lose track of what is up. `scripts/status.sh` prints one screen, read-only and in about four seconds:
+
+```bash
+scripts/status.sh            # everything
+scripts/status.sh --short    # skip the disk and node-memory details
+```
+
+It shows the Colima VMs and their sizes; Docker containers per VM grouped by compose project, with unhealthy ones named; the kind cluster's namespaces, Helm releases and node memory; which stacks and demos are deployed (TinyOlly on kind and on Docker, the OpenTelemetry Demo on Docker and on kind, the Istio ambient demo) with **the command that removes each one**; TinyOlly's UI and MCP endpoints with the number of services each holds; and disk use. Run it before starting a demo and after cleaning up.
+
+## Tear everything down
+
+`scripts/teardown.sh` removes what `status.sh` shows, in levels. It is **destructive**, so it prints the plan and does nothing until you answer `y` (or pass `--yes`); with no terminal it only prints the plan.
+
+```bash
+scripts/teardown.sh --level demos      # OpenTelemetry Demo (Docker and kind), Istio ambient demo
+scripts/teardown.sh --level stacks     # + TinyOlly itself, Docker and kind, data volumes included
+scripts/teardown.sh --level cluster    # + the kind cluster
+scripts/teardown.sh --level vms        # + stop both Colima VMs
+scripts/teardown.sh --level vms --prune            # also prune build cache and dangling images first
+scripts/teardown.sh --level vms --delete-vms --yes # delete the VMs and their disks (data loss)
+```
+
+Each level includes the ones above it. It only touches what this project creates (the `otel-demo` and `docker` compose projects, the kind cluster, the `my-otel-demo` Helm release, the Istio demo namespaces); before stopping a VM it lists any other containers that stop with it. `--prune-images` also removes all unused images, which you then have to rebuild or re-pull. Run `scripts/status.sh` afterwards to confirm.
+
 ## Docker contexts
 
 Two Colima VMs can coexist: `colima` (default) and `colima-tinyolly` (this project). Every script pins `DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}` at the top; new scripts that call `docker` must do the same (copy the 3-line block from any `0N-*.sh`). For ad hoc commands use `docker --context colima-tinyolly ...`.

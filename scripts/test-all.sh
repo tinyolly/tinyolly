@@ -21,6 +21,8 @@ run "tinyolly-ui (pytest)"      pytest_in docker/apps/tinyolly-ui -r "$ROOT/dock
 run "otlp-receiver (pytest)"    pytest_in docker/apps/tinyolly-otlp-receiver -r "$ROOT/docker/apps/tinyolly-otlp-receiver/requirements.txt" pytest pytest-asyncio httpx "$ROOT/docker/apps/tinyolly-common"
 run "tinyolly-mcp (pytest)"     docker/apps/tinyolly-mcp/run-tests.sh
 run "scripts (seed_mesh, agent_eval)" "$ROOT/.venv-tests/tinyolly-common/bin/python" -m pytest scripts -q
+run "status.sh and teardown.sh syntax" bash -c "bash -n scripts/status.sh && bash -n scripts/teardown.sh"
+run "teardown.sh stays a dry run without a terminal" bash -c "scripts/teardown.sh --level vms </dev/null | grep -q 'dry run'"
 run "doc images (clickable, small previews)" python3 scripts/make-doc-images.py --check
 run "frontend JS (node --test)" node --test docker/apps/tinyolly-ui/tests-js/serviceMap.test.mjs
 run "opamp-server (Go)"         scripts/test-go.sh
