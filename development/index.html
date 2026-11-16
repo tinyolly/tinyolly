@@ -745,7 +745,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    MCP & API
   
 
     
@@ -761,7 +761,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    API Reference
+    MCP & API
   
 
           </label>
@@ -774,14 +774,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
+      <a href="../mcp/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    REST API & Examples
+    MCP Tools and Playbooks
   
 
     
@@ -802,14 +802,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../mcp/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    MCP Tools and Playbooks
+    REST API & Examples
   
 
     
@@ -1107,6 +1107,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-is-running" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is running?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tear-everything-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tear everything down
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docker-contexts" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1270,6 +1292,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#what-is-running" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is running?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tear-everything-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tear everything down
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docker-contexts" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1416,13 +1460,29 @@
 <li>Adding an image to <code>docs/</code> but not committing <code>docs/images/full/&lt;name&gt;.png</code>, so the click opens a 404.</li>
 <li>Editing a generated preview by hand. Re-run the script instead.</li>
 </ul>
+<h2 id="what-is-running">What is running?</h2>
+<p>Two Colima VMs, a kind cluster with Helm releases, and several demos make it easy to lose track of what is up. <code>scripts/status.sh</code> prints one screen, read-only and in about four seconds:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>scripts/status.sh<span class="w">            </span><span class="c1"># everything</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>scripts/status.sh<span class="w"> </span>--short<span class="w">    </span><span class="c1"># skip the disk and node-memory details</span>
+</code></pre></div>
+<p>It shows the Colima VMs and their sizes; Docker containers per VM grouped by compose project, with unhealthy ones named; the kind cluster's namespaces, Helm releases and node memory; which stacks and demos are deployed (TinyOlly on kind and on Docker, the OpenTelemetry Demo on Docker and on kind, the Istio ambient demo) with <strong>the command that removes each one</strong>; TinyOlly's UI and MCP endpoints with the number of services each holds; and disk use. Run it before starting a demo and after cleaning up.</p>
+<h2 id="tear-everything-down">Tear everything down</h2>
+<p><code>scripts/teardown.sh</code> removes what <code>status.sh</code> shows, in levels. It is <strong>destructive</strong>, so it prints the plan and does nothing until you answer <code>y</code> (or pass <code>--yes</code>); with no terminal it only prints the plan.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>demos<span class="w">      </span><span class="c1"># OpenTelemetry Demo (Docker and kind), Istio ambient demo</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>stacks<span class="w">     </span><span class="c1"># + TinyOlly itself, Docker and kind, data volumes included</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>cluster<span class="w">    </span><span class="c1"># + the kind cluster</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>vms<span class="w">        </span><span class="c1"># + stop both Colima VMs</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>vms<span class="w"> </span>--prune<span class="w">            </span><span class="c1"># also prune build cache and dangling images first</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>vms<span class="w"> </span>--delete-vms<span class="w"> </span>--yes<span class="w"> </span><span class="c1"># delete the VMs and their disks (data loss)</span>
+</code></pre></div>
+<p>Each level includes the ones above it. It only touches what this project creates (the <code>otel-demo</code> and <code>docker</code> compose projects, the kind cluster, the <code>my-otel-demo</code> Helm release, the Istio demo namespaces); before stopping a VM it lists any other containers that stop with it. <code>--prune-images</code> also removes all unused images, which you then have to rebuild or re-pull. Run <code>scripts/status.sh</code> afterwards to confirm.</p>
 <h2 id="docker-contexts">Docker contexts</h2>
 <p>Two Colima VMs can coexist: <code>colima</code> (default) and <code>colima-tinyolly</code> (this project). Every script pins <code>DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}</code> at the top; new scripts that call <code>docker</code> must do the same (copy the 3-line block from any <code>0N-*.sh</code>). For ad hoc commands use <code>docker --context colima-tinyolly ...</code>.</p>
 <h2 id="service-catalog-actions-ui-layout-easy-revert">Service catalog actions (UI layout, easy revert)</h2>
 <p>In the APM Service Catalog, per-service actions (Traces, Spans, Logs, Metrics, Service map) are a popover menu opened by clicking the service name. The original layout, a row of buttons on every service, is still in the code.</p>
 <p>To revert, set <code>ACTIONS_STYLE = 'buttons'</code> at the top of <code>docker/apps/tinyolly-ui/static/serviceCatalog.js</code> and rebuild the UI image:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="nv">DOCKER_CONTEXT</span><span class="o">=</span>colima-tinyolly<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose-tinyolly-core-local.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>--no-deps<span class="w"> </span>tinyolly-ui
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nb">cd</span><span class="w"> </span>docker
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="nv">DOCKER_CONTEXT</span><span class="o">=</span>colima-tinyolly<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose-tinyolly-core-local.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>--no-deps<span class="w"> </span>tinyolly-ui
 </code></pre></div>
 <p>To remove the menu code entirely, delete <code>SERVICE_ACTIONS</code>, <code>openServiceMenu</code>, <code>closeServiceMenu</code>, the <code>data-service-menu</code> click handler and the two <code>document.addEventListener</code> lines.
 Map and Service Catalog cross-links (<code>window.viewServiceMap</code>, <code>window.viewServiceCatalog</code>) are independent of this setting.</p>

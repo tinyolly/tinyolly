@@ -847,7 +847,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    MCP & API
   
 
     
@@ -863,7 +863,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    API Reference
+    MCP & API
   
 
           </label>
@@ -876,14 +876,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
+      <a href="../mcp/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    REST API & Examples
+    MCP Tools and Playbooks
   
 
     
@@ -904,14 +904,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../mcp/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    MCP Tools and Playbooks
+    REST API & Examples
   
 
     
@@ -1358,6 +1358,7 @@ Flags that depend on Kafka (<code>kafkaQueueProblems</code>), the AI agent (<cod
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>scripts/test-otel-demo.py<span class="w"> </span>--mode<span class="w"> </span>k8s<span class="w">         </span><span class="c1"># flags via the flagd ConfigMap</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>scripts/test-otel-demo.py<span class="w"> </span>--mode<span class="w"> </span>docker<span class="w"> </span>--skip-flags<span class="w"> </span>--skip-preset<span class="w">   </span><span class="c1"># data checks only, about 2 minutes</span>
 </code></pre></div>
+<p>To see what is running before or after (both platforms, the VMs, other demos) use <code>scripts/status.sh</code>; <code>scripts/teardown.sh --level demos</code> removes the demo from Docker and kind (<a href="../development/#tear-everything-down">details</a>).</p>
 <p>Set <code>TINYOLLY_UI</code> and <code>MCP_URL</code> if TinyOlly is not on the default ports (for example the shifted ports of <code>scripts/docker-alt.sh</code>). A full run takes about 12 minutes.</p>
 
 
