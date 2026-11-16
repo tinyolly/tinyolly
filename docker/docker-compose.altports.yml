@@ -1,0 +1,22 @@
+# Dev overlay: run this stack next to the kind cluster by moving every published host port up by 100
+# (UI 5105, MCP 8865, OTLP 4417/4418, receiver 4443, OpAMP 4420/4421, remote write 19391).
+#   docker compose -f docker-compose-tinyolly-core-local.yml -f docker-compose.altports.yml up -d --build
+services:
+  tinyolly-otlp-receiver:
+    ports: !override
+      - "4443:4343"
+  tinyolly-opamp-server:
+    ports: !override
+      - "4420:4320"
+      - "127.0.0.1:4421:4321"
+  otel-collector:
+    ports: !override
+      - "4417:4317"
+      - "4418:4318"
+      - "19391:19291"
+  tinyolly-ui:
+    ports: !override
+      - "5105:5002"
+  tinyolly-mcp:
+    ports: !override
+      - "127.0.0.1:8865:8765"

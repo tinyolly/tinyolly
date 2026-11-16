@@ -72,3 +72,6 @@ docker-otel-demo/.demo/
 
 ### Python package builds ###
 docker/apps/*/build/
+
+# agent eval output
+eval-results.json

@@ -53,35 +53,36 @@ Visualize and correlate logs, metrics, and traces without sending data to the cl
   <table>
     <tr>
       <td align="center" width="50%">
-        <img src="docs/images/traces.png" width="400"><br>
-        <em>Trace waterfall with correlated logs</em>
+        <a href="docs/images/full/ui-traces.png"><img src="docs/images/ui-traces.png" width="400" alt="Traces: waterfall with correlated logs"></a><br>
+        <em>Traces: waterfall with correlated logs</em>
       </td>
       <td align="center" width="50%">
-        <img src="docs/images/logs1.png" width="400"><br>
-        <em>Real-time logs with trace/span linking</em>
+        <a href="docs/images/full/ui-logs.png"><img src="docs/images/ui-logs.png" width="400" alt="Logs with trace and span linking"></a><br>
+        <em>Logs with trace and span linking</em>
       </td>
     </tr>
     <tr>
       <td align="center" width="50%">
-        <img src="docs/images/metrics.png" width="400"><br>
+        <a href="docs/images/full/ui-metrics.png"><img src="docs/images/ui-metrics.png" width="400" alt="Metrics with chart visualizations"></a><br>
         <em>Metrics with chart visualizations</em>
       </td>
       <td align="center" width="50%">
-        <img src="docs/images/servicecatalog.png" width="400"><br>
+        <a href="docs/images/full/ui-service-catalog.png"><img src="docs/images/ui-service-catalog.png" width="400" alt="Service catalog with RED metrics"></a><br>
         <em>Service catalog with RED metrics</em>
       </td>
     </tr>
     <tr>
       <td align="center" width="50%">
-        <img src="docs/images/servicemap.png" width="400"><br>
-        <em>Interactive service dependency map</em>
+        <a href="docs/images/full/ui-service-map.png"><img src="docs/images/ui-service-map.png" width="400" alt="Service map with mTLS, plaintext and denied edges"></a><br>
+        <em>Service map with mTLS, plaintext and denied edges</em>
       </td>
       <td align="center" width="50%">
-        <img src="docs/images/collector.png" width="400"><br>
+        <a href="docs/images/full/ui-collector.png"><img src="docs/images/ui-collector.png" width="400" alt="OpenTelemetry Collector configuration via OpAMP"></a><br>
         <em>OpenTelemetry Collector configuration via OpAMP</em>
       </td>
     </tr>
   </table>
+  <sub>Click a screenshot to enlarge. Regenerate with <code>scripts/make-doc-images.py</code>.</sub>
 </div>
 
 ---
@@ -391,7 +392,7 @@ For building and publishing Docker images, see [build/README.md](build/README.md
 
 ## MCP server (for AI agents)
 
-A read-only [MCP](https://modelcontextprotocol.io) server lets Claude Code, Zed or any MCP client query your telemetry: services, traces (large traces are summarized and paged), logs and metrics, with pretty tables, a trace waterfall and charts (metric chart, service map with mTLS and denied edges), Istio mesh tools (mTLS posture, denied and plaintext edges, mesh time and retries per trace, version split, what changed), it can read TinyOlly's own docs, and it ships investigation skills (triage, trace and service deep dives, metrics, mesh investigation, troubleshooting) served through the MCP server itself as tools, prompts and resources.
+A read-only [MCP](https://modelcontextprotocol.io) server lets Claude Code, Zed or any MCP client query your telemetry: services, traces (large traces are summarized and paged), logs and metrics, with pretty tables, a trace waterfall and charts (metric chart, service map with mTLS and denied edges), Istio mesh tools (mTLS posture, denied and plaintext edges, mesh time and retries per trace, version split, `what_changed` against change markers you post to `/api/events`, `chart_map_diff`, `chart_trace_path`, and `suggest_authz` for a least-privilege policy draft with SPIFFE callers, plus decoded Envoy response flags), it can read TinyOlly's own docs, and it ships investigation skills (triage, trace and service deep dives, metrics, mesh investigation, troubleshooting) served through the MCP server itself as tools, prompts and resources.
 
 ```bash
 docker/apps/tinyolly-mcp/install.sh   # prints copy-paste setup for Claude Code, Claude Desktop and Zed

@@ -366,3 +366,176 @@ def test_get_version_split_no_data(api):
     api["/api/metrics/query"] = {"name": "istio_requests_total", "series": []}
     d = call(server.get_version_split, "ghost")
     assert d["versions"] == [] and "no istio_requests_total data" in d["note"]
+
+
+def _flagged(flag, first, last):
+    return {"attributes": {"response_flags": flag}, "datapoints": [{"timestamp": 1.0, "value": first}, {"timestamp": 2.0, "value": last}]}
+
+
+def test_get_edge_decodes_response_flags(api):
+    seen = {}
+
+    def fake(**params):
+        seen.update(params)
+        return {"name": params["name"], "series": [_flagged("-", 0, 60), _flagged("UC", 0, 40)]}
+    api["/api/service-map"] = {"nodes": [], "edges": [{"source": "a", "target": "b", "value": 100, "error_count": 0,
+                                                       "p95": 1.0, "req_rate": 2.0, "mtls": True, "source_kind": "metrics"}]}
+    api["/api/service-catalog"] = []
+    api["/api/metrics/query"] = fake
+    d = call(server.get_edge, "a", "b", minutes=5)
+    assert seen["name"] == "istio_requests_total"
+    assert seen["attribute.source_canonical_service"] == "a" and seen["attribute.destination_canonical_service"] == "b"
+    rf = d["response_flags"]
+    assert rf["total"] == 100 and rf["flags"][0]["flag"] == "UC" and rf["flags"][0]["share_pct"] == 40.0
+    assert rf["flags"][0]["meaning"] and rf["flags"][0]["hint"]
+
+
+def test_get_edge_without_metrics_has_empty_flags(api):
+    api["/api/service-map"] = {"nodes": [], "edges": [{"source": "a", "target": "b", "value": 1}]}
+    api["/api/service-catalog"] = []
+    api["/api/metrics/query"] = lambda **p: {"name": p["name"], "series": []}
+    assert call(server.get_edge, "a", "b")["response_flags"] == {"total": 0, "flags": []}
+
+
+def test_what_changed_lists_events_and_changes_around_them(api):
+    import time as _t
+    now = _t.time()
+    api["/api/events"] = [{"id": "e1", "timestamp": now - 120, "title": "applied flaky", "kind": "scenario",
+                           "source": "demo", "attributes": {"scenario": "flaky"}}]
+
+    def fake(**params):
+        pts = lambda a, b, c: [{"timestamp": now - 180, "value": a}, {"timestamp": now - 120, "value": b}, {"timestamp": now - 30, "value": c}]  # noqa: E731
+        return {"name": params["name"], "series": [
+            {"attributes": {"destination_canonical_service": "pc", "response_flags": "-", "response_code": "200"}, "datapoints": pts(0, 100, 130)},
+            {"attributes": {"destination_canonical_service": "pc", "response_flags": "UC", "response_code": "200"}, "datapoints": pts(0, 0, 90)}]}
+    api["/api/metrics/query"] = fake
+    d = call(server.what_changed, minutes=30)
+    assert d["events"][0]["title"] == "applied flaky"
+    ch = d["events"][0]["changes"]
+    assert ch and ch[0]["service"] == "pc" and ch[0]["after"]["flags"] == {"UC": 90}
+
+
+def test_what_changed_without_events_says_so(api):
+    api["/api/events"] = []
+    d = call(server.what_changed)
+    assert d["events"] == [] and "no change markers" in d["note"].lower()
+
+
+def test_suggest_authz_drafts_policy_from_observed_callers(api):
+    def fake(**params):
+        assert params["attribute.destination_canonical_service"] == "cartservice"
+        return {"name": params["name"], "series": [
+            {"attributes": {"source_canonical_service": "frontend", "source_principal": "spiffe://cluster.local/ns/boutique/sa/frontend",
+                            "connection_security_policy": "mutual_tls", "destination_workload_namespace": "boutique"},
+             "datapoints": [{"timestamp": 1.0, "value": 0}, {"timestamp": 2.0, "value": 9}]},
+            {"attributes": {"source_canonical_service": "outsider", "source_principal": "", "connection_security_policy": "none",
+                            "source_workload_namespace": "outside", "destination_workload_namespace": "boutique"},
+             "datapoints": [{"timestamp": 1.0, "value": 0}, {"timestamp": 2.0, "value": 3}]}]}
+    api["/api/metrics/query"] = fake
+    d = call(server.suggest_authz, "cartservice")
+    assert d["service"] == "cartservice" and [c["service"] for c in d["callers"]] == ["frontend"]
+    assert d["plaintext_callers"][0]["service"] == "outsider"
+    assert "kind: AuthorizationPolicy" in d["policy_yaml"] and "sa/frontend" in d["policy_yaml"]
+    assert any("plaintext" in n.lower() for n in d["notes"]) and any("deni" in n.lower() for n in d["notes"])
+
+
+def test_suggest_authz_without_traffic(api):
+    api["/api/metrics/query"] = lambda **p: {"name": p["name"], "series": []}
+    d = call(server.suggest_authz, "ghost")
+    assert d["policy_yaml"] is None and d["callers"] == [] and "no" in d["notes"][0].lower()
+
+
+def test_suggest_authz_warns_when_a_waypoint_is_the_caller(api):
+    api["/api/metrics/query"] = lambda **p: {"name": p["name"], "series": [
+        {"attributes": {"source_canonical_service": "waypoint", "source_principal": "spiffe://cluster.local/ns/boutique/sa/waypoint",
+                        "connection_security_policy": "mutual_tls", "destination_workload_namespace": "boutique"},
+         "datapoints": [{"timestamp": 1.0, "value": 1}, {"timestamp": 2.0, "value": 5}]}]}
+    d = call(server.suggest_authz, "cartservice")
+    assert any("waypoint" in n.lower() and "per-caller" in n.lower() for n in d["notes"])
+
+
+def test_chart_map_diff_uses_the_latest_marker_and_names_the_changes(api):
+    import time as _t
+    now = _t.time()
+    api["/api/service-map"] = {"nodes": [{"id": "a", "type": "service"}, {"id": "b", "type": "service"}],
+                               "edges": [{"source": "a", "target": "b", "mtls": True}]}
+    api["/api/events"] = [{"id": "e1", "timestamp": now - 100, "title": "applied flaky", "kind": "scenario", "source": "demo", "attributes": {}}]
+
+    def pts(a, b, c):
+        return [{"timestamp": now - 160, "value": a}, {"timestamp": now - 100, "value": b}, {"timestamp": now - 30, "value": c}]
+    api["/api/metrics/query"] = lambda **p: {"name": p["name"], "series": [
+        {"attributes": {"source_canonical_service": "a", "destination_canonical_service": "b", "response_flags": "-", "response_code": "200"}, "datapoints": pts(0, 100, 130)},
+        {"attributes": {"source_canonical_service": "a", "destination_canonical_service": "b", "response_flags": "UC", "response_code": "200"}, "datapoints": pts(0, 0, 90)}]}
+    out = server.chart_map_diff(minutes=30, window_seconds=120)
+    assert out[0].data[:4] == b"\x89PNG"
+    assert "applied flaky" in out[1] and "1 failures_up" in out[1].replace("failures rose", "failures_up")
+
+
+def test_chart_map_diff_without_marker_compares_the_last_two_windows(api):
+    api["/api/service-map"] = {"nodes": [{"id": "a"}, {"id": "b"}], "edges": [{"source": "a", "target": "b"}]}
+    api["/api/events"] = []
+    api["/api/metrics/query"] = lambda **p: {"name": p["name"], "series": []}
+    out = server.chart_map_diff()
+    assert out[0].data[:4] == b"\x89PNG" and "last" in out[1].lower()
+
+
+def _jspan(i, service, start_ms, dur_ms, parent=None):
+    s = {"spanId": f"{i:016x}", "serviceName": service, "name": f"op-{i}",
+         "startTimeUnixNano": str(start_ms * 1_000_000), "endTimeUnixNano": str((start_ms + dur_ms) * 1_000_000)}
+    if parent:
+        s["parentSpanId"] = f"{parent:016x}"
+    return s
+
+
+def test_chart_trace_path_draws_the_journey_and_reports_mesh_share(api):
+    api["/api/service-map"] = {"nodes": [{"id": "shop-ingress-istio"}, {"id": "frontend"}, {"id": "waypoint"}, {"id": "cart"}],
+                               "edges": [{"source": "shop-ingress-istio", "target": "frontend"}, {"source": "frontend", "target": "waypoint"},
+                                         {"source": "waypoint", "target": "cart"}]}
+    api[f"/api/traces/{T}"] = {"trace_id": T, "spans": [_jspan(1, "shop-ingress-istio", 0, 100), _jspan(2, "frontend", 5, 90, 1),
+                                                         _jspan(3, "waypoint.boutique", 10, 60, 2), _jspan(4, "cart", 15, 40, 3)]}
+    out = server.chart_trace_path(T)
+    assert out[0].data[:4] == b"\x89PNG"
+    assert "3 hops" in out[1] and "30%" in out[1] and "waypoint" in out[1]
+
+
+def test_chart_trace_path_unknown_trace_and_single_service(api):
+    api["/api/service-map"] = {"nodes": [], "edges": []}
+    assert "not found" in call(server.chart_trace_path, "ff" * 16)["error"].lower()
+    api[f"/api/traces/{T}"] = {"trace_id": T, "spans": [_jspan(1, "a", 0, 5)]}
+    assert "no service hops" in call(server.chart_trace_path, T)["error"].lower()
+
+
+def test_get_version_split_flags_a_much_slower_version_and_a_version_with_more_errors(api):
+    def hist(count, total):
+        return {"count": count, "sum": total, "bucketCounts": [], "explicitBounds": []}
+
+    def lat(version, c0, s0, c1, s1):
+        return {"attributes": {"destination_version": version, "destination_canonical_service": "cart"},
+                "datapoints": [{"timestamp": 1.0, "value": None, "histogram": hist(c0, s0)},
+                               {"timestamp": 2.0, "value": None, "histogram": hist(c1, s1)}]}
+
+    def fake(**params):
+        if params["name"] == "istio_request_duration_milliseconds":
+            return {"name": params["name"], "series": [lat("v1", 0, 0, 90, 90), lat("v2", 0, 0, 10, 4000)]}
+        return {"name": "istio_requests_total", "series": [_vs("v1", "200", 0, 90), _vs("v2", "200", 0, 5), _vs("v2", "500", 0, 5)]}
+    api["/api/metrics/query"] = fake
+    d = call(server.get_version_split, "cart")
+    assert any("v2" in f and "slower" in f and "400" in f for f in d["findings"])         # 400 ms vs 1 ms
+    assert any("v2" in f and "error" in f.lower() for f in d["findings"])                 # 50% errors vs 0%
+
+
+def test_get_version_split_has_no_findings_when_versions_look_alike(api):
+    def hist(count, total):
+        return {"count": count, "sum": total, "bucketCounts": [], "explicitBounds": []}
+
+    def lat(version, c1, s1):
+        return {"attributes": {"destination_version": version, "destination_canonical_service": "cart"},
+                "datapoints": [{"timestamp": 1.0, "value": None, "histogram": hist(0, 0)},
+                               {"timestamp": 2.0, "value": None, "histogram": hist(c1, s1)}]}
+
+    def fake(**params):
+        if params["name"] == "istio_request_duration_milliseconds":
+            return {"name": params["name"], "series": [lat("v1", 90, 180), lat("v2", 10, 22)]}
+        return {"name": "istio_requests_total", "series": [_vs("v1", "200", 0, 90), _vs("v2", "200", 0, 10)]}
+    api["/api/metrics/query"] = fake
+    assert call(server.get_version_split, "cart")["findings"] == []

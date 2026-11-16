@@ -20,6 +20,8 @@ run "tinyolly-common (pytest)"  pytest_in docker/apps/tinyolly-common -r "$ROOT/
 run "tinyolly-ui (pytest)"      pytest_in docker/apps/tinyolly-ui -r "$ROOT/docker/apps/tinyolly-ui/requirements.txt" pytest pytest-asyncio httpx "$ROOT/docker/apps/tinyolly-common"
 run "otlp-receiver (pytest)"    pytest_in docker/apps/tinyolly-otlp-receiver -r "$ROOT/docker/apps/tinyolly-otlp-receiver/requirements.txt" pytest pytest-asyncio httpx "$ROOT/docker/apps/tinyolly-common"
 run "tinyolly-mcp (pytest)"     docker/apps/tinyolly-mcp/run-tests.sh
+run "scripts (seed_mesh, agent_eval)" "$ROOT/.venv-tests/tinyolly-common/bin/python" -m pytest scripts -q
+run "doc images (clickable, small previews)" python3 scripts/make-doc-images.py --check
 run "frontend JS (node --test)" node --test docker/apps/tinyolly-ui/tests-js/serviceMap.test.mjs
 run "opamp-server (Go)"         scripts/test-go.sh
 run "collector configs"         scripts/test-collector-configs.sh

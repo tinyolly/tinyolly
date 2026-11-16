@@ -322,7 +322,7 @@ COL_X = 5.8                  # column pitch
 INK, MUTED, LINE = "#0f172a", "#64748b", "#cbd5e1"
 
 
-def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bool = False) -> None:
+def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bool = False, cluster: str | None = None) -> None:
     """Card at (x, y): role icon, service name, error/p95 line, and a stripe on the left coloured by health."""
     from matplotlib.patches import FancyBboxPatch
     color = _node_color(m, isolated=role == "isolated")
@@ -335,13 +335,19 @@ def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bo
             fontweight="bold", color=INK, zorder=5)
     ax.text(x0 + 1.05, y - 0.2, f"{m.get('error_rate', 0):g}% err · p95 {fmt_ms(m.get('duration_p95'))}", ha="left", va="center",
             fontsize=8.5, color=MUTED, zorder=5)
+    if cluster:                                       # which cluster the service runs in (only drawn for multicluster graphs)
+        ax.text(x0 + CARD_W - 0.15, y - 0.2, cluster, ha="right", va="center", fontsize=8, color="#6d28d9", zorder=5,
+                bbox=dict(boxstyle="round,pad=0.18", fc="#ede9fe", ec="none"))
 
 
 LEGEND_COL = 4.6   # horizontal spacing between legend items (data units)
 LEGEND_ROW = 0.62
 
 
-def _legend_rows(mesh: bool) -> list[list[tuple]]:
+def _legend_rows(mesh: bool, diff: bool = False) -> list[list[tuple]]:
+    if diff:
+        keys = list(DIFF_LABELS)
+        return [[("edge", DIFF_STYLES[k], DIFF_LABELS[k]) for k in keys[i:i + 3]] for i in range(0, len(keys), 3)]
     rows: list[list[tuple]] = [[("role", "client", "client (no callers)"), ("role", "server", "service"),
                                 ("role", "external", "leaf (no callees)")],
                                [("role", "isolated", "no connections")] + ([("role", "waypoint", "waypoint / ztunnel"), ("role", "gateway", "gateway")] if mesh else []),
@@ -349,18 +355,20 @@ def _legend_rows(mesh: bool) -> list[list[tuple]]:
     if mesh:
         rows.append([("edge", ("#16a34a", "-"), "edge: mTLS"), ("edge", ("#f59e0b", "--"), "edge: plaintext"),
                      ("edge", ("#ef4444", "-"), "edge: denied / errors")])
-        rows.append([("edge", ("#94a3b8", "-"), "edge: mTLS unknown (traces only)")])
+        rows.append([("edge", ("#94a3b8", "-"), "edge: mTLS unknown (traces only)"),
+                     ("edge", ("#16a34a", "-", 0.45), "faded: L4 only (no requests)"),
+                     ("edge", ("#16a34a", "-."), "dash-dot: crosses clusters")])
     return rows
 
 
-def legend_height(mesh: bool) -> float:
-    return LEGEND_ROW * len(_legend_rows(mesh)) + 0.5
+def legend_height(mesh: bool, diff: bool = False) -> float:
+    return LEGEND_ROW * len(_legend_rows(mesh, diff)) + 0.5
 
 
-def _legend(ax, x: float, y: float, mesh: bool = False) -> None:
+def _legend(ax, x: float, y: float, mesh: bool = False, diff: bool = False) -> None:
     """Shapes = role, node colour = health, edge colour = mesh security. Rows go downward from y."""
     from matplotlib.patches import Rectangle
-    for ri, items in enumerate(_legend_rows(mesh)):
+    for ri, items in enumerate(_legend_rows(mesh, diff)):
         yy = y - ri * LEGEND_ROW
         for i, (kind, key, text) in enumerate(items):
             xx = x + i * LEGEND_COL
@@ -369,7 +377,7 @@ def _legend(ax, x: float, y: float, mesh: bool = False) -> None:
             elif kind == "node":
                 ax.add_patch(Rectangle((xx - 0.2, yy - 0.13), 0.4, 0.26, fc=key, ec="none", zorder=3))
             else:
-                ax.plot([xx - 0.22, xx + 0.22], [yy, yy], color=key[0], linestyle=key[1], lw=2.4)
+                ax.plot([xx - 0.22, xx + 0.22], [yy, yy], color=key[0], linestyle=key[1], lw=2.4, alpha=key[2] if len(key) > 2 else 1.0)
             ax.text(xx + 0.42, yy, text, fontsize=10, va="center", color="#475569")
 
 
@@ -419,6 +427,41 @@ def edge_style(e: dict) -> tuple[str, str]:
     return "#94a3b8", "-"
 
 
+def cluster_badges(graph: dict) -> dict:
+    """{node: cluster} when the graph spans more than one cluster, else {} (one cluster needs no badges)."""
+    by_node = {n["id"]: n["cluster"] for n in graph.get("nodes", []) if n.get("cluster")}
+    return by_node if len(set(by_node.values())) > 1 else {}
+
+
+DIFF_STYLES = {
+    "failures_up": ("#ef4444", "-", 1.0), "failures_down": ("#0d9488", "-", 1.0), "new": ("#2563eb", "--", 1.0),
+    "gone": ("#64748b", ":", 1.0), "traffic_up": ("#2563eb", "-", 1.0), "traffic_down": ("#64748b", "-", 0.5),
+    "steady": ("#94a3b8", "-", 0.35),
+}
+DIFF_LABELS = {"failures_up": "failures rose", "failures_down": "failures fell", "new": "new traffic", "gone": "traffic stopped",
+               "traffic_up": "busier", "traffic_down": "quieter", "steady": "unchanged"}
+
+
+def resolve_service(name: str, names) -> str | None:
+    """Map a span's service name onto a graph node: exact, else with a trailing '.namespace' removed (waypoint.boutique -> waypoint)."""
+    if name in names:
+        return name
+    head = name.rpartition(".")[0]
+    return head if head and head in names else None
+
+
+def diff_edge_style(change: str) -> tuple:
+    """(colour, linestyle, alpha) for an edge in the diff map; unknown classes look like 'steady'."""
+    return DIFF_STYLES.get(change, DIFF_STYLES["steady"])
+
+
+def edge_alpha(e: dict, l7_present: bool) -> float:
+    """Opacity of an edge: when some edges have request-level (L7) data, connection-only edges fade, but problem edges never do."""
+    if not l7_present or e.get("l7") or (e.get("denied_count") or 0) > 0 or (e.get("error_count") or 0) > 0 or e.get("mtls") is False:
+        return 1.0
+    return 0.45
+
+
 def posture_line(graph: dict) -> str:
     """'mTLS 92% · 3 plaintext · 1 denied' from the edges' mesh fields, or '' when the graph has no mesh data."""
     edges = graph.get("edges") or []
@@ -427,14 +470,22 @@ def posture_line(graph: dict) -> str:
     denied = sum(1 for e in edges if (e.get("denied_count") or 0) > 0)
     if not (mtls or plain):
         return ""
-    return f"mTLS {mtls / (mtls + plain) * 100:.0f}% · {plain} plaintext · {denied} denied"
+    line = f"mTLS {mtls / (mtls + plain) * 100:.0f}% · {plain} plaintext · {denied} denied"
+    l7 = sum(1 for e in edges if e.get("l7"))
+    cross = sum(1 for e in edges if e.get("cross_cluster"))
+    return line + (f" · L7 {l7 / len(edges) * 100:.0f}%" if l7 else "") + (f" · {cross} cross-cluster" if cross else "")
 
 
-def _draw_edge(ax, e: dict, pos: dict, t: float = 0.55, label: bool = True) -> None:
+def _draw_edge(ax, e: dict, pos: dict, t: float = 0.55, label: bool = True, l7_present: bool = False, override: tuple | None = None) -> None:
     (x1, y1), (x2, y2) = pos[e["source"]], pos[e["target"]]
     color, style = edge_style(e)
+    alpha = edge_alpha(e, l7_present)
+    if override:                                      # diff map: colour says what changed, not security
+        color, style, alpha = override
+    elif e.get("cross_cluster") and style == "-":     # dash-dot: this call crosses clusters (plaintext keeps its dashes)
+        style = "-."
     ax.annotate("", xy=(x2 - CARD_W / 2 - 0.06, y2), xytext=(x1 + CARD_W / 2 + 0.06, y1), zorder=1,
-                arrowprops=dict(arrowstyle="-|>", color=color, linestyle=style,
+                arrowprops=dict(arrowstyle="-|>", color=color, linestyle=style, alpha=alpha,
                                 lw=1.4 + min(2.0, (e.get("value") or e.get("call_count") or 0) ** 0.25 / 3),
                                 connectionstyle="arc3,rad=0.05", shrinkA=0, shrinkB=0))
     if label and e.get("p95"):                         # metric-only edges have no latency; skip the "0" label
@@ -494,10 +545,13 @@ def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
         names = g["columns"][c]
         for ri, n in enumerate(names):
             pos[n] = (ci * COL_X, -(ri - (len(names) - 1) / 2) * ROW)
+    l7_present = any(x.get("l7") for x in graph.get("edges", []))
+    badges = cluster_badges(graph)
     for i, e in enumerate(g["edges"]):
-        _draw_edge(ax, e, pos, 0.25 + 0.17 * (i % 4))
+        _draw_edge(ax, e, pos, 0.25 + 0.17 * (i % 4), l7_present=l7_present)
     for n, (x, y) in pos.items():
-        _draw_node(ax, x, y, n, (g["nodes"].get(n) or {}).get("metrics") or {}, roles.get(n, "server"), center=n == service)
+        _draw_node(ax, x, y, n, (g["nodes"].get(n) or {}).get("metrics") or {}, roles.get(n, "server"), center=n == service,
+                   cluster=badges.get(n))
     for c, k in g["hidden"].items():
         x = cols.index(c) * COL_X
         ax.text(x, min(y for (px, y) in pos.values() if px == x) - 0.75, f"+{k} more", ha="center", fontsize=10, color="#64748b")
@@ -513,12 +567,14 @@ def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
     return _png(fig)
 
 
-def full_map_chart(graph: dict) -> bytes:
+def full_map_chart(graph: dict, diff: dict | None = None, title: str | None = None, journey: list | None = None) -> bytes:
     """Whole service map: connected services in left-to-right layers (callers -> callees), unconnected ones in a compact grid below."""
     plt = _plt()
     roles = node_roles(graph)
     nodes = {n["id"]: n for n in graph.get("nodes", [])}
     edges = [e for e in graph.get("edges", []) if e["source"] in nodes and e["target"] in nodes and e["source"] != e["target"]]
+    l7_present = any(x.get("l7") for x in edges)
+    badges = cluster_badges(graph)
     linked = {e["source"] for e in edges} | {e["target"] for e in edges}
     # Layers = longest path from the roots after dropping back edges (found by DFS), so every caller sits left of its callees
     # and no edge runs inside a column. Back edges (cycles such as waypoint <-> frontend) are drawn as curves.
@@ -596,10 +652,31 @@ def full_map_chart(graph: dict) -> bytes:
     ax.axis("off")
     # a dense map: label only the busiest edges so the labels stay readable (the per-service chart labels all of them)
     busiest = {id(e) for e in sorted(edges, key=lambda e: -(e.get('value') or 0))[:6]}
+    hops_on_map = {}                                    # journey: (source, target) -> hop, for hops that exist on this map
+    for hop in journey or []:
+        a, b = resolve_service(hop["source"], nodes), resolve_service(hop["target"], nodes)
+        if a and b and a != b:
+            hops_on_map.setdefault((a, b), hop)
     for i, e in enumerate(edges):
-        _draw_edge(ax, e, pos, 0.25 + 0.17 * (i % 4), label=id(e) in busiest)
+        override = None
+        if diff is not None:
+            override = diff_edge_style(diff.get((e["source"], e["target"]), "steady"))
+        elif journey is not None:
+            override = ("#7c3aed", "-", 1.0) if (e["source"], e["target"]) in hops_on_map else ("#94a3b8", "-", 0.25)
+        _draw_edge(ax, e, pos, 0.25 + 0.17 * (i % 4), label=id(e) in busiest and diff is None and journey is None,
+                   l7_present=l7_present, override=override)
+    for (a, b), hop in hops_on_map.items():             # numbered chip with the time spent in that hop
+        if a in pos and b in pos:
+            (x1, y1), (x2, y2) = pos[a], pos[b]
+            xs, xe = x1 + CARD_W / 2 + 0.06, x2 - CARD_W / 2 - 0.06
+            t = max(0.5, 1 - 1.1 / (xe - xs)) if xe > xs else 0.5     # in the gap before the target card, never on a card in between
+            ax.text(xs + (xe - xs) * t, y1 + (y2 - y1) * t, f"{hop['order']} · {fmt_ms(hop['duration_ms'])}", ha="center", va="center",
+                    fontsize=9.5, fontweight="bold", color="white", zorder=6,
+                    bbox=dict(boxstyle="round,pad=0.25", fc="#7c3aed" if not hop.get("via_proxy") else "#6d28d9", ec="none"))
+    visited = {n for pair in hops_on_map for n in pair}
     for n, (x, y) in pos.items():
-        _draw_node(ax, x, y, n, (nodes.get(n) or {}).get("metrics") or {}, roles.get(n, "server"))
+        _draw_node(ax, x, y, n, (nodes.get(n) or {}).get("metrics") or {}, roles.get(n, "server"), center=n in visited,
+                   cluster=badges.get(n))
     ys = [y for _, y in pos.values()] or [0]
     xs = [x for x, _ in pos.values()] or [0]
     if linked:
@@ -610,12 +687,12 @@ def full_map_chart(graph: dict) -> bytes:
     right = max(max(xs), (width_units - 1) * X) + CARD_W / 2 + 0.4
     mesh = bool(posture_line(graph))
     right = max(right, 2 * LEGEND_COL + 3.0)
-    _legend(ax, -CARD_W / 2 - 0.1, min(ys) - 1.25, mesh)
+    _legend(ax, -CARD_W / 2 - 0.1, min(ys) - 1.25, mesh, diff is not None)
     ax.set_xlim(-CARD_W / 2 - 0.4, right)
-    ax.set_ylim(min(ys) - 1.25 - legend_height(mesh), max(ys) + 1.35)
+    ax.set_ylim(min(ys) - 1.25 - legend_height(mesh, diff is not None), max(ys) + 1.35)
     errs = sum(1 for n in nodes.values() if float(((n.get("metrics") or {}).get("error_rate")) or 0) > 5)
-    ax.set_title(f"Service map  ·  {len(nodes)} services  ·  {len(edges)} connections" + (f"  ·  {errs} unhealthy" if errs else "")
-                 + (f"  ·  {posture_line(graph)}" if mesh else ""),
+    ax.set_title(title or (f"Service map  ·  {len(nodes)} services  ·  {len(edges)} connections" + (f"  ·  {errs} unhealthy" if errs else "")
+                           + (f"  ·  {posture_line(graph)}" if mesh else "")),
                  loc="left", fontsize=15, fontweight="bold", color="#0f172a", pad=14)
     _finalize(fig, ax)
     return _png(fig)

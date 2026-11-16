@@ -32,6 +32,42 @@ description: "Developer notes: pinned versions, lint, local test suites, Docker 
 - OpAMP protocol support for remote collector configuration management
 - No vendor lock-in
 
+## Testing mesh features without Istio
+
+Docker Compose has no Istio, so `scripts/seed_mesh.py` posts synthetic Istio metrics (OTLP/JSON) for the Online Boutique mesh: scenarios `baseline`, `flaky`, `fault`, `canary`, `deny` and `multicluster`, plus `--trace` (a trace through a gateway and a waypoint), `--l7 <service>` (request metrics for one destination only) and `--ui <url>` (records a change marker).
+
+To run the Compose stack next to the kind cluster, use the second Colima VM and shifted ports (UI 5105, MCP 8865, OTLP 4418):
+
+```bash
+scripts/docker-alt.sh                      # rebuild python-base and every service, then start (docker/docker-compose.altports.yml)
+python3 scripts/seed_mesh.py --otlp http://localhost:4418 --scenario flaky --ui http://localhost:5105
+MCP_URL=http://localhost:8865/mcp ...      # then ask the MCP server (get_edge, what_changed, chart_map_diff)
+```
+
+## Agent eval
+
+`scripts/agent_eval/eval.py` injects a known fault, lets a local model investigate through the MCP tools, and grades the answer against ground truth (service, cause, evidence). It has five scenarios including a healthy control, and runs against Compose (seeded metrics) or kind (real faults from the demo repo):
+
+```bash
+python3 scripts/agent_eval/eval.py --target docker --repeat 3
+python3 scripts/agent_eval/eval.py --target kind --scenarios flaky,deny --no-skill-hint
+```
+
+Needs Ollama (`LOCAL_BASE`, `LOCAL_MODEL`). Results go to `eval-results.json`. Unit tests for the loop and grader: `pytest scripts/agent_eval`.
+
+## Documentation images
+
+Screenshots in the README and docs are generated, not hand-pasted, so they can be refreshed in one command. `scripts/make-doc-images.py` takes headless-Chrome screenshots of the UI tabs and saves the PNGs the MCP chart tools return, and writes each twice: a preview at most 900 px wide in `docs/images/` (what the docs show) and the full-size file in `docs/images/full/` (what a click opens).
+
+```bash
+scripts/make-doc-images.py                       # all shots from the running stack (UI :5005, MCP :8765)
+scripts/make-doc-images.py --only mesh-map-diff  # one shot
+scripts/make-doc-images.py --seed --otlp http://localhost:4318   # post a fault scenario first (diff and trace path)
+scripts/make-doc-images.py --check               # no stack needed; also runs in test-all.sh
+```
+
+To add a screenshot, add a line to `SHOTS` in the script, run it, and embed it as `[![alt](images/<name>.png)](images/full/<name>.png)` (or `<a href="images/full/<name>.png"><img src="images/<name>.png" width="400"></a>` where a width is needed). `--check` fails when a shot is missing, a preview is over 300 KB, or a doc embeds a generated shot without the click-to-expand link. The shots come from whatever is running: use a stack with mesh data (the seeder, or the Istio demo) for the `mesh-*` shots, and set `TINYOLLY_UI`, `TINYOLLY_MCP` for another port. It needs Chrome (`CHROME=` overrides the path) and Pillow or macOS `sips`.
+
 ## Docker contexts
 
 Two Colima VMs can coexist: `colima` (default) and `colima-tinyolly` (this project). Every script pins `DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}` at the top; new scripts that call `docker` must do the same (copy the 3-line block from any `0N-*.sh`). For ad hoc commands use `docker --context colima-tinyolly ...`.

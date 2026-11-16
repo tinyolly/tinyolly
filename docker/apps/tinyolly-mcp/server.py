@@ -25,6 +25,10 @@ import docsindex
 import httpx
 import render
 import skillsindex
+from authz import build_policy, summarize_callers
+from changes import compare_around, compare_edges
+from flags import FLAGS, summarize_flags
+from journey import journey_hops, mesh_vs_app
 from mcp.server.mcpserver import Image, MCPServer
 
 BASE_URL = os.environ.get("TINYOLLY_URL", "http://localhost:5005").rstrip("/")
@@ -209,9 +213,10 @@ def find_plaintext() -> str:
 
 
 @mcp.tool()
-def get_edge(source: str, target: str) -> str:
+def get_edge(source: str, target: str, minutes: float = 10) -> str:
     """Drill into one caller -> callee edge: calls, errors, p95, request rate, mTLS, denied count and where the edge came
-    from (traces/metrics), plus the RED summary of both services. Use after get_service_map to explain a red or orange edge."""
+    from (traces/metrics), plus the RED summary of both services and decoded response flags over the last `minutes`.
+    Use after get_service_map to explain a red or orange edge."""
     graph = _api("/api/service-map", limit=2000) or {}
     edge = next((e for e in graph.get("edges", []) if e.get("source") == source and e.get("target") == target), None)
     if not edge:
@@ -223,8 +228,12 @@ def get_edge(source: str, target: str) -> str:
     def red(name):
         c = catalog.get(name) or {}
         return {"rate": c.get("rate"), "error_rate": c.get("error_rate"), "p95": c.get("duration_p95")}
+    end = time.time()
+    result = _api("/api/metrics/query", name="istio_requests_total", start=end - minutes * 60, end=end,
+                  **{"attribute.source_canonical_service": source, "attribute.destination_canonical_service": target})
     return _out({"edge": {k: edge[k] for k in _EDGE_KEYS if k in edge and edge[k] is not None},
-                 "source": {"service": source, **red(source)}, "target": {"service": target, **red(target)}})
+                 "source": {"service": source, **red(source)}, "target": {"service": target, **red(target)},
+                 "response_flags": summarize_flags((result or {}).get("series"))})
 
 
 # ---------- traces ----------
@@ -324,25 +333,6 @@ def _fetch_trace(trace_id: str) -> list[dict] | None:
     return None if d is None else d.get("spans", [])
 
 
-_PROXY_FLAGS = {
-    "UH": "no healthy upstream",
-    "UF": "upstream connection failure",
-    "UC": "upstream connection termination",
-    "UT": "upstream request timeout",
-    "NR": "no route configured",
-    "URX": "retry limit exceeded",
-    "DC": "downstream connection termination",
-    "RL": "rate limited",
-    "UAEX": "unauthorized by external authorization",
-    "UR": "upstream remote reset",
-    "LR": "local reset",
-    "DI": "delay injected",
-    "FI": "fault injected",
-    "IH": "invalid header",
-    "SI": "stream idle timeout",
-}
-
-
 @mcp.tool()
 def get_trace(trace_id: str, slowest: int = 10, format: str = "json", max_rows: int = 60) -> str:
     """Summary of a trace that stays small however large the trace is: duration, span/error
@@ -431,7 +421,7 @@ def get_trace_mesh(trace_id: str) -> str:
         app_ms = _ms(app_child) if app_child is not None else None
         mesh_ms = max(0.0, proxy_ms - app_ms) if app_child is not None else proxy_ms
         raw_flags = a.get("response_flags") or ""
-        flags = [{"code": code, "meaning": _PROXY_FLAGS.get(code, "unknown flag")}
+        flags = [{"code": code, "meaning": FLAGS.get(code, ("unknown flag",))[0]}
                  for code in raw_flags.split(",") if code and code != "-"]
         hops.append({
             "proxy": s.get("serviceName"),
@@ -613,6 +603,26 @@ def query_metric(name: str, service: str | None = None, minutes: float = 10,
                  "series_total": len(d["series"]), "series": series})
 
 
+def _version_findings(versions: list[dict]) -> list[str]:
+    """Plain-language flags for a canary: a version much slower than the fastest, or failing more than the best one."""
+    out: list[str] = []
+    timed = [v for v in versions if v.get("avg_ms") is not None and v["requests"] > 0]
+    if len(timed) > 1:
+        fastest = min(timed, key=lambda v: v["avg_ms"])
+        for v in timed:
+            base = max(fastest["avg_ms"], 0.1)
+            if v is not fastest and v["avg_ms"] >= 3 * base and v["avg_ms"] - fastest["avg_ms"] >= 20:
+                out.append(f"{v['version']} is {v['avg_ms'] / base:.0f}x slower than {fastest['version']} "
+                           f"({v['avg_ms']:g} ms vs {fastest['avg_ms']:g} ms average)")
+    if len(versions) > 1:
+        best = min(versions, key=lambda v: v["error_rate_pct"])
+        for v in versions:
+            if v is not best and v["error_rate_pct"] - best["error_rate_pct"] >= 5:
+                out.append(f"{v['version']} has more errors than {best['version']} "
+                           f"({v['error_rate_pct']:g}% vs {best['error_rate_pct']:g}%)")
+    return out
+
+
 @mcp.tool()
 def get_version_split(service: str, minutes: float = 10) -> str:
     """Canary / version traffic split and error rate per version for a service, from istio_requests_total."""
@@ -677,7 +687,56 @@ def get_version_split(service: str, minutes: float = 10) -> str:
             "error_rate_pct": round(err / req * 100, 1) if req else 0.0,
             "avg_ms": avg_ms,
         })
-    return _out({"service": service, "minutes": minutes, "total_requests": int(total), "versions": versions})
+    return _out({"service": service, "minutes": minutes, "total_requests": int(total), "versions": versions,
+                 "findings": _version_findings(versions)})
+
+
+@mcp.tool()
+def suggest_authz(service: str, minutes: float = 60) -> str:
+    """Drafts a least-privilege ALLOW AuthorizationPolicy for `service` from the callers actually seen in the last
+    `minutes` (from ztunnel/waypoint metrics, using their SPIFFE identities), lists plaintext callers that
+    identity-based policy cannot allow, and says it only drafts: review before applying."""
+    end = time.time()
+    d = _api("/api/metrics/query", name="istio_tcp_connections_opened_total", start=end - minutes * 60, end=end,
+             **{"attribute.destination_canonical_service": service})
+    summary = summarize_callers((d or {}).get("series"))
+    namespace = summary["namespace"]
+    mtls = summary["mtls"]
+    plaintext = summary["plaintext"]
+    policy = build_policy(service, namespace, mtls)
+    if not mtls and not plaintext:
+        notes = ["No traffic to this service in the window, so there is nothing to base a policy on."]
+    else:
+        notes = ["An ALLOW policy denies every caller that is not listed, so check that all legitimate callers appear (a longer window helps)."]
+        if plaintext:
+            names = ", ".join(sorted({p["service"] for p in plaintext}))
+            notes.append(f"Plaintext callers cannot be matched by identity and would be denied: {names}.")
+        if any(c["service"].startswith("waypoint") for c in mtls):
+            notes.append("A waypoint calls this service, so the destination sees the waypoint's identity, not the original caller's: "
+                         "enforce per-caller rules at the waypoint (targetRefs on the Gateway or Service) instead.")
+        notes.append("Drafted for L4 (identity only); add `to.operation` ports or paths for L7 rules, which need a waypoint.")
+    return _out({"service": service, "minutes": minutes, "namespace": namespace,
+                 "callers": mtls, "plaintext_callers": plaintext, "policy_yaml": policy, "notes": notes})
+
+
+@mcp.tool()
+def what_changed(minutes: float = 30, window_seconds: float = 300) -> str:
+    """Lists change markers (events recorded by scenario scripts or deploy hooks, via POST /api/events) and what
+    happened to request failures and traffic around each. For each event, compares Istio request metrics in the
+    window before and after the marker timestamp, flagging services whose failure rate, response flags, or
+    request volume changed significantly."""
+    events = _api("/api/events", minutes=minutes, limit=5) or []
+    if not events:
+        return _out({"minutes": minutes, "events": [],
+                     "note": "No change markers in this window. Scenario scripts and deploy hooks can record one with POST /api/events."})
+    out_events = []
+    for event in events:
+        ts = event["timestamp"]
+        end = min(time.time(), ts + window_seconds)
+        d = _api("/api/metrics/query", name="istio_requests_total", start=ts - window_seconds, end=end)
+        changes = compare_around((d or {}).get("series"), ts, window_seconds, now=end)
+        out_events.append({**event, "changes": changes[:5]})
+    return _out({"minutes": minutes, "window_seconds": window_seconds, "events": out_events})
 
 
 # ---------- spans, visuals ----------
@@ -763,6 +822,53 @@ def chart_service_map(service: str | None = None, depth: int = 1, save_to: str |
     callers = sum(len(v) for c, v in g["columns"].items() if c < 0)
     callees = sum(len(v) for c, v in g["columns"].items() if c > 0)
     return _image_result(png, f"{service}: {callers} callers, {callees} callees (depth {max(1, min(depth, 2))}).", save_to)
+
+
+@mcp.tool()
+def chart_map_diff(minutes: float = 30, window_seconds: float = 120):
+    """Diagram (PNG image) of the service map coloured by what CHANGED: red edges got more failures, teal fewer, blue are
+    new or busier, grey quieter or stopped, faint ones unchanged. It compares the `window_seconds` before and after the
+    latest change marker in the last `minutes` (see what_changed); with no marker it compares the last two windows.
+    Needs Istio request metrics (a waypoint)."""
+    graph = _api("/api/service-map", limit=2000) or {}
+    events = _api("/api/events", minutes=minutes, limit=1) or []
+    now = time.time()
+    if events:
+        at, what = events[0]["timestamp"], f"change marker '{events[0]['title']}'"
+    else:
+        at, what = now - window_seconds, f"the last {window_seconds:g} s against the {window_seconds:g} s before"
+    end = min(now, at + window_seconds)
+    d = _api("/api/metrics/query", name="istio_requests_total", start=at - window_seconds, end=end)
+    rows = compare_edges((d or {}).get("series"), at, window_seconds, now=end)
+    diff = {(r["source"], r["target"]): r["change"] for r in rows}
+    counts: dict[str, int] = {}
+    for change in diff.values():
+        if change != "steady":
+            counts[change] = counts.get(change, 0) + 1
+    summary = ", ".join(f"{n} {render.DIFF_LABELS[c]}" for c, n in sorted(counts.items(), key=lambda kv: -kv[1])) or "no edge changed"
+    png = render.full_map_chart(graph, diff=diff, title=f"What changed around {what.split(' against')[0]}")
+    return _image_result(png, f"Map diff around {what}: {summary}.")
+
+
+@mcp.tool()
+def chart_trace_path(trace_id: str):
+    """Diagram (PNG image) of ONE request's journey over the service map: the services it passed through, numbered in order
+    with the time spent in each hop, everything else faded. The caption says how much of the time was spent in mesh proxies
+    (waypoint, gateway) versus the apps. Use search_traces to find a trace id; waypoint or gateway tracing makes the proxies visible."""
+    spans = _fetch_trace(trace_id)
+    if not spans:
+        return _out({"error": f"trace {trace_id} not found"})
+    hops = journey_hops(spans)
+    if not hops:
+        return _out({"error": "this trace has no service hops (all spans are in one service)"})
+    split = mesh_vs_app(spans)
+    graph = _api("/api/service-map", limit=2000) or {}
+    names = [h["source"] for h in hops] + [hops[-1]["target"]]
+    title = f"Journey of {trace_id[:8]}: {split['total_ms']:g} ms, {split['proxy_pct']:g}% in mesh proxies"
+    png = render.full_map_chart(graph, journey=hops, title=title)
+    path = " -> ".join(dict.fromkeys(names))
+    return _image_result(png, f"{split['hops']} hops, {split['total_ms']:g} ms total: {split['proxy_ms']:g} ms ({split['proxy_pct']:g}%) in "
+                              f"mesh proxies, {split['app_ms']:g} ms in apps. Path: {path}.")
 
 
 # ---------- documentation ----------

@@ -79,9 +79,13 @@ How it works: the container runs `server.py --http` and reads TinyOlly over its 
 | `get_service_map` | Compact caller → callee edges with call counts, errors and p95. With Istio: node `role` (waypoint, gateway), edge `mtls`, `source_kind` and `denied_count`; `merge=False` for the layered view. Filters for big meshes: `service`, `only` (`denied`, `plaintext`, `errors`), `limit` |
 | `get_mesh_posture` | Istio posture: mTLS coverage %, plaintext edges and denied calls |
 | `find_denied`, `find_plaintext` | Just the denied or the non-mTLS edges |
-| `get_edge` | One caller → callee edge in detail, with the RED numbers of both services |
+| `get_edge` | One caller → callee edge in detail, with the RED numbers of both services and the Envoy/ztunnel response flags it carries (UC, UT, DI, DENY...), each with a plain meaning and a next step |
 | `get_trace_mesh` | Mesh view of a trace: proxy time per hop (mesh time), retry attempts and decoded Envoy response flags |
-| `get_version_split` | Canary view: traffic share, error rate and average latency (`avg_ms`) per destination version |
+| `get_version_split` | Canary view: traffic share, error rate and average latency (`avg_ms`) per destination version, plus plain-language `findings` when a version is much slower or fails more than the best one |
+| `what_changed` | Change markers (deploys, applied policies or scenarios, recorded with `POST /api/events`) and, for each, how request failures, response flags and traffic changed per service in the minutes before and after it |
+| `suggest_authz` | Drafts a least-privilege ALLOW `AuthorizationPolicy` for a service from the callers actually seen (their SPIFFE identities), and lists plaintext callers it would block. A draft to review, not something to apply blindly |
+| `chart_map_diff` | The service map coloured by what changed around the latest change marker (red: more failures, teal: fewer, blue: new or busier, grey: quieter or stopped) |
+| `chart_trace_path` | One trace's journey over the service map: numbered hops with the time in each, and how much of it was spent in mesh proxies versus the apps |
 | `compare_windows` | What changed in the last N minutes vs the N before: new, gone, more errors, slower services |
 | `search_traces` | Recent traces filtered by service, errors, min duration, root name (`format="table"`) |
 | `get_trace` | **Bounded summary** of a trace: duration, counts, per-service breakdown, error spans, slowest spans, depth. `format="waterfall"` draws a text waterfall |
@@ -108,6 +112,14 @@ The JSON tools are compact for agents. When you want something to show a person,
 Claude Desktop shows tool images as a small preview. Click it to enlarge, or ask for a full-size file: both chart tools take `save_to` (for example "show me the service map and save it to ~/Desktop/map.png").
 
 `chart_service_map` draws each service as a card: a small icon for its role (client, service, external, waypoint or ztunnel, gateway), the name and `err · p95` inside, and a stripe coloured by health (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green solid mTLS, amber dashed plaintext, red denied or errors. Every chart carries a legend. The whole map lays callers left of callees; pass a service name to draw just its neighbourhood (`depth=2` for two hops), which stays readable on large meshes. A grey edge means mTLS is unknown (the edge is known only from traces). On the whole-service map only the six busiest edges carry latency labels so the picture stays readable.
+
+[![Service map drawn by chart_service_map](images/mesh-service-map.png)](images/full/mesh-service-map.png)
+
+`chart_map_diff` colours the same map by what changed around a change marker (red: failures rose), and `chart_trace_path` draws one request's journey over it with the time spent in mesh proxies:
+
+[![chart_map_diff after a fault was injected](images/mesh-map-diff.png)](images/full/mesh-map-diff.png)
+
+[![chart_trace_path for one request through the waypoint](images/mesh-trace-path.png)](images/full/mesh-trace-path.png)
 
 Try asking: "chart http.server.duration for tinyolly-ui", "show me the service map", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "pretty print the service catalog".
 

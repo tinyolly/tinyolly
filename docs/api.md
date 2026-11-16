@@ -371,6 +371,18 @@ curl http://localhost:5005/api/mesh-posture
 
 ---
 
+### Change markers (events)
+
+Record something that happened to the system, so telemetry can be lined up with it (the MCP tool `what_changed` does this):
+
+```bash
+curl -X POST http://localhost:5005/api/events -H 'Content-Type: application/json' \
+  -d '{"title": "deploy checkout v2", "kind": "deploy", "source": "ci", "attributes": {"version": "2"}}'
+curl 'http://localhost:5005/api/events?minutes=30&limit=20'   # newest first
+```
+
+Events are kept for the same time as other telemetry and are removed by `POST /admin/reset`.
+
 ### 7. Check System Statistics
 
 Get SQLite database usage and cardinality metrics:

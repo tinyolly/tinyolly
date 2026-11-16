@@ -25,6 +25,8 @@ Because ztunnel produces only metrics, TinyOlly builds map edges from Istio metr
 | Mesh roles | Waypoint (cut box) and gateway (pentagon) node shapes |
 | Merged vs Layered | `waypoint.boutique` (trace identity) and `waypoint` (metric identity) merge into one node; untick **Merge proxy and app nodes** to see both |
 
+<p align="center"><a href="images/full/ui-service-map.png"><img src="images/ui-service-map.png" alt="APM Service Map showing mTLS and plaintext edges" width="800"></a></p>
+
 The same data is available from `GET /api/service-map` and `GET /api/mesh-posture` ([API reference](api.md)) and the `get_service_map` / `get_mesh_posture` MCP tools ([MCP](mcp.md)).
 
 ## Getting the data in
@@ -39,5 +41,7 @@ The same data is available from `GET /api/service-map` and `GET /api/mesh-postur
 - **Denial detection is heuristic:** a gRPC call denied by an authorization policy returns HTTP 200 with `grpc-status: 7`, and a waypoint local reply shows up with no upstream workload. TinyOlly treats both as denied, and also connections ztunnel marks `DENY`. Calls that fail upstream with a response flag (for example `UH`) count as errors, not denials.
 - **Plaintext edges** are normal for non-mesh traffic such as apps exporting telemetry to TinyOlly.
 - **History persists:** ztunnel counters count from when ztunnel started, so TinyOlly shows denied and plaintext history from before a demo began. Restart ztunnel and clear TinyOlly's stored telemetry (`POST /admin/reset`) for a clean start.
+- **Why did it break?** `get_edge` decodes the response flags an edge carries (`UC`, `UT`, `DI`, `DENY`...) with a meaning and a next step, and `what_changed` lines up change markers (`POST /api/events`, which the demo's scenario script posts) with the failures and traffic around them.
+- **Seeing the mesh:** the map fades edges that only have connection counts (L4) when others have request data, shows each service's cluster and marks edges that cross clusters when the metrics carry cluster labels, and `chart_map_diff` / `chart_trace_path` show what changed and where one request spent its time. `get_mesh_posture` reports L7 coverage and the L4-only edges.
 - **Reconnect after adding a waypoint:** long-lived gRPC connections keep the path they were opened on, so a waypoint sees no traffic until callers reconnect (for example by restarting them).
 - **Timeouts and delays:** a route timeout does not cut off a fault delay injected by the mesh; it only cuts off real upstream slowness.

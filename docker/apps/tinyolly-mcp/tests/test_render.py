@@ -130,3 +130,70 @@ def test_full_map_chart_with_mesh_roles_and_edges_renders():
                    {"source": "wp", "target": "s", "mtls": True, "denied_count": 3}]}
     assert render.node_roles(g)["wp"] == "waypoint" and render.node_roles(g)["gw"] == "gateway"
     assert render.full_map_chart(g)[:4] == b"\x89PNG"
+
+
+def test_l7_coverage_in_posture_line_and_edge_alpha():
+    g = {"edges": [{"mtls": True, "l7": True}, {"mtls": True, "l7": False}, {"mtls": True, "l7": False}, {"mtls": True, "l7": False}]}
+    assert render.posture_line(g) == "mTLS 100% · 0 plaintext · 0 denied · L7 25%"
+    assert "L7" not in render.posture_line({"edges": [{"mtls": True}, {"mtls": True, "l7": False}]})      # no L7 edge at all: say nothing
+    assert render.edge_alpha({"mtls": True, "l7": True}, True) == 1.0
+    assert render.edge_alpha({"mtls": True, "l7": False}, True) < 0.6
+    assert render.edge_alpha({"mtls": False, "l7": False}, True) == 1.0              # problems are never faded
+    assert render.edge_alpha({"mtls": True, "denied_count": 1}, True) == 1.0
+    assert render.edge_alpha({"mtls": True, "l7": False}, False) == 1.0              # nothing is L7: do not fade everything
+    assert render.legend_height(True) > render.legend_height(False)
+
+
+def test_charts_render_with_l7_and_l4_edges():
+    g = {"nodes": [{"id": "a", "type": "service"}, {"id": "b", "type": "service"}, {"id": "c", "type": "service"}],
+         "edges": [{"source": "a", "target": "b", "mtls": True, "l7": True, "value": 50, "p95": 3.0, "req_rate": 4},
+                   {"source": "a", "target": "c", "mtls": True, "l7": False, "value": 9}]}
+    assert render.full_map_chart(g)[:4] == b"\x89PNG"
+    assert render.service_map_chart(g, "a")[:4] == b"\x89PNG"
+
+
+def test_cross_cluster_in_posture_line_and_charts_render():
+    g = {"nodes": [{"id": "a", "type": "service", "cluster": "east"}, {"id": "b", "type": "service", "cluster": "west"},
+                   {"id": "c", "type": "service", "cluster": "east"}],
+         "edges": [{"source": "a", "target": "b", "mtls": True, "cross_cluster": True, "source_cluster": "east", "target_cluster": "west", "value": 5},
+                   {"source": "a", "target": "c", "mtls": True, "cross_cluster": False, "value": 5}]}
+    assert render.posture_line(g) == "mTLS 100% · 0 plaintext · 0 denied · 1 cross-cluster"
+    assert render.cluster_badges(g) == {"a": "east", "b": "west", "c": "east"}
+    single = {"nodes": [{"id": "a", "cluster": "east"}, {"id": "b", "cluster": "east"}], "edges": []}
+    assert render.cluster_badges(single) == {}                      # one cluster: no badges
+    assert render.full_map_chart(g)[:4] == b"\x89PNG" and render.service_map_chart(g, "a")[:4] == b"\x89PNG"
+
+
+def test_diff_styles_are_distinct_and_cover_all_classes():
+    classes = ["failures_up", "failures_down", "new", "gone", "traffic_up", "traffic_down", "steady"]
+    styles = {c: render.diff_edge_style(c) for c in classes}
+    assert len(set(styles.values())) == len(classes)
+    assert render.diff_edge_style("failures_up")[0] == "#ef4444"
+    assert render.diff_edge_style("something_else") == render.diff_edge_style("steady")
+    assert render.legend_height(True, diff=True) > 0
+
+
+def test_full_map_chart_in_diff_mode_renders():
+    g = {"nodes": [{"id": "a", "type": "service"}, {"id": "b", "type": "service"}, {"id": "c", "type": "service"}],
+         "edges": [{"source": "a", "target": "b", "mtls": True}, {"source": "a", "target": "c", "mtls": True}]}
+    png = render.full_map_chart(g, diff={("a", "b"): "failures_up", ("a", "c"): "steady"}, title="What changed around: applied flaky")
+    assert png[:4] == b"\x89PNG"
+
+
+def test_resolve_service_maps_proxy_names_onto_graph_nodes():
+    names = {"frontend", "waypoint", "shop-ingress"}
+    assert render.resolve_service("frontend", names) == "frontend"
+    assert render.resolve_service("waypoint.boutique", names) == "waypoint"
+    assert render.resolve_service("nope.boutique", names) is None
+
+
+def test_full_map_chart_with_a_journey_renders():
+    g = {"nodes": [{"id": "ingress"}, {"id": "frontend"}, {"id": "waypoint"}, {"id": "cart"}],
+         "edges": [{"source": "ingress", "target": "frontend", "mtls": True}, {"source": "frontend", "target": "waypoint", "mtls": True},
+                   {"source": "waypoint", "target": "cart", "mtls": True}]}
+    hops = [{"order": 1, "source": "ingress", "target": "frontend", "duration_ms": 90.0, "via_proxy": True},
+            {"order": 2, "source": "frontend", "target": "waypoint.boutique", "duration_ms": 60.0, "via_proxy": True},
+            {"order": 3, "source": "waypoint.boutique", "target": "cart", "duration_ms": 40.0, "via_proxy": True},
+            {"order": 4, "source": "cart", "target": "missing", "duration_ms": 1.0, "via_proxy": False}]       # not in the map: skipped
+    png = render.full_map_chart(g, journey=hops, title="Journey of abcd: 100 ms, 30% in the mesh")
+    assert png[:4] == b"\x89PNG"

@@ -13,7 +13,8 @@ def test_graph_node_list_defaults_type_and_metrics():
 def test_metric_only_edge_shape_and_denied_default():
     e = metric_only_edge("x", "y", {"count": 7, "errors": 2, "mtls": True})
     assert e == {"source": "x", "target": "y", "value": 7, "p95": 0, "req_rate": 0, "error_count": 2,
-                 "denied_count": 0, "source_kind": "metrics", "mtls": True}
+                 "denied_count": 0, "source_kind": "metrics", "mtls": True, "l7": False}
+    assert metric_only_edge("x", "y", {"count": 1, "errors": 0, "mtls": True, "l7": True})["l7"] is True
     assert metric_only_edge("x", "y", {"count": 1, "errors": 0, "mtls": False, "denied": 5})["denied_count"] == 5
 
 
@@ -38,3 +39,8 @@ def test_trace_edge_with_metric_edge_and_short_window():
 def test_trace_edge_empty_data():
     e = trace_edge("a", "b", {"count": 0, "durations": [], "spans": []}, None)
     assert e["p95"] == 0 and e["req_rate"] == 0 and e["error_count"] == 0
+
+
+def test_trace_edges_are_request_level():
+    e = trace_edge("a", "b", {"count": 1, "durations": [1.0], "spans": [(0, 1_000_000, False)]}, None)
+    assert e["l7"] is True

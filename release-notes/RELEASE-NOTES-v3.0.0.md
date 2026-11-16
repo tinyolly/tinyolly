@@ -16,6 +16,8 @@
 
 - **An MCP server that understands the mesh** — New tools: `get_mesh_posture`, `find_denied`, `find_plaintext`, `get_edge`, `get_trace_mesh`, `get_version_split` and `compare_windows`, plus label filters on `query_metric` and a mesh investigation skill. `chart_service_map` is redrawn with cards, a legend and health colors. Ask "what is denied in the mesh?" and get an answer plus a picture. `get_version_split` includes average latency per version.
 
+- **Investigate, don't just look** — `what_changed` lines up change markers (`POST /api/events`) with the failures and traffic around them, `get_edge` decodes Envoy and ztunnel response flags (UC, UT, DI, DENY) into a cause and a next step, `suggest_authz` drafts a least-privilege policy from the callers actually seen, `chart_map_diff` paints what changed on the map, and `chart_trace_path` draws one request's journey with the share of time spent in mesh proxies. The map also shows L7 coverage (which edges have request data) and which edges cross clusters.
+
 - **MCP is always on** — It runs as a pod next to TinyOlly on Kubernetes and as a service in Docker Compose, on `http://localhost:8765/mcp`. One URL for every client: Claude Code directly, Claude Desktop through `mcp-remote`.
 
 - **More accurate service metrics** — Rate, errors and latency now count server-side spans only, so proxy and client spans no longer double-count. Edges report real error counts and request rates.

@@ -22,14 +22,16 @@ import subprocess
 import sys
 import time
 import traceback
+import os
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RUN = secrets.token_hex(3)
-UI = "http://localhost:5005"
-OTLP = "http://localhost:4318"
+UI = os.environ.get("TINYOLLY_UI", "http://localhost:5005")           # docker-alt.sh stack: http://localhost:5105
+OTLP = os.environ.get("TINYOLLY_OTLP", "http://localhost:4318")        # docker-alt.sh stack: http://localhost:4418
+REMOTE_WRITE_PORT = int(os.environ.get("TINYOLLY_RW_PORT", "19291"))   # docker-alt.sh stack: 19391
 
 results = []   # (scenario, name, ok, detail)
 current = ["-"]
@@ -423,7 +425,7 @@ def s_promrw():
     if not scenario_setup("preset: prometheus-remote-write", "prometheus-remote-write"):
         return
     try:
-        socket.create_connection(("localhost", 19291), timeout=3).close()
+        socket.create_connection(("localhost", REMOTE_WRITE_PORT), timeout=3).close()
         listening = True
     except OSError:
         listening = False

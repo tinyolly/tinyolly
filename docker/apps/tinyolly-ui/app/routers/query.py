@@ -8,12 +8,48 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from models import ErrorResponse, MetricDetail, MetricMetadata, MetricQueryResult, TraceDetail
+from pydantic import BaseModel, Field
 
 from tinyolly_common import Storage
 
 from ..dependencies import get_storage
 
 router = APIRouter(prefix="/api", tags=["Traces", "Spans", "Logs", "Metrics"])
+
+
+class EventIn(BaseModel):
+    """A change marker: something that happened to the system (a scenario applied, a deploy)."""
+    title: str = Field(..., min_length=1, max_length=200)
+    source: str = "api"
+    kind: str = "change"
+    attributes: Dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post(
+    '/events',
+    summary="Record a change marker",
+    operation_id="create_event"
+)
+async def create_event(
+    body: EventIn,
+    storage: Storage = Depends(get_storage)
+):
+    """Record a change marker."""
+    return await storage.add_event(body.title, source=body.source, kind=body.kind, attributes=body.attributes)
+
+
+@router.get(
+    '/events',
+    summary="List change markers",
+    operation_id="list_events"
+)
+async def list_events(
+    minutes: float = Query(60, gt=0),
+    limit: int = Query(100, ge=1, le=500),
+    storage: Storage = Depends(get_storage)
+):
+    """List change markers."""
+    return await storage.get_events(since_ts=time.time() - minutes * 60, limit=limit)
 
 
 @router.get(
