@@ -1,5 +1,5 @@
 # TinyOlly Common Package Base Image
-FROM python:3.13-slim AS tinyolly-common
+FROM python:3.15-slim AS tinyolly-common
 
 WORKDIR /tinyolly-common
 
