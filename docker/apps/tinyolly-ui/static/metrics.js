@@ -850,11 +850,23 @@ function renderSumChart(metric, data, canvas, chartId) {
     });
 }
 
+// Unit text for histogram charts. Use the metric's own unit; never assume milliseconds.
+// Unitless histograms are common (e.g. tokens per request), so only label them "Duration" when the name or
+// description says they measure time, and claim no unit in that case.
+function histogramUnitLabels(metric) {
+    const unit = (metric.unit || '').trim();
+    if (unit) return { tooltipSuffix: ` ${unit}`, axisTitle: unit };
+    const looksLikeTime = /(duration|latency|_time\b|seconds)/i.test(`${metric.name || ''} ${metric.description || ''}`);
+    return { tooltipSuffix: '', axisTitle: looksLikeTime ? 'Duration' : 'Value' };
+}
+
 function renderHistogramChart(metric, data, canvas, chartId) {
     if (!canvas) {
         console.error('Canvas not provided to renderHistogramChart');
         return;
     }
+
+    const unitLabels = histogramUnitLabels(metric);
 
     // Show histogram as percentile bars (P50, P75, P90, P95, P99) over time
     if (!data.series || data.series.length === 0) return;
@@ -972,7 +984,7 @@ function renderHistogramChart(metric, data, canvas, chartId) {
                     mode: 'index',
                     intersect: false,
                     callbacks: {
-                        label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)} ${metric.unit || 'ms'}`
+                        label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}${unitLabels.tooltipSuffix}`
                     }
                 }
             },
@@ -987,7 +999,7 @@ function renderHistogramChart(metric, data, canvas, chartId) {
                 },
                 y: {
                     beginAtZero: true,
-                    title: { display: true, text: metric.unit || 'Latency (ms)' }
+                    title: { display: true, text: unitLabels.axisTitle }
                 }
             },
             barPercentage: 0.9,

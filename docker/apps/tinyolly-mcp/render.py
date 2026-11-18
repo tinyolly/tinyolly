@@ -344,13 +344,16 @@ LEGEND_COL = 4.6   # horizontal spacing between legend items (data units)
 LEGEND_ROW = 0.62
 
 
-def _legend_rows(mesh: bool, diff: bool = False) -> list[list[tuple]]:
+def _legend_rows(mesh: bool, diff: bool = False, present: frozenset = frozenset()) -> list[list[tuple]]:
     if diff:
         keys = list(DIFF_LABELS)
         return [[("edge", DIFF_STYLES[k], DIFF_LABELS[k]) for k in keys[i:i + 3]] for i in range(0, len(keys), 3)]
     rows: list[list[tuple]] = [[("role", "client", "client (no callers)"), ("role", "server", "service"),
                                 ("role", "external", "leaf (no callees)")],
-                               [("role", "isolated", "no connections")] + ([("role", "waypoint", "waypoint / ztunnel"), ("role", "gateway", "gateway")] if mesh else []),
+                               [("role", "isolated", "no connections")]
+                               # proxy roles are listed when a mesh is present OR a node of that role is actually drawn
+                               + ([("role", "waypoint", "waypoint / ztunnel")] if mesh or present & {"waypoint", "ztunnel"} else [])
+                               + ([("role", "gateway", "gateway")] if mesh or "gateway" in present else []),
                                [("node", COLOR_OK, "node: healthy"), ("node", COLOR_WARN, "node: >1% errors"), ("node", COLOR_ERR, "node: >5% errors")]]
     if mesh:
         rows.append([("edge", ("#16a34a", "-"), "edge: mTLS"), ("edge", ("#f59e0b", "--"), "edge: plaintext"),
@@ -361,14 +364,14 @@ def _legend_rows(mesh: bool, diff: bool = False) -> list[list[tuple]]:
     return rows
 
 
-def legend_height(mesh: bool, diff: bool = False) -> float:
-    return LEGEND_ROW * len(_legend_rows(mesh, diff)) + 0.5
+def legend_height(mesh: bool, diff: bool = False, present: frozenset = frozenset()) -> float:
+    return LEGEND_ROW * len(_legend_rows(mesh, diff, present)) + 0.5
 
 
-def _legend(ax, x: float, y: float, mesh: bool = False, diff: bool = False) -> None:
+def _legend(ax, x: float, y: float, mesh: bool = False, diff: bool = False, present: frozenset = frozenset()) -> None:
     """Shapes = role, node colour = health, edge colour = mesh security. Rows go downward from y."""
     from matplotlib.patches import Rectangle
-    for ri, items in enumerate(_legend_rows(mesh, diff)):
+    for ri, items in enumerate(_legend_rows(mesh, diff, present)):
         yy = y - ri * LEGEND_ROW
         for i, (kind, key, text) in enumerate(items):
             xx = x + i * LEGEND_COL
@@ -557,8 +560,9 @@ def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
         ax.text(x, min(y for (px, y) in pos.values() if px == x) - 0.75, f"+{k} more", ha="center", fontsize=10, color="#64748b")
     ax.set_xlim(-CARD_W / 2 - 0.4, xr)
     ys = [y for _, y in pos.values()]
-    _legend(ax, -CARD_W / 2 - 0.1, min(ys) - 1.3, mesh)
-    ax.set_ylim(min(ys) - 1.3 - legend_height(mesh), max(ys) + 1.0)
+    present = frozenset(roles.get(n, "server") for n in pos)
+    _legend(ax, -CARD_W / 2 - 0.1, min(ys) - 1.3, mesh, present=present)
+    ax.set_ylim(min(ys) - 1.3 - legend_height(mesh, present=present), max(ys) + 1.0)
     titles = {-2: "callers (2 hops)", -1: "callers", 0: "service", 1: "callees", 2: "callees (2 hops)"}
     for ci, c in enumerate(cols):
         ax.text(ci * COL_X, max(ys) + 0.75, titles.get(c, f"hop {c}"), ha="center", fontsize=10, color="#94a3b8")
@@ -687,9 +691,10 @@ def full_map_chart(graph: dict, diff: dict | None = None, title: str | None = No
     right = max(max(xs), (width_units - 1) * X) + CARD_W / 2 + 0.4
     mesh = bool(posture_line(graph))
     right = max(right, 2 * LEGEND_COL + 3.0)
-    _legend(ax, -CARD_W / 2 - 0.1, min(ys) - 1.25, mesh, diff is not None)
+    present = frozenset(roles.values())
+    _legend(ax, -CARD_W / 2 - 0.1, min(ys) - 1.25, mesh, diff is not None, present)
     ax.set_xlim(-CARD_W / 2 - 0.4, right)
-    ax.set_ylim(min(ys) - 1.25 - legend_height(mesh, diff is not None), max(ys) + 1.35)
+    ax.set_ylim(min(ys) - 1.25 - legend_height(mesh, diff is not None, present), max(ys) + 1.35)
     errs = sum(1 for n in nodes.values() if float(((n.get("metrics") or {}).get("error_rate")) or 0) > 5)
     ax.set_title(title or (f"Service map  ·  {len(nodes)} services  ·  {len(edges)} connections" + (f"  ·  {errs} unhealthy" if errs else "")
                            + (f"  ·  {posture_line(graph)}" if mesh else "")),

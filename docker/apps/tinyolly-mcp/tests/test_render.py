@@ -29,6 +29,19 @@ def test_formatters():
     assert render.fmt_time(1_700_000_000.5).endswith(".500") and render.fmt_time(1_700_000_000_500_000_000).endswith(".500")
 
 
+def test_legend_lists_proxy_roles_when_drawn_even_without_mesh():
+    """A gateway node is drawn as a pentagon, so the legend must show a pentagon entry whether or not a mesh is present."""
+    def labels(*args, **kw):
+        return [text for row in render._legend_rows(*args, **kw) for (_, _, text) in row]
+
+    assert "gateway" not in labels(False)                                              # nothing drawn, no mesh: not listed
+    assert "gateway" in labels(False, present=frozenset({"gateway"}))                  # gateway drawn, no mesh: listed
+    assert "waypoint / ztunnel" not in labels(False, present=frozenset({"gateway"}))
+    assert "waypoint / ztunnel" in labels(False, present=frozenset({"waypoint"}))
+    assert {"gateway", "waypoint / ztunnel"} <= set(labels(True))                      # mesh: both, as before
+    assert render.legend_height(False, present=frozenset({"gateway"})) == render.legend_height(False)  # same row count
+
+
 def test_md_table_truncates_and_escapes():
     t = render.md_table(["a", "b"], [["x" * 100, "p|q"]], [10, 10])
     lines = t.splitlines()
