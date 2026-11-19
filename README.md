@@ -39,7 +39,8 @@ git clone https://github.com/tinyolly/tinyolly && cd tinyolly
 brew install colima docker docker-compose docker-buildx docker-credential-helper kubectl kind helm
 mkdir -p ~/.docker && echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json   # merge into an existing file if you have one
 
-./scripts/colima-up.sh                  # the 'tinyolly' VM, 4 CPU / 4 GB (COLIMA_MEMORY=8 for the demos)
+./scripts/colima-up.sh                  # the 'tinyolly' VM, 4 CPU / 4 GB (COLIMA_MEMORY=8 for the demos; sizing applies only when the VM is created, stop it first to resize)
+                                        # VM disk lives in ${COLIMA_HOME:-~/.colima}: keep that on APFS, not HFS+ (no sparse files, creation hangs)
 (cd docker && ./01-start-core.sh)       # TinyOlly, about 30 seconds
 open http://localhost:5005
 ```

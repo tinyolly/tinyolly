@@ -6,7 +6,7 @@ tinyolly_preflight() {
   command -v docker >/dev/null || { echo "ERROR: docker CLI missing (brew install docker docker-compose)" >&2; return 1; }
   docker compose version >/dev/null 2>&1 || { echo "ERROR: 'docker compose' plugin missing (brew install docker-compose)" >&2; return 1; }
   if ! docker info >/dev/null 2>&1; then
-    echo "ERROR: docker daemon unreachable. Run: ./scripts/colima-up.sh" >&2; return 1
+    echo "ERROR: docker daemon unreachable. Run: ./scripts/colima-up.sh (it also repairs a stale docker context after COLIMA_HOME changes)" >&2; return 1
   fi
   local mem_bytes; mem_bytes=$(docker info --format '{{.MemTotal}}')
   if (( mem_bytes < 3500000000 )); then

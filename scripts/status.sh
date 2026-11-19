@@ -111,7 +111,7 @@ done
 
 if [ "$SHORT" = 0 ]; then
   hdr "Disk"
-  printf '  free on /: %s   ~/.colima: %s\n' "$(df -h / | awk 'NR==2{print $4}')" "$(du -sh ~/.colima 2>/dev/null | cut -f1)"
+  printf '  free on /: %s   colima home: %s\n' "$(df -h / | awk 'NR==2{print $4}')" "$(du -sh "${COLIMA_HOME:-$HOME/.colima}" 2>/dev/null | cut -f1)"
   printf '  %sreclaim build cache: docker --context colima-tinyolly builder prune -af  (and --context colima)%s\n' "$D" "$N"
 fi
 printf '\n'
