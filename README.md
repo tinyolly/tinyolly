@@ -92,6 +92,15 @@ Within a couple of minutes `checkout` and `payment` turn red in the catalog and 
 </tr>
 </table>
 
+## AI SRE agent (opt-in)
+
+A local model that watches TinyOlly (errors, latency, traffic drops, vanished services, error logs, mesh denials, store health), opens an incident, investigates it once through the MCP tools, writes a runbook and checks the recovery. It also reviews every change marker and runs routine reviews. Findings land back in TinyOlly as `ai-finding` change markers; the live console is on http://localhost:7173.
+
+```bash
+(cd docker && ./05-start-sre.sh)        # needs Ollama on the host (SRE_MODEL, default qwen3:8b); kind: k8s/06-rebuild+deploy-sre.sh
+```
+Self-contained in [`docker/apps/tinyolly-sre`](docker/apps/tinyolly-sre/README.md), so it can become a standalone project.
+
 ## Ask an AI about your telemetry (MCP)
 
 TinyOlly ships a read-only [MCP](https://modelcontextprotocol.io) server with **28 tools** and investigation playbooks. It runs as a container next to the UI, so there is nothing to start by hand. Connect an assistant once:

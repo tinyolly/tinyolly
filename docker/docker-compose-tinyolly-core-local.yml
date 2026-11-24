@@ -110,6 +110,24 @@ services:
     environment:
       - TINYOLLY_URL=http://tinyolly-ui:5002
 
+  # AI SRE agent (opt-in): watches TinyOlly, opens incidents, investigates through the MCP server above.
+  # Needs an OpenAI-compatible model (Ollama on the host by default).  Start: ./05-start-sre.sh   UI: http://localhost:7173
+  tinyolly-sre:
+    profiles: ["sre"]
+    build:
+      context: ./apps/tinyolly-sre
+    image: tinyolly/sre:latest
+    container_name: tinyolly-sre
+    ports:
+      - "127.0.0.1:7173:8080"
+    depends_on:
+      - tinyolly-mcp
+    environment:
+      - TINYOLLY_URL=http://tinyolly-ui:5002
+      - TINYOLLY_MCP_URL=http://tinyolly-mcp:8765/mcp
+      - LLM_URL=${SRE_LLM_URL:-http://host.docker.internal:11434/v1}
+      - MODEL=${SRE_MODEL:-qwen3:8b}
+
 volumes:
   otel-supervisor-data:
     name: tinyolly-otel-supervisor-data

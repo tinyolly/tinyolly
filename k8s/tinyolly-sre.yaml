@@ -1,0 +1,32 @@
+# AI SRE agent (opt-in): kubectl apply -f k8s/tinyolly-sre.yaml   (build/load first: k8s/06-rebuild+deploy-sre.sh)
+# Model: any OpenAI-compatible endpoint; the default reaches Ollama on the Mac host from kind.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: tinyolly-sre, labels: {app: tinyolly-sre}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: tinyolly-sre}}
+  template:
+    metadata: {labels: {app: tinyolly-sre}}
+    spec:
+      containers:
+      - name: tinyolly-sre
+        image: tinyolly/sre:latest
+        imagePullPolicy: IfNotPresent
+        ports: [{containerPort: 8080}]
+        env:
+        - {name: TINYOLLY_URL, value: "http://tinyolly-ui:5002"}
+        - {name: TINYOLLY_MCP_URL, value: "http://tinyolly-mcp:8765/mcp"}
+        - {name: LLM_URL, value: "http://host.docker.internal:11434/v1"}
+        - {name: MODEL, value: "qwen3:8b"}
+        readinessProbe: {httpGet: {path: /healthz, port: 8080}, periodSeconds: 10}
+        resources:
+          requests: {memory: "64Mi", cpu: "50m"}
+          limits: {memory: "256Mi", cpu: "300m"}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: tinyolly-sre}
+spec:
+  selector: {app: tinyolly-sre}
+  ports: [{port: 8080, targetPort: 8080}]
