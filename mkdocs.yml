@@ -66,9 +66,7 @@ nav:
   - Demos:
       - OpenTelemetry Demo (Astronomy Shop): otel-demo.md
       - Ask an AI about the OTel Demo: otel-demo-ai.md
-      - eBPF Zero-Code Tracing: ebpf.md
-      - AI Agent with Ollama: ai-agent.md
-      - Istio Ambient Mesh: istio.md
+      - TinyOlly AI SRE Agent: ai-sre.md
   - MCP & API:
       - MCP Tools and Playbooks: mcp.md
       - REST API & Examples: api.md
@@ -77,6 +75,8 @@ nav:
       - Metrics Explorer: metrics.md
       - Cardinality Protection: CARDINALITY-PROTECTION.md
       - Development & Testing: development.md
+  - Misc:
+      - Istio Ambient Mesh: istio.md
   - Licensing: licensing.md
 
 extra:

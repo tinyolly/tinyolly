@@ -13,8 +13,8 @@ This page covers running and connecting it. For what it can do, see [MCP tools a
 
 | Deployment | How it runs | URL |
 |---|---|---|
-| **Docker Compose** | A `tinyolly-mcp` service in the core compose files (`docker/` and `docker-core-only/`). It starts and stops with the stack. | `http://localhost:8765/mcp` |
-| **Kubernetes (kind)** | A `tinyolly-mcp` Deployment and NodePort Service (`k8s/tinyolly-mcp.yaml`, `k8s-core-only/tinyolly-mcp.yaml`). The kind config maps host port 8765 to it. | `http://localhost:8765/mcp` |
+| **Docker Compose** | A `tinyolly-mcp` service in the core compose files (`docker/` and `misc/docker-core-only/`). It starts and stops with the stack. | `http://localhost:8765/mcp` |
+| **Kubernetes (kind)** | A `tinyolly-mcp` Deployment and NodePort Service (`k8s/tinyolly-mcp.yaml`, `misc/k8s-core-only/tinyolly-mcp.yaml`). The kind config maps host port 8765 to it. | `http://localhost:8765/mcp` |
 | **Standalone** | You run `server.py` yourself, or the client starts it over stdio (see below). | your choice |
 
 Docker and Kubernetes use the same port and URL, so client configuration is identical for both. Every client shares one server over streamable HTTP. The container reads TinyOlly through its REST API (`TINYOLLY_URL`, `http://tinyolly-ui:5002` inside the stack), bundles the TinyOlly docs and the investigation skills, and binds to `127.0.0.1` on the host in Docker.

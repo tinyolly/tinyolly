@@ -19,10 +19,10 @@ fail=0
 check() { if [ "$2" = "ok" ]; then echo "ok    $1"; else echo "FAIL  $1"; fail=1; fi; }
 
 # Every script that mutates a cluster must be guarded (so a new unguarded script fails this test).
-UNGUARDED=$(grep -lE '(kubectl[[:space:]]+(apply|delete|create|rollout|scale|patch|replace)|helm[[:space:]]+(upgrade|install|uninstall))' k8s/*.sh k8s-core-only/*.sh k8s-demo/*.sh k8s-demo-ebpf/*.sh k8s-otel-demo/*.sh k8s-ai-agent-demo/*.sh 2>/dev/null | xargs grep -L 'kubectx.sh' 2>/dev/null)
+UNGUARDED=$(grep -lE '(kubectl[[:space:]]+(apply|delete|create|rollout|scale|patch|replace)|helm[[:space:]]+(upgrade|install|uninstall))' k8s/*.sh k8s-otel-demo/*.sh misc/k8s*/*.sh 2>/dev/null | xargs grep -L 'kubectx.sh' 2>/dev/null)
 if [ -n "$UNGUARDED" ]; then echo "FAIL  mutating scripts without the context guard:"; echo "$UNGUARDED" | sed 's/^/        /'; fail=1; else echo "ok    every cluster-mutating script is guarded"; fi
 
-SCRIPTS=$(grep -l 'kubectx.sh' k8s/*.sh k8s-core-only/*.sh k8s-demo/*.sh k8s-demo-ebpf/*.sh k8s-otel-demo/*.sh k8s-ai-agent-demo/*.sh 2>/dev/null)
+SCRIPTS=$(grep -l 'kubectx.sh' k8s/*.sh k8s-otel-demo/*.sh misc/k8s*/*.sh 2>/dev/null)
 [ -n "$SCRIPTS" ] || { echo "FAIL  no guarded scripts found"; exit 1; }
 
 for s in $SCRIPTS; do

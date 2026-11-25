@@ -12,19 +12,11 @@ build/
 │   ├── 02-build-all.sh            # Step 2: Build all images
 │   ├── 02-build-core.sh           # Step 2: Build core images
 │   ├── 02-build-ui.sh             # Step 2: Build UI only (quick iteration)
-│   ├── 02-build-demo.sh           # Step 2: Build demo images
-│   ├── 02-build-ebpf-demo.sh      # Step 2: Build eBPF demo images
-│   ├── 02-build-ai-demo.sh        # Step 2: Build AI demo image
 │   ├── 03-push-all.sh             # Step 3: Push all images
 │   ├── 03-push-core.sh            # Step 3: Push core images
-│   ├── 03-push-ui.sh              # Step 3: Push UI only
-│   ├── 03-push-demo.sh            # Step 3: Push demo images
-│   ├── 03-push-ebpf-demo.sh       # Step 3: Push eBPF demo images
-│   └── 03-push-ai-demo.sh         # Step 3: Push AI demo image
+│   └── 03-push-ui.sh              # Step 3: Push UI only
 └── local/                         # Local builds (kind)
-    ├── build-core-kind.sh
-    ├── build-demo-kind.sh
-    └── build-ebpf-demo-kind.sh
+    └── build-core-kind.sh
 ```
 
 ## Quick Start - Docker Hub
@@ -56,8 +48,6 @@ cd build/dockerhub
 cd build/local
 
 ./build-core-kind.sh       # Core images
-./build-demo-kind.sh       # Demo images
-./build-ebpf-demo-kind.sh  # eBPF demo images
 ```
 
 ## Scripts Reference
@@ -75,9 +65,6 @@ cd build/local
 | `02-build-all.sh` | Build all images locally |
 | `02-build-core.sh` | Build core TinyOlly images |
 | `02-build-ui.sh` | Build UI image only (quick iteration) |
-| `02-build-demo.sh` | Build demo app images |
-| `02-build-ebpf-demo.sh` | Build eBPF demo images |
-| `02-build-ai-demo.sh` | Build AI agent demo image |
 
 ### Step 3: Push
 
@@ -86,9 +73,6 @@ cd build/local
 | `03-push-all.sh` | Push all images to Docker Hub |
 | `03-push-core.sh` | Push core images |
 | `03-push-ui.sh` | Push UI image only |
-| `03-push-demo.sh` | Push demo images |
-| `03-push-ebpf-demo.sh` | Push eBPF demo images |
-| `03-push-ai-demo.sh` | Push AI demo image |
 
 ## Images Reference
 
@@ -102,25 +86,7 @@ cd build/local
 | `tinyolly/opamp-server` | OpAMP configuration server |
 | `tinyolly/otel-supervisor` | OTel Collector supervisor |
 
-### Demo Images
-
-| Image | Description |
-|-------|-------------|
-| `tinyolly/demo-frontend` | Demo frontend app |
-| `tinyolly/demo-backend` | Demo backend app |
-
-### eBPF Demo Images
-
-| Image | Description |
-|-------|-------------|
-| `tinyolly/ebpf-frontend` | eBPF demo frontend |
-| `tinyolly/ebpf-backend` | eBPF demo backend |
-
-### AI Demo Image
-
-| Image | Description |
-|-------|-------------|
-| `tinyolly/ai-agent-demo` | AI agent demo app |
+The old demo apps' images (demo, eBPF demo, AI agent demo) and their build scripts are in `archive/build/`.
 
 ## Build Behavior
 

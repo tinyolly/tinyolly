@@ -115,8 +115,15 @@ services:
     environment:
       - TINYOLLY_URL=http://tinyolly-ui:5002
       - TINYOLLY_MCP_URL=http://tinyolly-mcp:8765/mcp
-      - LLM_URL=${SRE_LLM_URL:-http://host.docker.internal:11434/v1}
-      - MODEL=${SRE_MODEL:-qwen3:8b}
+      # Default model: local Ollama (built and tested with qwen3.8 27B on an RTX 5090 box). Point SRE_LLM_URL at your own Ollama.
+      - LLM_URL=${SRE_LLM_URL:-http://192.168.68.71:11434/v1}
+      - MODEL=${SRE_MODEL:-qwen3.8:27b-mtp-q4_K_M}
+      - LLM_PRESET=${SRE_PRESET:-local}
+      # Optional cloud presets, offered in the console's model picker only when the key is set on the host.
+      - OPENAI_API_KEY
+      - OPENAI_MODEL=${SRE_OPENAI_MODEL:-gpt-5}
+      - ANTHROPIC_API_KEY
+      - ANTHROPIC_MODEL=${SRE_ANTHROPIC_MODEL:-claude-opus-5-5}
 
 volumes:
   otel-supervisor-data:

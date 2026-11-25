@@ -9,7 +9,7 @@ set -e
 # Usage: ./03-push-all.sh [version]
 # Example: ./03-push-all.sh v2.1.0
 #
-# This pushes: core, demo, ebpf-demo, and ai-demo images
+# This pushes: core images (the old demo images are in archive/build)
 # Run ./02-build-all.sh first to build the images
 
 VERSION=${1:-"latest"}
@@ -27,23 +27,8 @@ echo ">>> Pushing Core Images..."
 echo ""
 "$SCRIPT_DIR/03-push-core.sh" "$VERSION"
 
-# Push demo images
-echo ""
-echo ">>> Pushing Demo Images..."
-echo ""
-"$SCRIPT_DIR/03-push-demo.sh" "$VERSION"
 
-# Push eBPF demo images
-echo ""
-echo ">>> Pushing eBPF Demo Images..."
-echo ""
-"$SCRIPT_DIR/03-push-ebpf-demo.sh" "$VERSION"
 
-# Push AI demo image
-echo ""
-echo ">>> Pushing AI Demo Image..."
-echo ""
-"$SCRIPT_DIR/03-push-ai-demo.sh" "$VERSION"
 
 echo ""
 echo "=========================================="
@@ -57,9 +42,4 @@ echo "  - tinyolly/ui:$VERSION"
 echo "  - tinyolly/mcp:$VERSION"
 echo "  - tinyolly/opamp-server:$VERSION"
 echo "  - tinyolly/otel-supervisor:$VERSION"
-echo "  - tinyolly/demo-frontend:$VERSION"
-echo "  - tinyolly/demo-backend:$VERSION"
-echo "  - tinyolly/ebpf-frontend:$VERSION"
-echo "  - tinyolly/ebpf-backend:$VERSION"
-echo "  - tinyolly/ai-agent-demo:$VERSION"
 echo ""

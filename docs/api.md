@@ -90,7 +90,7 @@ Retrieve the last 50 traces:
 [
   {
     "trace_id": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
-    "service_name": "demo-frontend",
+    "service_name": "frontend",
     "name": "GET /products",
     "start_time": 1701234567890000000,
     "duration_ms": 125.4,
@@ -135,7 +135,7 @@ Retrieve a complete trace with all spans for waterfall visualization:
 {
   "trace_id": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
   "name": "GET /products",
-  "service_name": "demo-frontend",
+  "service_name": "frontend",
   "start_time": 1701234567890000000,
   "duration_ms": 125.4,
   "span_count": 5,
@@ -144,7 +144,7 @@ Retrieve a complete trace with all spans for waterfall visualization:
       "span_id": "1234567890abcdef",
       "parent_span_id": null,
       "name": "GET /products",
-      "service_name": "demo-frontend",
+      "service_name": "frontend",
       "start_time": 1701234567890000000,
       "duration_ms": 125.4,
       "status": {"code": 1},
@@ -191,7 +191,7 @@ Correlate logs with a trace using trace_id:
     "span_id": "1234567890abcdef",
     "severity": "INFO",
     "body": "Processing product request",
-    "service_name": "demo-frontend",
+    "service_name": "frontend",
     "attributes": {
       "user_id": "12345"
     }
@@ -214,7 +214,7 @@ List the available metrics (metadata only), then fetch one metric's time series:
     curl "http://localhost:5005/api/metrics/query?name=http.server.duration"
 
     # Filter by resource and metric attributes
-    curl "http://localhost:5005/api/metrics/query?name=http.server.duration&resource.service.name=demo-frontend&attribute.http.method=GET"
+    curl "http://localhost:5005/api/metrics/query?name=http.server.duration&resource.service.name=frontend&attribute.http.method=GET"
     ```
 
 === "Python"
@@ -226,7 +226,7 @@ List the available metrics (metadata only), then fetch one metric's time series:
         print(f"{m['name']} ({m['type']}, {m['unit']}) services={m['services']}")
 
     d = requests.get(f'{base}/api/metrics/query',
-                     params={'name': 'http.server.duration', 'resource.service.name': 'demo-frontend'}).json()
+                     params={'name': 'http.server.duration', 'resource.service.name': 'frontend'}).json()
     for s in d['series']:
         print(s['attributes'], [(p['timestamp'], p['value']) for p in s['datapoints'][-3:]])
     ```
@@ -234,7 +234,7 @@ List the available metrics (metadata only), then fetch one metric's time series:
 **`/api/metrics` response** (one entry per metric):
 ```json
 [{"name": "http.server.duration", "type": "histogram", "unit": "ms", "description": "HTTP request duration",
-  "resource_count": 3, "attribute_combinations": 12, "label_count": 4, "services": ["demo-frontend"]}]
+  "resource_count": 3, "attribute_combinations": 12, "label_count": 4, "services": ["frontend"]}]
 ```
 
 **`/api/metrics/query` response:**
@@ -243,7 +243,7 @@ List the available metrics (metadata only), then fetch one metric's time series:
   "name": "http.server.duration", "type": "histogram", "unit": "ms", "description": "HTTP request duration",
   "series": [
     {
-      "resource": {"service.name": "demo-frontend"},
+      "resource": {"service.name": "frontend"},
       "attributes": {"http.method": "GET", "http.route": "/products"},
       "datapoints": [{"timestamp": 1701234567.89, "value": 42.0, "histogram": null, "summary": null}],
       "exemplars": []
@@ -282,7 +282,7 @@ List all services with Rate, Errors, and Duration metrics:
 ```json
 [
   {
-    "service_name": "demo-frontend",
+    "service_name": "frontend",
     "span_count": 1523,
     "request_rate": 12.5,
     "error_rate": 2.3,
@@ -430,7 +430,7 @@ Get SQLite database usage and cardinality metrics:
 ### Filter Spans by Service
 
 ```bash
-curl "http://localhost:5005/api/spans?service=demo-frontend&limit=100"
+curl "http://localhost:5005/api/spans?service=frontend&limit=100"
 ```
 
 ### Filter Logs by Severity

@@ -23,7 +23,7 @@ Why send telemetry to a cloud platform while you are coding? TinyOlly runs on yo
 
 - **Everything correlated:** service catalog with RED metrics, a service map, trace waterfalls with their logs, a metrics explorer with cardinality analysis. Share a deep link straight to a trace or span.
 - **Local and bounded:** no cloud, no accounts. Pre-built images, SQLite storage with a 30-minute TTL and a 256 MB cap, so it never grows out of control.
-- **Realistic demos built in:** the official OpenTelemetry Demo with failure injection, and an Istio ambient service mesh that TinyOlly draws live, mTLS and denied calls included.
+- **A realistic demo built in:** the official OpenTelemetry Demo with failure injection, and an AI SRE agent that investigates the faults as they happen.
 - **AI-ready:** a read-only MCP server with 28 tools and investigation playbooks. Ask Claude Code, Claude Desktop or Zed what is failing and why, and get charts back.
 - **Collector control:** apply ready-made collector configs (tail sampling, PII redaction, enrichment) from the UI over OpAMP.
 - **No Docker Desktop:** runs on [Colima](https://github.com/abiosoft/colima), with Docker or [kind](https://kind.sigs.k8s.io/) for Kubernetes, on Apple Silicon.
@@ -64,15 +64,14 @@ Run the Docker stack or the kind cluster, not both: they use the same host ports
 
 ## Demos
 
-The fastest way to see TinyOlly work. Each has a guide with screenshots.
+The fastest way to see TinyOlly work: the OpenTelemetry Demo, and an AI SRE agent that watches it.
 
 | Demo | What you see | Run it |
 |---|---|---|
 | **[OpenTelemetry Demo](docs/otel-demo.md)** (Astronomy Shop) | 16 real services with traces, logs and metrics, and feature flags that break things on purpose. Docker and kind. | `cd docker-otel-demo && ./01-start-otel-demo.sh` |
-| **[Istio ambient mesh](https://github.com/stevelerner/istio-ambient-demo)** | A sidecar-less mesh drawn live: mTLS, plaintext and denied calls, waypoint L7, canary, fault injection, an AI that investigates. Its own repo. | [Guide](https://github.com/stevelerner/istio-ambient-demo#readme) |
-| **[eBPF zero-code tracing](docs/ebpf.md)** | Traces captured in the kernel with no tracing SDK in the app. | `cd docker-demo-ebpf && ./01-deploy-ebpf-demo.sh` |
-| **[AI agent with Ollama](docs/ai-agent.md)** | GenAI traces: prompts, responses, token counts and latency per LLM call. | `cd docker-ai-agent-demo && ./01-deploy-ai-demo.sh` |
-| **Flask services** | Two small services with generated traffic. The simplest demo. | `cd docker-demo && ./01-deploy-demo.sh` |
+| **[TinyOlly AI SRE Agent](docs/ai-sre.md)** | An agent on shift over the shop: faults injected on a timer, incidents opened, investigated with TinyOlly's MCP tools, scored against what was injected. Local Ollama model by default. | `cd docker && ./05-start-sre.sh --demo` |
+
+Also available, kept outside the main path: an [Istio ambient mesh demo](https://github.com/stevelerner/istio-ambient-demo) (its own repo) and a core-only stack for your own collector (`misc/`).
 
 ### Break the shop and watch it
 

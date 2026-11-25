@@ -1,0 +1,102 @@
+services:
+  tinyolly-otlp-receiver:
+    build:
+      context: ../../docker
+      dockerfile: dockerfiles/Dockerfile.tinyolly-otlp-receiver
+      args:
+        - APP_DIR=tinyolly-otlp-receiver
+    container_name: tinyolly-otlp-receiver
+    environment:
+      - STORAGE_BACKEND=sqlite
+      - SQLITE_DB_PATH=/data/tinyolly.db
+      - MAX_DB_SIZE_MB=256
+      - DEPLOYMENT_ENV=docker-core
+      - PORT=4343
+    ports:
+      - "4343:4343"
+    volumes:
+      - tinyolly-db-data:/data
+    networks:
+      - tinyolly-core-network
+
+  tinyolly-opamp-server:
+    build:
+      context: ../../docker
+      dockerfile: ../../docker/dockerfiles/Dockerfile.tinyolly-opamp-server
+    container_name: tinyolly-opamp-server
+    ports:
+      - "4320:4320"  # OpAMP WebSocket port
+      - "127.0.0.1:4321:4321"  # HTTP REST API: unauthenticated config push, so localhost only (the UI reaches it over the docker network)
+    volumes:
+      - ../../docker/otelcol-configs/config.yaml:/etc/otel-collector-config.yaml:ro
+    environment:
+      - OPAMP_PORT=4320
+      - HTTP_PORT=4321
+      - COLLECTOR_CONFIG_PATH=/etc/otel-collector-config.yaml
+    networks:
+      - tinyolly-core-network
+
+  # No otel-collector service - use external collector (e.g., Elastic EDOT)
+  # Configure your external collector to send to: localhost:4343 (gRPC)
+  # Optional: Configure your external collector to connect to OpAMP server at: ws://localhost:4320/v1/opamp
+
+  tinyolly-ui:
+    build:
+      context: ../../docker
+      dockerfile: dockerfiles/Dockerfile.tinyolly-ui
+      args:
+        - APP_DIR=tinyolly-ui
+    container_name: tinyolly-ui
+    ports:
+      - "5005:5002"  # Exposed on 5005 to avoid conflict if running alongside full demo
+    depends_on:
+      tinyolly-otlp-receiver:
+        condition: service_started
+      tinyolly-opamp-server:
+        condition: service_started
+    volumes:
+      - ../../docker/otelcol-configs/templates:/app/otelcol-templates:ro
+      - ../../docker/otelcol-configs/config.yaml:/app/otelcol-config.yaml:ro
+      - tinyolly-db-data:/data
+    environment:
+      - STORAGE_BACKEND=sqlite
+      - SQLITE_DB_PATH=/data/tinyolly.db
+      - MAX_DB_SIZE_MB=256
+      - DEPLOYMENT_ENV=docker-core
+      - OPAMP_SERVER_URL=http://tinyolly-opamp-server:4321
+      - OTELCOL_DEFAULT_CONFIG=/app/otelcol-config.yaml
+      - OTEL_SERVICE_NAME=tinyolly-ui
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tinyolly-otlp-receiver:4343
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://tinyolly-otlp-receiver:4343
+      - OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://tinyolly-otlp-receiver:4343
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://tinyolly-otlp-receiver:4343
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+    networks:
+      - tinyolly-core-network
+
+  # MCP server (read-only) for AI agents: http://localhost:8765/mcp
+  #   claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp
+  tinyolly-mcp:
+    build:
+      context: ..
+      dockerfile: docker/dockerfiles/Dockerfile.tinyolly-mcp
+    container_name: tinyolly-mcp
+    ports:
+      - "127.0.0.1:8765:8765"
+    depends_on:
+      tinyolly-ui:
+        condition: service_started
+    environment:
+      - TINYOLLY_URL=http://tinyolly-ui:5002
+    networks:
+      - tinyolly-core-network
+
+networks:
+  tinyolly-core-network:
+    name: tinyolly-core-network
+
+volumes:
+  tinyolly-db-data:
+    name: tinyolly-db-data
+

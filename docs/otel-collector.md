@@ -79,7 +79,7 @@ kubectl rollout restart deployment/otel-collector
 
 You can use your own OpenTelemetry Collector instance instead of the one bundled with TinyOlly. This is useful if you have an existing collector setup or want to test specific collector configurations.
 
-To do this, deploy the **Core-Only** version of TinyOlly (see [Docker Deployment](docker.md#6-tinyolly-core-only-deployment-use-your-own-docker-opentelemetry-collector) or [Kubernetes Deployment](kubernetes.md#4-tinyolly-core-only-deployment-use-your-own-kubernetes-opentelemetry-collector)).
+To do this, deploy the **Core-Only** version of TinyOlly (see [Docker Deployment](docker.md#4-tinyolly-core-only-deployment-use-your-own-docker-opentelemetry-collector) or [Kubernetes Deployment](kubernetes.md#3-tinyolly-core-only-deployment-use-your-own-kubernetes-opentelemetry-collector)).
 
 Then, configure your collector's OTLP exporter to send data to the TinyOlly Receiver:
 

@@ -24,6 +24,14 @@ class Backend:
         """(text for the prompt, top entity, top trace id). Raw facts the model cites from."""
         raise NotImplementedError
 
+    def topology(self) -> set[tuple[str, str]]:
+        """(caller, callee) pairs, used to group related incidents. Empty = no grouping across entities."""
+        return set()
+
+    def links(self) -> dict[str, str]:
+        """URL templates with {id}, for the console: "trace" and "service"."""
+        return {}
+
     duties: list[str] = []   # routine reviews to rotate through (names in core.ASKS)
 
     def review_evidence(self, duty: str, ctx: str = "") -> str:
@@ -32,6 +40,9 @@ class Backend:
 
     def changes(self, minutes: float = 15) -> list[dict]:
         return []
+
+    def mark_change(self, title: str, attrs: dict) -> None:
+        """Record a real-world change (flag flip, deploy) as a change marker, the way a CD or flag system would. Best effort."""
 
     def publish(self, kind: str, title: str, attrs: dict) -> None:
         """Write a finding back where humans look. Best effort."""

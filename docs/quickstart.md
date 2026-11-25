@@ -1,6 +1,6 @@
 ---
 title: "Quick Start"
-description: "Run TinyOlly core and the demo apps with Docker on Colima in about 5 minutes, then tour the UI"
+description: "Run TinyOlly core and the OpenTelemetry Demo with Docker on Colima, then tour the UI"
 ---
 
 # Quick Start
@@ -12,7 +12,7 @@ Get TinyOlly running in under 5 minutes!
 - **TinyOlly UI** at `http://localhost:5005`
 - **OpenTelemetry Collector** listening on ports 4317 (gRPC) and 4318 (HTTP)
 - **OpAMP Server** for remote collector configuration management
-- **Demo microservices** generating automatic telemetry
+- **The OpenTelemetry Demo** (Astronomy Shop) sending real traces, logs and metrics
 
 ---
 
@@ -61,20 +61,19 @@ This pulls pre-built images from Docker Hub and starts:
 
 ---
 
-## Step 3: Deploy Demo Apps (Optional but Recommended)
-
-In a new terminal:
+## Step 3: Start the OpenTelemetry Demo
 
 ```bash
-cd docker-demo
-./01-deploy-demo.sh
+cd ../docker-otel-demo
+./01-start-otel-demo.sh
 ```
 
-This pulls demo images from Docker Hub and deploys two Flask microservices that automatically generate traffic.
+This clones the upstream [OpenTelemetry Demo](otel-demo.md) at a pinned version and starts a 16-service subset of the Astronomy Shop
+with a small load generator, all sending OTLP to TinyOlly. The first run pulls about 16 images.
 
-**Wait 30 seconds** for telemetry to appear!
+**Wait a minute or two** for the services to appear. The shop itself is at `http://localhost:8080`.
 
-**For local development:** Use `./01-deploy-demo-local.sh` to build images locally.
+To watch an AI SRE agent investigate faults in the shop as they happen, see the [TinyOlly AI SRE Agent](ai-sre.md).
 
 ---
 
@@ -85,8 +84,8 @@ Open your browser to: **`http://localhost:5005`**
 You should see:
 
 <div align="center">
-  <a href="../images/traces.png"><img src="../images/traces.png" alt="TinyOlly Traces View" width="700"></a>
-  <p><em>Trace waterfall with correlated logs and span timing</em></p>
+  <a href="../images/full/ui-traces.png"><img src="../images/ui-traces.png" alt="TinyOlly Traces View" width="700"></a>
+  <p><em>Traces from the OpenTelemetry Demo</em></p>
 </div>
 
 ---
@@ -96,53 +95,31 @@ You should see:
 ### Traces Tab
 View distributed traces across microservices with timing waterfall.
 
-<div align="center">
-  <a href="../images/spans.png"><img src="../images/spans.png" alt="Span Waterfall" width="700"></a>
-  <p><em>Span waterfall showing request timing breakdown with correlated logs</em></p>
-</div>
-
-Click on a span to view detailed JSON data:
-
-<div align="center">
-  <a href="../images/traces1.png"><img src="../images/traces1.png" alt="Span Details" width="700"></a>
-  <p><em>Span detail view with full OpenTelemetry attributes</em></p>
-</div>
+Click a trace for its span waterfall with correlated logs; click a span for its full JSON.
 
 ### Logs Tab
 Browse logs with trace/span correlation. Filter by severity (Error, Warn, Info, Debug).
 
 <div align="center">
-  <a href="../images/logs.png"><img src="../images/logs.png" alt="Logs View" width="700"></a>
-  <p><em>Real-time logs with trace and span correlation</em></p>
+  <a href="../images/full/ui-logs.png"><img src="../images/ui-logs.png" alt="Logs View" width="700"></a>
+  <p><em>Logs with trace and span correlation</em></p>
 </div>
 
-Click on a log entry to view full details:
-
-<div align="center">
-  <a href="../images/logs2.png"><img src="../images/logs2.png" alt="Log Details" width="700"></a>
-  <p><em>Log detail view with full attributes and resource info</em></p>
-</div>
-
-Filter to show only errors:
-
-<div align="center">
-  <a href="../images/logs3.png"><img src="../images/logs3.png" alt="Error Logs" width="700"></a>
-  <p><em>Filtered error logs with trace correlation</em></p>
-</div>
+Click a log entry for its full attributes; filter to errors to find failures fast.
 
 ### Metrics Tab
 Visualize metrics with automatic charting.
 
 <div align="center">
-  <a href="../images/metrics.png"><img src="../images/metrics.png" alt="Metrics View" width="700"></a>
-  <p><em>Time-series metrics visualization with rate charts</em></p>
+  <a href="../images/full/ui-metrics.png"><img src="../images/ui-metrics.png" alt="Metrics View" width="700"></a>
+  <p><em>Metrics explorer with charts and cardinality</em></p>
 </div>
 
 ### Service Catalog
 View all services with RED metrics (Rate, Errors, Duration). Click a service name for a menu that jumps to its map node, traces, spans, logs or metrics.
 
 <div align="center">
-  <a href="../images/servicecatalog.png"><img src="../images/servicecatalog.png" alt="Service Catalog" width="700"></a>
+  <a href="../images/full/ui-otel-catalog.png"><img src="../images/ui-otel-catalog.png" alt="Service Catalog" width="700"></a>
   <p><em>Service catalog with RED metrics for all services</em></p>
 </div>
 
@@ -150,7 +127,7 @@ View all services with RED metrics (Rate, Errors, Duration). Click a service nam
 Visualize service dependencies with an interactive graph. Shape shows the service type and color shows health (see the legend above the map); click a node for latency and a link to the Service Catalog, and use the checkbox to hide TinyOlly's own services.
 
 <div align="center">
-  <a href="../images/servicemap.png"><img src="../images/servicemap.png" alt="Service Map" width="700"></a>
+  <a href="../images/full/ui-otel-service-map.png"><img src="../images/ui-otel-service-map.png" alt="Service Map" width="700"></a>
   <p><em>Interactive service dependency map with latency information</em></p>
 </div>
 
@@ -194,10 +171,10 @@ TinyOlly will automatically capture and display your telemetry!
 
 ## Cleanup
 
-Stop demo apps (keeps TinyOlly running):
+Stop the OpenTelemetry Demo (keeps TinyOlly running):
 ```bash
-cd docker-demo
-./02-cleanup-demo.sh
+cd docker-otel-demo
+./02-stop-otel-demo.sh
 ```
 
 Stop everything:
@@ -220,36 +197,30 @@ cd docker
 ## Troubleshooting
 
 ### UI shows "No traces/logs/metrics"
-- Wait 30 seconds after starting demo apps
+- Wait a minute or two after starting the OpenTelemetry Demo
 - Check containers are running in the TinyOlly VM (plain `docker ps` shows whichever context is active, possibly another Colima VM):
 
     ```bash
     docker --context colima-tinyolly ps
     ```
 
-- Check demo app logs:
+- Check the demo's containers and the load generator:
 
     ```bash
-    docker compose -f docker-demo/docker-compose-demo.yml logs
+    docker --context colima-tinyolly logs load-generator --tail 20
     ```
 
 ### Port conflicts
 - TinyOlly uses ports 4317, 4318, 4320, 4321, 4343, 5005, 8765, 19291
 - Stop conflicting services or modify ports in `docker-compose-tinyolly-core.yml`
 
-### Demo apps not generating traffic
-- Restart demo:
+### The shop is not generating traffic
+- Restart the demo:
 
     ```bash
-    cd docker-demo
-    ./02-cleanup-demo.sh
-    ./01-deploy-demo.sh
-    ```
-
-- Check logs:
-
-    ```bash
-    docker compose -f docker-demo/docker-compose-demo.yml logs demo-frontend
+    cd docker-otel-demo
+    ./02-stop-otel-demo.sh
+    ./01-start-otel-demo.sh
     ```
 
 For more help, [open an issue on GitHub](https://github.com/tinyolly/tinyolly/issues).

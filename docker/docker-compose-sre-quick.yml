@@ -1,0 +1,24 @@
+# Quick profile (default for ./05-start-sre.sh --demo): problems show and clear in seconds, a scenario takes ~2 min.
+#  - stronger fault variants and 75-90 s faults, 30 s cooldowns, 20-30 s gaps (scenario "quick" blocks, DEMO_PROFILE=quick)
+#  - 5 s polls, ~30 s baseline; rate, p95 and error % from the last 30 s of spans (DETECT_RECENT_STATS), not long averages
+#  - a clean cutoff when each fault ends (no waiting for errors to age out)
+#  - change-risk notes off, so the model is free for investigations (it still sees change markers via what_changed)
+# The start script also raises the shop's load to DEMO_LOAD_USERS (20). ./05-start-sre.sh --demo --realistic skips all this.
+services:
+  tinyolly-sre:
+    environment:
+      - DEMO_PROFILE=quick
+      - DEMO_SPEED=1
+      - DEMO_GAP_SECONDS=20,30
+      - DEMO_FIRST_GAP_SECONDS=60
+      - DETECT_SECONDS=5
+      - WARMUP_SECONDS=20
+      - BASELINE_POLLS=6
+      - DETECT_CONFIRM_POLLS=2
+      - INCIDENT_SETTLE_SECONDS=10
+      - INCIDENT_CLEAR_POLLS=3
+      - DETECT_RECENT_SECONDS=30
+      - DETECT_WINDOW_SECONDS=60
+      - DETECT_RECENT_STATS=1
+      - DETECT_HOLD_MAX_POLLS=36
+      - CHANGE_NOTES=0

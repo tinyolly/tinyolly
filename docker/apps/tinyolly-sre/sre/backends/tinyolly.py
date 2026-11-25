@@ -1,15 +1,19 @@
 """TinyOlly backend: reads TinyOlly's REST API, tools come from TinyOlly's MCP server,
 findings are written back as change-marker events (kind=ai-finding / ai-review) via POST /api/events."""
 from __future__ import annotations
-import os, time, collections
+import os, time, collections, fnmatch, json
 import httpx
 from ..backend import Backend, Signal
 
 E = os.getenv
 URL = E("TINYOLLY_URL", "http://tinyolly-ui:5002").rstrip("/")
+PUBLIC_URL = E("TINYOLLY_PUBLIC_URL", "http://localhost:5005").rstrip("/")   # the TinyOlly UI as the viewer's browser sees it
 ERRORS_MIN = int(E("DETECT_ERRORS_MIN", "10"))            # error spans of one service in the window
 WINDOW_S = int(E("DETECT_WINDOW_SECONDS", "120"))
-IGNORE = {s for s in E("DETECT_IGNORE", "load-generator").split(",") if s}
+IGNORE = [s for s in E("DETECT_IGNORE", "load-generator,tinyolly-*").split(",") if s]   # names or globs
+RECENT_S = int(E("DETECT_RECENT_SECONDS", "120"))         # error rate is measured over spans this recent, not the catalog's long average
+RECENT_ERRORS_MIN = int(E("DETECT_RECENT_ERRORS_MIN", "3"))  # fewer error spans than this in that window count as 0%
+RECENT_MIN_SPANS = int(E("DETECT_RECENT_MIN_SPANS", "10"))   # below this many spans in the window, widen it to 3x (low-traffic services)
 LOG_ERRORS_MIN = int(E("DETECT_LOG_ERRORS_MIN", "10"))    # error logs of one service in the window
 ERR_PCT_MIN = float(E("DETECT_ERROR_PCT_MIN", "5"))       # service error rate (%) that counts, if also 3x its learned normal
 LATENCY_FACTOR = float(E("DETECT_LATENCY_FACTOR", "3"))   # p95 this many times its learned normal (and +100 ms)
@@ -17,12 +21,21 @@ TRAFFIC_DROP = float(E("DETECT_TRAFFIC_DROP", "0.2"))     # rate below this frac
 BASELINE_POLLS = int(E("BASELINE_POLLS", "6"))            # polls before a service's learned normal is trusted
 CONFIRM_POLLS = int(E("DETECT_CONFIRM_POLLS", "2"))       # consecutive polls a shift must hold before it is a signal
 VANISHED_POLLS = int(E("DETECT_VANISHED_POLLS", "3"))
+HOLD_MAX_POLLS = int(E("DETECT_HOLD_MAX_POLLS", "20"))
+RECENT_STATS = E("DETECT_RECENT_STATS", "0") == "1"           # rate and p95 from recent spans too (not the catalog's long average): faster detect and clear      # a traffic/latency shift held this long becomes the new normal (errors never do)
 DB_PCT = float(E("DETECT_DB_PCT", "90"))
-DETECTORS = set(E("DETECTORS", "errors,error-rate,latency,traffic,vanished,logs,mesh,platform").split(","))
+DETECTORS = set(E("DETECTORS", "errors,error-rate,op-errors,latency,traffic,vanished,logs,mesh,platform").split(","))
+OP_MIN_SPANS = int(E("DETECT_OP_MIN_SPANS", "8"))         # op-errors: one operation (service + span name) failing often while the service as a whole looks fine
+
+
+def _svc(sp: dict) -> str:
+    return sp.get("service_name") or "unknown"
 
 
 def _is_error(sp: dict) -> bool:
     if (sp.get("status") or {}).get("code") in (2, "STATUS_CODE_ERROR", "ERROR"):
+        return True
+    if str(sp.get("status_code") or "").isdigit() and int(sp["status_code"]) >= 500:
         return True
     for a in sp.get("attributes") or []:
         if a.get("key") in ("http.status_code", "http.response.status_code"):
@@ -42,15 +55,52 @@ def _secs(ts) -> float:
     return ts
 
 
+def _ignored(name: str) -> bool:
+    return any(fnmatch.fnmatch(name, p) for p in IGNORE)
+
+
 class Learned:
     """Per-service learned normal (EMA of rate, p95, error rate) with confirmation counters."""
-    def __init__(self): self.n = 0; self.rate = self.p95 = self.err = 0.0; self.hits = collections.Counter(); self.missing = 0
+    def __init__(self): self.n = 0; self.rate = self.p95 = self.err = 0.0; self.hits = collections.Counter(); self.missing = 0; self.held = 0
     def update(self, c, hold: bool):
         a = 0.2 if self.n < BASELINE_POLLS else 0.05
-        if hold and self.n >= BASELINE_POLLS: return          # do not learn a problem as normal
+        keys = ("rate", "p95", "err")
+        if hold and self.n >= BASELINE_POLLS:                  # do not learn a problem as normal ...
+            self.held += 1
+            if self.held < HOLD_MAX_POLLS: return
+            # ... unless a traffic/latency level has held for HOLD_MAX_POLLS: it is the new normal (a baseline learned
+            # during a boot burst would otherwise keep an incident open forever). Error rate is never re-learned.
+            keys = ("rate", "p95"); a = 0.5
+        else: self.held = 0
         for k, v in (("rate", c.get("rate")), ("p95", c.get("duration_p95")), ("err", c.get("error_rate"))):
-            v = float(v or 0); setattr(self, k, v if self.n == 0 else getattr(self, k) * (1 - a) + v * a)
+            if k not in keys: continue
+            v = float(v or 0); w = 0.4 if k == "err" and v < self.err else a   # errors seen at startup must not stay "normal"
+            setattr(self, k, v if self.n == 0 else getattr(self, k) * (1 - w) + v * w)
         self.n += 1
+
+
+def _key(path, params):
+    return path + "?" + "&".join(f"{k}={v}" for k, v in sorted(params.items()) if v is not None)
+
+
+class Recorder:
+    """SRE_RECORD=<file.jsonl>: one line per detect poll with the API responses it used (spans and logs as deltas),
+    for replaying detector and prompt changes in seconds (python -m sre.replay)."""
+    def __init__(self, path):
+        self.path, self.cur, self.seen = path, None, {"spans": set(), "logs": set()}
+    def put(self, key, data):
+        if self.cur is not None and key not in self.cur: self.cur[key] = data
+    def flush(self, meta):
+        if self.cur is None: return
+        out = {}
+        for k, v in self.cur.items():
+            kind = "spans" if k.startswith("/api/spans") else "logs" if k.startswith("/api/logs") else None
+            if kind and isinstance(v, list):
+                ids = [x.get("span_id") if kind == "spans" else x.get("log_id") or f"{x.get('timestamp')}{x.get('service_name')}{x.get('message')}" for x in v]
+                out[k] = {"delta": [x for x, i in zip(v, ids) if i not in self.seen[kind]]}; self.seen[kind].update(ids)
+            else: out[k] = v
+        with open(self.path, "a") as fh: fh.write(json.dumps({"t": time.time(), **meta, "r": out}) + "\n")
+        self.cur = None
 
 
 class TinyOllyBackend(Backend):
@@ -62,45 +112,128 @@ class TinyOllyBackend(Backend):
         self.c = httpx.Client(base_url=URL, timeout=20)
         self.learned: dict[str, Learned] = collections.defaultdict(Learned)
         self.mesh0: dict | None = None; self.dropped0: int | None = None
+        self._topo: tuple[float, set] = (0.0, set())
+        self.rec = Recorder(E("SRE_RECORD")) if E("SRE_RECORD") else None
+        self.fence_t = 0.0                                     # telemetry before this time is ignored (set when an injected fault ends)
+        self.op_err: dict[tuple, float] = {}; self.op_hits: collections.Counter = collections.Counter(); self.op_n: collections.Counter = collections.Counter()
+
+    def fence(self, t: float | None = None):
+        """Clean cutoff: forget telemetry before `t`, so the next fault is judged without waiting for the last one to age out."""
+        self.fence_t = t or time.time()
+        for L in self.learned.values(): L.hits.clear(); L.held = 0
+        self.op_hits.clear()
+
+    def links(self):
+        u = PUBLIC_URL
+        return {"trace": u + "/?tab=traces&traceId={id}", "service": u + "/?tab=catalog", "catalog": u + "/?tab=catalog", "map": u + "/?tab=map",
+                "logs": u + "/?tab=logs&search={id}", "spans": u + "/?tab=spans&search={id}", "traces": u + "/?tab=traces&search={id}",
+                "metrics": u + "/?tab=metrics&search={id}"}
+
+    def topology(self):
+        """(caller, callee) pairs from the service map, cached for 30 s."""
+        at, edges = self._topo
+        if time.time() - at < 30: return edges
+        m = self._safe("/api/service-map", {}, limit=1000)
+        edges = {(e.get("source"), e.get("target")) for e in m.get("edges") or [] if not _ignored(str(e.get("source")))} or edges
+        self._topo = (time.time(), edges)
+        return edges
 
     def _get(self, path, **params):
         r = self.c.get(path, params={k: v for k, v in params.items() if v is not None})
         r.raise_for_status()
-        return r.json()
+        d = r.json()
+        if self.rec: self.rec.put(_key(path, params), d)
+        return d
 
     def _safe(self, path, default, **params):
         try: return self._get(path, **params) or default
         except Exception: return default
 
+    def _spans(self, seconds: float) -> list[dict]:
+        """Spans from the last `seconds` (the API's fields: service_name, trace_id, start_time, name, status)."""
+        cut = max(time.time() - seconds, self.fence_t)
+        return [s for s in self._safe("/api/spans", [], limit=5000) if _secs(s.get("start_time")) >= cut]
+
     def _recent_errors(self, seconds: float) -> list[dict]:
-        cut = time.time() - seconds
-        return [s for s in self._safe("/api/spans", [], limit=5000) if _secs(s.get("startTimeUnixNano")) >= cut and _is_error(s)]
+        return [s for s in self._spans(seconds) if _is_error(s)]
+
+    def _recent_stats(self) -> dict[str, dict]:
+        """Per service over the last RECENT_S: error %, and (for DETECT_RECENT_STATS) rate and p95. A low-traffic service
+        (< RECENT_MIN_SPANS spans there) is measured over 3x that, so a partial fault on a service called a few times a
+        minute still clears the RECENT_ERRORS_MIN floor. `window_s` is the time really covered (a fence shortens it)."""
+        now = time.time(); cut = max(now - RECENT_S, self.fence_t); lcut = max(now - RECENT_S * 3, self.fence_t)
+        short, long_ = collections.defaultdict(list), collections.defaultdict(list)
+        for s in self._spans(RECENT_S * 3):
+            row = (_is_error(s), float(s.get("duration_ms") or 0))
+            long_[_svc(s)].append(row)
+            if _secs(s.get("start_time")) >= cut: short[_svc(s)].append(row)
+        out = {}
+        for k, rows_l in long_.items():
+            rows, win = (short[k], now - cut) if len(short[k]) >= RECENT_MIN_SPANS else (rows_l, now - lcut)
+            bad = sum(e for e, _ in rows); d = sorted(x for _, x in rows)
+            out[k] = {"error_rate": round(bad * 100 / len(rows), 2) if rows and bad >= RECENT_ERRORS_MIN else 0.0,
+                      "rate": round(len(rows) / win, 3) if win > 0 else 0.0, "duration_p95": d[int(0.95 * (len(d) - 1))] if d else 0.0, "window_s": win}
+        return out
+
+    def _recent_error_pct(self) -> dict[str, float]:
+        return {k: v["error_rate"] for k, v in self._recent_stats().items()}
 
     # ---- detectors (no model) ----
     def detect(self) -> list[Signal]:
+        if self.rec:                                   # also keep what investigations read, so --model replays see the same evidence
+            self.rec.cur = {}; self._safe("/api/events", [], minutes=15, limit=20); self._safe("/api/service-map", {}, limit=1000)
         out: list[Signal] = []
         D = DETECTORS
         if "errors" in D:
-            by = collections.Counter(s.get("serviceName") or "unknown" for s in self._recent_errors(WINDOW_S))
-            out += [Signal("errors", svc, f"{svc}: {n} failing spans in the last {max(WINDOW_S // 60, 1)} min") for svc, n in by.most_common() if n >= ERRORS_MIN and svc not in IGNORE]
+            by = collections.Counter(_svc(s) for s in self._recent_errors(WINDOW_S))
+            out += [Signal("errors", svc, f"{svc}: {n} failing spans in the last {max(WINDOW_S // 60, 1)} min") for svc, n in by.most_common() if n >= ERRORS_MIN and not _ignored(svc)]
         cat = {c["name"]: c for c in self._safe("/api/service-catalog", [])}
-        if cat: out += self._catalog_signals(cat, D)
+        if cat: out += self._catalog_signals(cat, D, self._recent_stats())
+        if "op-errors" in D: out += self._op_signals()
         if "logs" in D:
-            cut = time.time() - WINDOW_S
+            cut = max(time.time() - WINDOW_S, self.fence_t)
             by = collections.Counter(l.get("service_name") or "unknown" for l in self._safe("/api/logs", [], limit=1000)
                                      if (l.get("severity") or "").lower() in ("error", "fatal", "critical") and _secs(l.get("timestamp")) >= cut)
-            out += [Signal("logs", svc, f"{svc}: {n} error logs in the last {max(WINDOW_S // 60, 1)} min") for svc, n in by.most_common() if n >= LOG_ERRORS_MIN and svc not in IGNORE]
+            out += [Signal("logs", svc, f"{svc}: {n} error logs in the last {max(WINDOW_S // 60, 1)} min") for svc, n in by.most_common() if n >= LOG_ERRORS_MIN and not _ignored(svc)]
         if "mesh" in D: out += self._mesh_signals()
         if "platform" in D: out += self._platform_signals()
         return out
 
-    def _catalog_signals(self, cat, D):
+    def _op_signals(self) -> list[Signal]:
+        """Error % per operation (service + span name) over the long recent window, against its own learned normal.
+        Catches a failing dependency call (e.g. frontend -> GetAds at 14%) hidden inside a busy service's 0.5% overall."""
+        tot, bad = collections.Counter(), collections.Counter()
+        for s in self._spans(RECENT_S * 3):
+            if _ignored(_svc(s)): continue
+            k = (_svc(s), s.get("name") or "?"); tot[k] += 1; bad[k] += _is_error(s)
+        out, by_svc = [], {}
+        for k, n in tot.items():
+            pct = bad[k] * 100 / n if n >= OP_MIN_SPANS and bad[k] >= RECENT_ERRORS_MIN else 0.0
+            norm = self.op_err.get(k); ready = self.op_n[k] >= BASELINE_POLLS
+            hit = ready and pct >= ERR_PCT_MIN and pct > 3 * min(max(norm or 0, 0.5), ERR_PCT_MIN)
+            self.op_hits[k] = self.op_hits[k] + 1 if hit else 0
+            if not hit: self.op_err[k] = pct if norm is None else norm * 0.9 + pct * 0.1; self.op_n[k] += 1   # never learn a failure as normal
+            if self.op_hits[k] >= CONFIRM_POLLS and (k[0] not in by_svc or pct > by_svc[k[0]][0]): by_svc[k[0]] = (pct, k[1], bad[k], n)
+        for svc, (pct, op, b, n) in by_svc.items():
+            out.append(Signal("op-errors", svc, f"{svc}: {op} failing {pct:.0f}% ({b} of {n} calls, normal {self.op_err.get((svc, op), 0):.1f}%)"))
+        return out
+
+    def _catalog_signals(self, cat, D, recent=None):
         out = []
         for name, c in cat.items():
-            if name in IGNORE: continue
+            if _ignored(name): continue
             L = self.learned[name]; L.missing = 0; ready = L.n >= BASELINE_POLLS
+            if recent is not None:
+                r = recent.get(name, 0.0)
+                r = r if isinstance(r, dict) else {"error_rate": r}            # tests pass plain error %s
+                c = {**c, "error_rate": r.get("error_rate", 0.0)}
+                if RECENT_STATS and "rate" in r:
+                    if r["window_s"] >= RECENT_S / 2: c.update(rate=r["rate"], duration_p95=r["duration_p95"])
+                    else: c.update(rate=L.rate, duration_p95=L.p95)        # just after a fence: too little data, stay neutral
+                elif RECENT_STATS:                                             # no spans in the window: silent, unless a fence just cleared it
+                    c.update(rate=L.rate if time.time() - self.fence_t < RECENT_S / 2 else 0.0, duration_p95=L.p95)
             checks = {
-                "error-rate": ready and float(c.get("error_rate") or 0) >= ERR_PCT_MIN and float(c.get("error_rate") or 0) > 3 * max(L.err, 0.5),
+                "error-rate": ready and float(c.get("error_rate") or 0) >= ERR_PCT_MIN and float(c.get("error_rate") or 0) > 3 * min(max(L.err, 0.5), ERR_PCT_MIN),
                 "latency": ready and float(c.get("duration_p95") or 0) > LATENCY_FACTOR * max(L.p95, 1) and float(c.get("duration_p95") or 0) - L.p95 > 100,
                 "traffic": ready and L.rate >= 0.5 and float(c.get("rate") or 0) < TRAFFIC_DROP * L.rate,
             }
@@ -112,7 +245,7 @@ class TinyOllyBackend(Backend):
                 if L.hits[k] >= CONFIRM_POLLS: out.append(Signal(k, name, texts[k]))
             L.update(c, hold=any(L.hits[k] for k in checks))
         for name, L in self.learned.items():
-            if name in cat or name in IGNORE or L.n < BASELINE_POLLS: continue
+            if name in cat or _ignored(name) or L.n < BASELINE_POLLS: continue
             L.missing += 1
             if "vanished" in D and L.missing >= VANISHED_POLLS and L.rate >= 0.1:
                 out.append(Signal("vanished", name, f"{name}: no longer reporting (normal {L.rate:.1f} req/s)"))
@@ -152,16 +285,17 @@ class TinyOllyBackend(Backend):
         parts, top_svc, top_tid = [], entity, ""
         groups = collections.defaultdict(lambda: [0, ""])
         for s in self._recent_errors(win):
-            key = (s.get("serviceName") or "?", (s.get("name") or "?")[:80], ((s.get("status") or {}).get("message") or "")[:100])
-            groups[key][0] += 1; groups[key][1] = groups[key][1] or s.get("traceId", "")
+            key = (_svc(s), (s.get("name") or "?")[:80], ((s.get("status") or {}).get("message") or "")[:100])
+            groups[key][0] += 1; groups[key][1] = groups[key][1] or s.get("trace_id", "")
         ranked = sorted(groups.items(), key=lambda kv: (kv[0][0] != entity, -kv[1][0]))[:5]
         parts.append(f"ERROR SPANS (last {win // 60} min; service | span | status message | count | example trace_id):")
         parts += [f"  {k[0]} | {k[1]} | {k[2] or '-'} | {n} | {tid}" for k, (n, tid) in ranked] or ["  none"]
         if ranked: top_svc, top_tid = ranked[0][0][0], ranked[0][1][1]
         cat = {c["name"]: c for c in self._safe("/api/service-catalog", [])}
+        recent = self._recent_error_pct()
         for svc in dict.fromkeys([top_svc, entity]):
             c = cat.get(svc); L = self.learned.get(svc)
-            if c: parts.append(f"SERVICE {svc}: rate {c.get('rate')}/s, error rate {c.get('error_rate')}%, p95 {c.get('duration_p95')} ms" +
+            if c: parts.append(f"SERVICE {svc}: rate {c.get('rate')}/s, error rate {recent.get(svc, 0.0)}% (last {RECENT_S} s), p95 {c.get('duration_p95')} ms" +
                                (f" | learned normal: rate {L.rate:.1f}/s, error {L.err:.1f}%, p95 {L.p95:.0f} ms" if L and L.n >= BASELINE_POLLS else ""))
         if not recovery:
             logs = [l for l in self._safe("/api/logs", [], limit=500) if (l.get("severity") or "").lower() in ("error", "fatal", "critical") and (not top_svc or l.get("service_name") == top_svc)][:4]
@@ -173,8 +307,9 @@ class TinyOllyBackend(Backend):
     def review_evidence(self, duty, ctx=""):
         cat = self._safe("/api/service-catalog", [])
         if duty in ("shift-note", "change-risk", "post-change"):
-            rows = sorted(cat, key=lambda c: -(float(c.get("error_rate") or 0)))[:12]
-            err = collections.Counter(s.get("serviceName") or "?" for s in self._recent_errors(900))
+            recent = self._recent_error_pct()
+            rows = sorted(({**c, "error_rate": recent.get(c["name"], 0.0)} for c in cat), key=lambda c: -c["error_rate"])[:12]
+            err = collections.Counter(_svc(s) for s in self._recent_errors(900))
             parts = ["SERVICES (name | rate/s | error % | p95 ms | learned normal rate/err/p95):"]
             for c in rows:
                 L = self.learned.get(c["name"]); n = f"{L.rate:.1f}/{L.err:.1f}/{L.p95:.0f}" if L and L.n >= BASELINE_POLLS else "-"
@@ -198,6 +333,10 @@ class TinyOllyBackend(Backend):
         if duty == "platform-health":
             return "TINYOLLY STATS: " + str(self._safe("/admin/stats", {}))[:2000]
         return ""
+
+    def mark_change(self, title, attrs):
+        try: self.c.post("/api/events", json={"title": title[:200], "source": "flagd", "kind": "flag", "attributes": attrs}).raise_for_status()
+        except Exception: pass
 
     def publish(self, kind, title, attrs):
         try: self.c.post("/api/events", json={"title": title[:200], "source": "tinyolly-sre", "kind": kind, "attributes": {k: v for k, v in attrs.items() if k != "kind"}}).raise_for_status()

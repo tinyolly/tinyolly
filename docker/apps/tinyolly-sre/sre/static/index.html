@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TinyOlly AI SRE Agent</title>
+<link rel="stylesheet" href="console.css">
+<script>
+  // before first paint, same preference key and default as the TinyOlly UI
+  (function () { var t; try { t = localStorage.getItem('tinyolly-theme'); } catch (e) {}
+    if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t); })();
+</script>
+</head>
+<body>
+<header>
+  <h1>TinyOlly <span>AI SRE Agent</span></h1>
+  <div class="meta">
+    <span class="tag" id="env"></span>
+    <select class="tag" id="model" title="Model the agent uses (local by default)" aria-label="Model"></select>
+    <span class="tag" id="counts"></span>
+    <span class="tag" id="demo" hidden></span>
+    <button id="reveal" type="button" hidden title="Presenter: score each card against the fault that was injected">Reveal scores</button>
+    <span class="tag" id="conn">connecting</span>
+    <button id="theme" type="button"></button>
+  </div>
+</header>
+<main>
+  <section class="panel" id="stream-panel" aria-label="Live investigation stream">
+    <div class="panel-head"><h2>Live investigation stream</h2><button id="unfilter" type="button" hidden></button></div>
+    <div class="scroll" id="stream"><p class="empty">Watching telemetry. Activity appears here.</p></div>
+    <button id="jump" type="button" hidden>Jump to live</button>
+  </section>
+  <aside class="panel" id="inv-panel" aria-label="Investigations">
+    <div class="panel-head"><h2>Investigations</h2>
+      <div class="filters" id="filters"><button type="button" data-f="all" class="on">All</button><button type="button" data-f="open">Open</button><button type="button" data-f="done">Resolved</button></div>
+    </div>
+    <div class="scroll" id="cards"></div>
+  </aside>
+</main>
+<footer>
+  <div class="chips" id="chips"></div>
+  <form id="ask">
+    <input id="q" maxlength="400" autocomplete="off" placeholder="Ask TinyOlly AI SRE Agent about your telemetry">
+    <button type="submit" id="send">Ask</button>
+  </form>
+</footer>
+<script src="console.js"></script>
+<dialog id="pm" aria-labelledby="pm-title">
+  <div class="pm-head"><h2 id="pm-title">Postmortem draft</h2>
+    <div><button id="pm-copy" type="button">Copy</button> <button id="pm-download" type="button">Download .md</button>
+      <button type="button" onclick="document.getElementById('pm').close()">Close</button></div></div>
+  <pre id="pm-text"></pre>
+</dialog>
+</body>
+</html>

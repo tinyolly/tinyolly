@@ -78,6 +78,10 @@ With `paymentFailure` at 50%, `checkout` and `payment` turn red in the catalog w
 Entries not marked *Verified* are expected behaviour from the flag descriptions and have not been checked against TinyOlly yet.
 Flags that depend on Kafka (`kafkaQueueProblems`), the AI agent (`ai*`) or `flagd-ui` are not available in this subset.
 
+## Let an AI SRE agent watch it
+
+The [TinyOlly AI SRE Agent](ai-sre.md) watches the demo for you: it opens an incident when a flag breaks something, investigates with TinyOlly's MCP tools, proposes a fix and checks recovery. `./05-start-sre.sh --demo` (in `docker/`) also runs a **demo shift** that flips these flags on a timer and scores the agent against what it injected. It was built with a local Ollama model; OpenAI and Claude are optional.
+
 ## Notes
 
 * **Image tags:** the demo's `.env` defaults `DEMO_VERSION=latest` (images from `main`), which does not match the checked-out

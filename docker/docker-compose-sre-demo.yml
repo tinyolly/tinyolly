@@ -1,0 +1,17 @@
+# Demo shift driver for the TinyOlly AI SRE Agent: mounts the OTel demo's flagd file read-write so the agent's
+# demo driver can flip fault flags on a timer.  Start: ./05-start-sre.sh --demo   Controls: POST :7173/demo/start|stop|pause|reset|trigger
+services:
+  tinyolly-sre:
+    volumes:
+      - ../docker-otel-demo/.demo/src/flagd/demo.flagd.json:/flags/demo.flagd.json
+    environment:
+      - DEMO_FLAGS=file
+      - DEMO=${DEMO:-1}
+      - DEMO_SCRIPT=${DEMO_SCRIPT:-}
+      - DEMO_SEED=${DEMO_SEED:-}
+      - DEMO_SPEED=${DEMO_SPEED:-1}
+      - DEMO_ANNOUNCE=${DEMO_ANNOUNCE:-1}
+      - DEMO_QUIET_EVERY=${DEMO_QUIET_EVERY:-4}
+      - DEMO_GAP_SECONDS=${DEMO_GAP_SECONDS:-60,120}
+      - DEMO_FIRST_GAP_SECONDS=${DEMO_FIRST_GAP_SECONDS:-240}
+      - SRE_RECORD=${SRE_RECORD:-}          # e.g. /tmp/shift.jsonl: record every detect poll for python -m sre.replay (docker cp it out)

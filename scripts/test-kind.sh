@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Local-only smoke test of the Kubernetes path on kind (inside the Colima VM).
-#   ./scripts/test-kind.sh          core + collector (k8s/) and core-only (k8s-core-only/)
-#   ./scripts/test-kind.sh --demo   also builds and deploys k8s-demo
+#   ./scripts/test-kind.sh          core + collector (k8s/) and core-only (misc/k8s-core-only/)
 # Stops the compose stack (it owns host ports 5005/4317), creates a throwaway kind cluster, loads the LOCAL
 # images (build them first: docker/01-start-core-local.sh), checks the UI and ingest, then deletes the
 # cluster and restarts the compose stack if it was running.
@@ -11,7 +10,6 @@ export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLUSTER="${KIND_CLUSTER:-tinyolly}"
 COMPOSE=(docker compose -f "$ROOT/docker/docker-compose-tinyolly-core-local.yml")
-DEMO=0; [ "${1:-}" = "--demo" ] && DEMO=1
 FAILS=0
 ok()   { echo "  ✓ $*"; }
 bad()  { echo "  ✗ $*"; FAILS=$((FAILS+1)); }
@@ -42,12 +40,12 @@ ui_ok()      { curl -sf -o /dev/null localhost:5005/; }
 has_svc()    { curl -sf localhost:5005/api/service-catalog | grep -q "\"name\":\"$1\""; }
 retry()      { for _ in $(seq 1 30); do "$@" && return 0; sleep 3; done; return 1; }
 
-echo "== k8s-core-only"
-( cd "$ROOT/k8s-core-only" && ./01-deploy.sh >/dev/null 2>&1 ) && ok "applied" || bad "apply failed"
+echo "== misc/k8s-core-only"
+( cd "$ROOT/misc/k8s-core-only" && ./01-deploy.sh >/dev/null 2>&1 ) && ok "applied" || bad "apply failed"
 check "deployments available" wait_ready
 check "UI answers on :5005" retry ui_ok
 check "UI self-telemetry ingested via gRPC receiver" retry has_svc tinyolly-ui
-kubectl delete -f "$ROOT/k8s-core-only/" --ignore-not-found >/dev/null 2>&1
+kubectl delete -f "$ROOT/misc/k8s-core-only/" --ignore-not-found >/dev/null 2>&1
 
 echo "== k8s (core + collector)"
 ( cd "$ROOT/k8s" && ./02-deploy-tinyolly.sh >/dev/null 2>&1 ) && ok "applied" || bad "apply failed"
@@ -59,14 +57,6 @@ send_otlp() { curl -sf -X POST localhost:4318/v1/traces -H 'content-type: applic
 check "OTLP/HTTP through collector reaches TinyOlly" retry send_otlp
 check "ingested trace visible in catalog" retry has_svc kind-smoke
 
-if [ "$DEMO" = 1 ]; then
-  echo "== k8s-demo"
-  ( cd "$ROOT/k8s-demo" && printf 'y\n' | ./02-deploy.sh >/dev/null 2>&1 ) && ok "applied" || bad "apply failed"
-  check "demo deployments available" wait_ready
-  check "demo-frontend answers on :5001" retry curl -sf -o /dev/null localhost:5001/
-  check "demo traffic ingested" retry has_svc demo-frontend
-  git -C "$ROOT" diff --quiet -- "k8s-demo/demo-*.yaml" || bad "k8s-demo manifests left modified"
-fi
 
 echo; [ $FAILS -eq 0 ] && echo "kind smoke test: PASS" || echo "kind smoke test: $FAILS FAILED"
 exit $((FAILS>0))

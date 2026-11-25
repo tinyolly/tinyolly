@@ -1,6 +1,6 @@
 ---
 title: "Docker Deployment"
-description: "Start TinyOlly with Docker (core, demo apps, AI agent demo, OTel demo, your own apps, core-only) and configure OpAMP"
+description: "Start TinyOlly with Docker (core, the OpenTelemetry Demo, your own apps, core-only) and configure OpAMP"
 ---
 
 # Docker Deployment
@@ -54,71 +54,7 @@ This starts:
 
 ---
 
-## 2. Deploy Demo Apps (Optional)
-
-Deploy two Flask microservices with automatic traffic generation:
-
-```bash
-cd docker-demo
-./01-deploy-demo.sh
-```
-
-Wait 30 seconds. **The demo apps automatically generate traffic** - traces, logs, and metrics will appear in the UI!
-
-**Stop demo apps:**
-```bash
-./02-cleanup-demo.sh
-```
-
-This leaves TinyOlly core running. To stop everything:
-```bash
-cd docker
-./02-stop-core.sh
-```
-
----
-
-## 3. AI Agent Demo with Ollama (Optional)
-
-Deploy an AI agent demo with zero-code OpenTelemetry auto-instrumentation for GenAI:
-
-```bash
-cd docker-ai-agent-demo
-./01-deploy-ai-demo.sh
-```
-
-!!! note
-    First run will pull the Ollama image and TinyLlama model (~1.5GB total). This may take a few minutes.
-
-This starts:
-- **Ollama**: Local LLM server with TinyLlama model (`http://localhost:11434`)
-- **AI Agent**: Python agent making LLM calls every 15 seconds, auto-instrumented with `opentelemetry-instrumentation-ollama`
-
-**View AI Traces:** Navigate to the **AI Agents** tab in TinyOlly UI to see:
-
-- Prompts and responses for each LLM call
-- Token usage (input ↓ / output ↑) with color coding
-- Latency per request
-- Click any row to expand the full span JSON
-
-**Watch agent logs:**
-```bash
-docker compose logs -f ai-agent
-```
-
-**Stop AI demo:**
-```bash
-./02-stop-ai-demo.sh
-```
-
-**Cleanup (remove Ollama model volumes):**
-```bash
-./03-cleanup-ai-demo.sh
-```
-
----
-
-## 4. OpenTelemetry Demo (Astronomy Shop - Optional)
+## 2. OpenTelemetry Demo (Astronomy Shop)
 
 A 16-service subset of the upstream demo, pointed at TinyOlly's collector, with failure-injection feature flags.
 Runs in ~1.6 GB of VM memory. See [OpenTelemetry Demo](otel-demo.md).
@@ -130,9 +66,11 @@ cd docker-otel-demo
 ./02-stop-otel-demo.sh
 ```
 
+The [TinyOlly AI SRE Agent](ai-sre.md) can watch the shop and investigate faults as they happen: `cd docker && ./05-start-sre.sh --demo`.
+
 ---
 
-## 5. Use TinyOlly with Your Own Apps
+## 3. Use TinyOlly with Your Own Apps
 
 After deploying TinyOlly core (step 1 above), instrument your application to send telemetry:
 
@@ -153,12 +91,12 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 
 The Otel Collector will forward everything to TinyOlly's OTLP receiver, which processes telemetry and stores it in SQLite in OTEL format for the backend and UI to access.
 
-## 6. TinyOlly **Core-Only** Deployment: Use Your Own Docker OpenTelemetry Collector
+## 4. TinyOlly **Core-Only** Deployment: Use Your Own Docker OpenTelemetry Collector
 
 If you already have an OpenTelemetry Collector or want to send telemetry directly to the TinyOlly Receiver, you can deploy the core components without the bundled OTel Collector.
 
 ```bash
-cd docker-core-only
+cd misc/docker-core-only
 ./01-start-core.sh
 ```
 

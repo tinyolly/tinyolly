@@ -53,4 +53,4 @@ helm upgrade --install my-otel-demo open-telemetry/opentelemetry-demo --version 
   --set 'components.load-generator.envOverrides[0].name=LOCUST_BROWSER_TRAFFIC_ENABLED' \
   --set-string 'components.load-generator.envOverrides[0].value=false' \
   --set 'components.load-generator.envOverrides[1].name=LOCUST_USERS' \
-  --set-string 'components.load-generator.envOverrides[1].value=3'
+  --set-string "components.load-generator.envOverrides[1].value=${LOCUST_USERS:-3}"
