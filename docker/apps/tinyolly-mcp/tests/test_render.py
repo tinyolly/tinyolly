@@ -210,3 +210,12 @@ def test_full_map_chart_with_a_journey_renders():
             {"order": 4, "source": "cart", "target": "missing", "duration_ms": 1.0, "via_proxy": False}]       # not in the map: skipped
     png = render.full_map_chart(g, journey=hops, title="Journey of abcd: 100 ms, 30% in the mesh")
     assert png[:4] == b"\x89PNG"
+
+
+def test_inferred_nodes_take_metrics_from_incoming_edges():
+    g = {"nodes": [{"id": "gw", "metrics": {"error_rate": 0}}, {"id": "ollama", "type": "llm", "metrics": {}}],
+         "edges": [{"source": "gw", "target": "ollama", "value": 9, "p95": 780, "error_count": 0, "denied_count": 1}]}
+    m = {n["id"]: n["metrics"] for n in render.with_inferred_metrics(g)["nodes"]}
+    assert m["ollama"] == {"duration_p95": 780, "error_rate": 10.0}
+    assert m["gw"] == {"error_rate": 0}                       # nodes with their own metrics are untouched
+    assert render.full_map_chart(g)[:4] == b"\x89PNG"

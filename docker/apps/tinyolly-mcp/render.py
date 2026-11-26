@@ -8,6 +8,8 @@ import time
 from collections import defaultdict
 from typing import Any
 
+from edge_labels import ai_edge_suffix
+
 HEALTH = ((5, "🔴"), (0.0001, "🟡"))   # error_rate % thresholds
 SEVERITY_ICON = {"error": "🔴", "fatal": "🔴", "critical": "🔴", "warn": "🟡", "warning": "🟡", "info": "🔵", "debug": "⚪", "trace": "⚪"}
 COLOR_OK, COLOR_WARN, COLOR_ERR, COLOR_IDLE = "#2563eb", "#f59e0b", "#ef4444", "#94a3b8"
@@ -290,6 +292,10 @@ def _node_color(m: dict, isolated: bool = False) -> str:
 ROW = 1.35   # vertical spacing between nodes in the map charts
 
 
+AI_ROLES = ("agent", "llm", "mcp")
+INFERRED_TYPES = ("llm", "mcp", "external")       # node types tinyolly_common infers from callers' spans
+
+
 def node_roles(graph: dict) -> dict:
     """Same rules as the web UI's service map: shape says what the node is, colour says its health."""
     ins: dict[str, int] = defaultdict(int)
@@ -306,6 +312,10 @@ def node_roles(graph: dict) -> dict:
             roles[n["id"]] = "database"
         elif n.get("type") == "messaging":
             roles[n["id"]] = "messaging"
+        elif n.get("type") in AI_ROLES:                   # inferred from GenAI / MCP spans (tinyolly_common.graph_infer)
+            roles[n["id"]] = n["type"]
+        elif n.get("type") == "external":
+            roles[n["id"]] = "external"
         elif i == 0 and o == 0:
             roles[n["id"]] = "isolated"
         elif i == 0:
@@ -322,13 +332,15 @@ COL_X = 5.8                  # column pitch
 INK, MUTED, LINE = "#0f172a", "#64748b", "#cbd5e1"
 
 
-def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bool = False, cluster: str | None = None) -> None:
+def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bool = False, cluster: str | None = None,
+               inferred: bool = False) -> None:
     """Card at (x, y): role icon, service name, error/p95 line, and a stripe on the left coloured by health."""
     from matplotlib.patches import FancyBboxPatch
     color = _node_color(m, isolated=role == "isolated")
     x0, y0 = x - CARD_W / 2, y - CARD_H / 2
     ax.add_patch(FancyBboxPatch((x0, y0), CARD_W, CARD_H, boxstyle="round,pad=0,rounding_size=0.18", fc="white",
-                                ec=INK if center else LINE, lw=2.6 if center else 1.2, zorder=3))
+                                ec=INK if center else LINE, lw=2.6 if center else 1.2, zorder=3,
+                                linestyle=(0, (4, 3)) if inferred else "-"))    # dashed: no spans of its own, inferred from callers
     ax.add_patch(FancyBboxPatch((x0, y0), 0.2, CARD_H, boxstyle="round,pad=0,rounding_size=0.1", fc=color, ec="none", zorder=4))
     _draw_node_icon(ax, x0 + 0.62, y, role)
     ax.text(x0 + 1.05, y + 0.17, name if len(name) <= 22 else name[:21] + "…", ha="left", va="center", fontsize=10.5,
@@ -354,6 +366,8 @@ def _legend_rows(mesh: bool, diff: bool = False, present: frozenset = frozenset(
                                # proxy roles are listed when a mesh is present OR a node of that role is actually drawn
                                + ([("role", "waypoint", "waypoint / ztunnel")] if mesh or present & {"waypoint", "ztunnel"} else [])
                                + ([("role", "gateway", "gateway")] if mesh or "gateway" in present else []),
+                               *([[(r, k, t) for r, k, t in (("role", "agent", "agent"), ("role", "llm", "LLM"), ("role", "mcp", "MCP server"))
+                                   if k in present]] if present & set(AI_ROLES) else []),
                                [("node", COLOR_OK, "node: healthy"), ("node", COLOR_WARN, "node: >1% errors"), ("node", COLOR_ERR, "node: >5% errors")]]
     if mesh:
         rows.append([("edge", ("#16a34a", "-"), "edge: mTLS"), ("edge", ("#f59e0b", "--"), "edge: plaintext"),
@@ -411,6 +425,15 @@ def _draw_node_icon(ax, x: float, y: float, role: str) -> None:
         ax.add_patch(Polygon([(x - r, y + r * 0.2), (x, y + r * 1.1), (x + r, y + r * 0.2), (x + r * 0.65, y - r), (x - r * 0.65, y - r)], **kw))
     elif role == "database":
         ax.add_patch(Rectangle((x - r * 0.8, y - r), r * 1.6, r * 2, **kw))
+    elif role == "agent":                               # triangle: acts on its own
+        ax.add_patch(Polygon([(x - r, y - r * 0.85), (x + r, y - r * 0.85), (x, y + r)], **kw))
+    elif role == "llm":                                 # star
+        import math
+        pts = [(x + (r * 1.15 if k % 2 == 0 else r * 0.5) * math.sin(k * math.pi / 5),
+                y + (r * 1.15 if k % 2 == 0 else r * 0.5) * math.cos(k * math.pi / 5)) for k in range(10)]
+        ax.add_patch(Polygon(pts, **kw))
+    elif role == "mcp":                                 # chevron (vee): a tool endpoint
+        ax.add_patch(Polygon([(x - r, y + r), (x, y + r * 0.3), (x + r, y + r), (x, y - r)], **kw))
     elif role == "messaging":
         ax.add_patch(Polygon([(x - r + 0.08, y + r * 0.8), (x + r + 0.08, y + r * 0.8), (x + r - 0.08, y - r * 0.8), (x - r - 0.08, y - r * 0.8)], **kw))
     else:
@@ -491,8 +514,10 @@ def _draw_edge(ax, e: dict, pos: dict, t: float = 0.55, label: bool = True, l7_p
                 arrowprops=dict(arrowstyle="-|>", color=color, linestyle=style, alpha=alpha,
                                 lw=1.4 + min(2.0, (e.get("value") or e.get("call_count") or 0) ** 0.25 / 3),
                                 connectionstyle="arc3,rad=0.05", shrinkA=0, shrinkB=0))
-    if label and e.get("p95"):                         # metric-only edges have no latency; skip the "0" label
-        label = fmt_ms(e.get("p95")) + (f" · {e['req_rate']:g}/s" if e.get("req_rate") else "")
+    ai = ai_edge_suffix(e)
+    if label and (e.get("p95") or ai):                 # metric-only edges have no latency; skip the "0" label
+        label = " · ".join(x for x in (fmt_ms(e.get("p95")) if e.get("p95") else "",
+                                       f"{e['req_rate']:g}/s" if e.get("req_rate") else "", ai) if x)
         xs, xe = x1 + CARD_W / 2 + 0.06, x2 - CARD_W / 2 - 0.06      # label along the visible part of the edge, never on a card
         ax.text(xs + (xe - xs) * t, y1 + (y2 - y1) * t + 0.12, label, ha="center", va="bottom", fontsize=9, color="#475569", zorder=5,
                 bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="#e2e8f0", lw=0.6))
@@ -531,9 +556,28 @@ def ego_graph(graph: dict, service: str, depth: int = 1, max_per_column: int = 1
                       and col.get(e["target"], -99) == col.get(e["source"], -99) + 1]}   # only edges that run caller -> callee, left to right
 
 
+def with_inferred_metrics(graph: dict) -> dict:
+    """Nodes that emit no spans (an LLM, MCP server, database, external host) have no metrics of their own; give their card
+    the incoming edges' worst p95 and their error rate, counting calls blocked at a gateway as errors."""
+    incoming: dict[str, list] = defaultdict(list)
+    for e in graph.get("edges", []):
+        incoming[e["target"]].append(e)
+    nodes = []
+    for n in graph.get("nodes", []):
+        es = incoming.get(n["id"])
+        if not (n.get("metrics") or {}) and es:
+            calls = sum((e.get("value") or 0) + (e.get("denied_count") or 0) for e in es)
+            bad = sum((e.get("error_count") or 0) + (e.get("denied_count") or 0) for e in es)
+            n = {**n, "metrics": {"duration_p95": max((e.get("p95") or 0) for e in es) or None,
+                                  "error_rate": round(100 * bad / calls, 1) if calls else 0}}
+        nodes.append(n)
+    return {**graph, "nodes": nodes}
+
+
 def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
     """Callers -> service -> callees diagram for one service, nodes coloured by health, edges labelled with p95."""
     plt = _plt()
+    graph = with_inferred_metrics(graph)
     g = ego_graph(graph, service, depth)
     cols = sorted(g["columns"])
     roles = node_roles(graph)
@@ -553,7 +597,7 @@ def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
     for i, e in enumerate(g["edges"]):
         _draw_edge(ax, e, pos, 0.25 + 0.17 * (i % 4), l7_present=l7_present)
     for n, (x, y) in pos.items():
-        _draw_node(ax, x, y, n, (g["nodes"].get(n) or {}).get("metrics") or {}, roles.get(n, "server"), center=n == service,
+        _draw_node(ax, x, y, n, (g["nodes"].get(n) or {}).get("metrics") or {}, roles.get(n, "server"), inferred=(g["nodes"].get(n) or {}).get("type") in INFERRED_TYPES, center=n == service,
                    cluster=badges.get(n))
     for c, k in g["hidden"].items():
         x = cols.index(c) * COL_X
@@ -574,6 +618,7 @@ def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
 def full_map_chart(graph: dict, diff: dict | None = None, title: str | None = None, journey: list | None = None) -> bytes:
     """Whole service map: connected services in left-to-right layers (callers -> callees), unconnected ones in a compact grid below."""
     plt = _plt()
+    graph = with_inferred_metrics(graph)
     roles = node_roles(graph)
     nodes = {n["id"]: n for n in graph.get("nodes", [])}
     edges = [e for e in graph.get("edges", []) if e["source"] in nodes and e["target"] in nodes and e["source"] != e["target"]]
@@ -656,6 +701,7 @@ def full_map_chart(graph: dict, diff: dict | None = None, title: str | None = No
     ax.axis("off")
     # a dense map: label only the busiest edges so the labels stay readable (the per-service chart labels all of them)
     busiest = {id(e) for e in sorted(edges, key=lambda e: -(e.get('value') or 0))[:6]}
+    busiest |= {id(e) for e in edges if ai_edge_suffix(e)}      # LLM / MCP edges always say tokens, tools, blocked calls
     hops_on_map = {}                                    # journey: (source, target) -> hop, for hops that exist on this map
     for hop in journey or []:
         a, b = resolve_service(hop["source"], nodes), resolve_service(hop["target"], nodes)
@@ -674,12 +720,13 @@ def full_map_chart(graph: dict, diff: dict | None = None, title: str | None = No
             (x1, y1), (x2, y2) = pos[a], pos[b]
             xs, xe = x1 + CARD_W / 2 + 0.06, x2 - CARD_W / 2 - 0.06
             t = max(0.5, 1 - 1.1 / (xe - xs)) if xe > xs else 0.5     # in the gap before the target card, never on a card in between
-            ax.text(xs + (xe - xs) * t, y1 + (y2 - y1) * t, f"{hop['order']} · {fmt_ms(hop['duration_ms'])}", ha="center", va="center",
-                    fontsize=9.5, fontweight="bold", color="white", zorder=6,
-                    bbox=dict(boxstyle="round,pad=0.25", fc="#7c3aed" if not hop.get("via_proxy") else "#6d28d9", ec="none"))
+            text = f"{hop['order']} · {fmt_ms(hop['duration_ms'])}" + (f" · blocked ({hop['blocked']})" if hop.get("blocked") else "")
+            chip = "#ef4444" if hop.get("blocked") else ("#7c3aed" if not hop.get("via_proxy") else "#6d28d9")
+            ax.text(xs + (xe - xs) * t, y1 + (y2 - y1) * t, text, ha="center", va="center",
+                    fontsize=9.5, fontweight="bold", color="white", zorder=6, bbox=dict(boxstyle="round,pad=0.25", fc=chip, ec="none"))
     visited = {n for pair in hops_on_map for n in pair}
     for n, (x, y) in pos.items():
-        _draw_node(ax, x, y, n, (nodes.get(n) or {}).get("metrics") or {}, roles.get(n, "server"), center=n in visited,
+        _draw_node(ax, x, y, n, (nodes.get(n) or {}).get("metrics") or {}, roles.get(n, "server"), inferred=(nodes.get(n) or {}).get("type") in INFERRED_TYPES, center=n in visited,
                    cluster=badges.get(n))
     ys = [y for _, y in pos.values()] or [0]
     xs = [x for x, _ in pos.values()] or [0]

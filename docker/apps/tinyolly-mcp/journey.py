@@ -36,6 +36,19 @@ def journey_hops(spans: list) -> list:
 
     indexed = []
     for span in spans:
+        peer = span.get("inferredPeer")              # set by the UI API: a callee that emits no spans (LLM, MCP server)
+        if peer and peer.get("name") and peer["name"] != span["serviceName"]:
+            hop = {
+                "source": span["serviceName"],
+                "target": peer["name"],
+                "duration_ms": _span_duration(span) / 1_000_000,
+                "start_ms": (_span_start(span) - earliest_start) / 1_000_000,
+                "via_proxy": is_proxy(span["serviceName"]),
+                "inferred": peer.get("type"),
+            }
+            if peer.get("blocked"):
+                hop["blocked"] = peer["blocked"]
+            indexed.append((_span_start(span), span["spanId"], 1, hop))   # after the hop into this span (same start)
         parent_id = span.get("parentSpanId")
         if parent_id is None or parent_id not in by_id:
             continue
@@ -49,11 +62,11 @@ def journey_hops(spans: list) -> list:
             "start_ms": (_span_start(span) - earliest_start) / 1_000_000,
             "via_proxy": is_proxy(parent["serviceName"]) or is_proxy(span["serviceName"]),
         }
-        indexed.append((_span_start(span), span["spanId"], hop))
+        indexed.append((_span_start(span), span["spanId"], 0, hop))
 
-    indexed.sort(key=lambda x: (x[0], x[1]))
+    indexed.sort(key=lambda x: (x[0], x[1], x[2]))
     result = []
-    for i, (_, _, hop) in enumerate(indexed, start=1):
+    for i, (_, _, _, hop) in enumerate(indexed, start=1):
         hop["order"] = i
         result.append(hop)
     return result

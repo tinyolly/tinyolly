@@ -18,6 +18,7 @@ from .mesh_adapters import (
     posture,
     trace_edge,
 )
+from .graph_infer import candidate_ips, infer_blocked, infer_external_enabled, infer_peer, is_agent_span, resolve_ips
 from .otlp_utils import (
     get_attr_value,
     is_error_status,
@@ -126,7 +127,7 @@ class ServicesMixin:
         await self._cache_delete(self._service_snapshot_key("catalog"))
 
     async def get_service_graph(self, limit: int = 500, merge: bool = True) -> Dict[str, Any]:
-        cache_key = f"service_graph_cache_v4:{limit}:merge={merge}"
+        cache_key = f"service_graph_cache_v5:{limit}:merge={merge}"
         snapshot_key = self._service_snapshot_key("map")
         reset_at = await self._get_service_reset_ts("map")
         trace_ids = await self.get_recent_traces(limit, since_ts=reset_at)
@@ -175,6 +176,10 @@ class ServicesMixin:
 
         edges: Dict[Tuple[str, str], Dict[str, Any]] = {}
         spans_by_trace = await self._get_trace_spans_batch(trace_ids)
+        infer_external = infer_external_enabled()
+        if infer_external:
+            await resolve_ips(candidate_ips(s for ss in spans_by_trace.values() for s in ss))
+        agents: set = set()
 
         for trace_id in trace_ids:
             spans = spans_by_trace.get(trace_id, [])
@@ -182,11 +187,15 @@ class ServicesMixin:
                 continue
 
             span_map = {s.get("spanId", s.get("span_id")): s for s in spans}
+            parent_ids = {s.get("parentSpanId", s.get("parent_span_id")) for s in spans}
 
             for span in spans:
                 service = span.get("serviceName", "unknown")
                 if service and service != "unknown" and service not in nodes:
                     nodes[service] = {"type": "service", "metrics": service_metrics.get(service, {})}
+
+                if service in nodes and service not in agents and is_agent_span(span):
+                    agents.add(service)
 
                 start = int(span.get("startTimeUnixNano", span.get("start_time", 0)))
                 end = int(span.get("endTimeUnixNano", span.get("end_time", 0)))
@@ -209,6 +218,23 @@ class ServicesMixin:
 
                 is_error = is_error_status(span.get("status", {}) or {})
 
+                extras: Dict[str, Any] = {}
+                if not target_node:
+                    # A CLIENT span nothing answered (LLM, MCP server, uninstrumented upstream): infer the callee.
+                    span_id = span.get("spanId", span.get("span_id"))
+                    parent_span = span_map.get(span.get("parentSpanId", span.get("parent_span_id")))
+                    peer = infer_peer(span, parent_span, span_id in parent_ids, nodes.keys(), infer_external)
+                    if peer and peer[0] != service:
+                        target_node, node_type, extras = peer
+                    blocked = infer_blocked(span, span_id in parent_ids, is_error)
+                    if blocked and blocked[0] != service:
+                        # Refused at the gateway: a red edge to the node the call was meant for, not a successful call.
+                        name, btype, reason = blocked
+                        nodes.setdefault(name, {"type": btype, "metrics": {}})
+                        edge = edges.setdefault((service, name), {"count": 0, "durations": [], "spans": []})
+                        edge.setdefault("blocked", {})
+                        edge["blocked"][reason] = edge["blocked"].get(reason, 0) + 1
+
                 if target_node:
                     if target_node not in nodes:
                         nodes[target_node] = {"type": node_type, "metrics": {}}
@@ -218,6 +244,8 @@ class ServicesMixin:
                     edges[key]["count"] += 1
                     edges[key]["durations"].append(duration_ms)
                     edges[key]["spans"].append((start, end, is_error))
+                    if extras:
+                        _add_edge_extras(edges[key], extras)
 
                 parent_id = span.get("parentSpanId", span.get("parent_span_id"))
                 if parent_id and parent_id in span_map:
@@ -231,7 +259,11 @@ class ServicesMixin:
                         edges[key]["durations"].append(duration_ms)
                         edges[key]["spans"].append((start, end, is_error))
 
-        graph_edges = [trace_edge(source, target, data, metric_edges_map.get((source, target)))
+        for name in agents:
+            if nodes[name].get("type") == "service":
+                nodes[name]["type"] = "agent"
+
+        graph_edges = [_with_extras(trace_edge(source, target, data, metric_edges_map.get((source, target))), data)
                        for (source, target), data in edges.items()]
 
         # Metric-only edges (no trace for the pair): add them, and any endpoint nodes they need.
@@ -553,3 +585,23 @@ class ServicesMixin:
             }
         finally:
             await conn.close()
+
+
+def _add_edge_extras(edge: Dict[str, Any], extras: Dict[str, Any]) -> None:
+    """Accumulate inferred-peer details on a trace edge: tokens, models, endpoints, MCP methods and tools."""
+    for k in ("tokens_in", "tokens_out"):
+        if k in extras:
+            edge[k] = edge.get(k, 0) + extras[k]
+    for k, bucket in (("model", "models"), ("endpoint", "endpoints"), ("method", "methods"), ("tool", "tools")):
+        if extras.get(k):
+            counts = edge.setdefault(bucket, {})
+            counts[extras[k]] = counts.get(extras[k], 0) + 1
+
+
+def _with_extras(out: Dict[str, Any], data: Dict[str, Any]) -> Dict[str, Any]:
+    for k in ("tokens_in", "tokens_out", "models", "endpoints", "methods", "tools", "blocked"):
+        if k in data:
+            out[k] = data[k]
+    if data.get("blocked"):                                 # same red "denied" style as mesh policy denials
+        out["denied_count"] = max(out.get("denied_count") or 0, sum(data["blocked"].values()))
+    return out

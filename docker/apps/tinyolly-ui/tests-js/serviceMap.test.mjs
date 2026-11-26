@@ -90,3 +90,42 @@ test('mesh roles override shape; edges get security classes', async () => {
     assert.equal(postureSummary({ total_edges: 4, mtls_pct: 75, plaintext_edges: 1, denied: [{}] }), 'mTLS 75% · 1 plaintext · 1 denied');
     assert.equal(postureSummary({ total_edges: 0 }), '');
 });
+
+test('agent, LLM and MCP nodes get their own shapes; AI edges carry tokens or tools', () => {
+    const graph = {
+        nodes: [node('bot', { type: 'agent' }), node('agentgateway-proxy'), node('ollama', { type: 'llm' }), node('mcp-target', { type: 'mcp' })],
+        edges: [{ source: 'bot', target: 'agentgateway-proxy', p95: 700 },
+                { source: 'agentgateway-proxy', target: 'ollama', p95: 780, value: 23, req_rate: 0.05, tokens_in: 4690, tokens_out: 755 },
+                { source: 'agentgateway-proxy', target: 'mcp-target', p95: 38, value: 69, tools: { fetch: 23 } }],
+    };
+    const els = buildElements(graph);
+    const n = nodesOf(els);
+    assert.deepEqual([n.bot.shape, n.bot.type], ['round-triangle', 'Agent']);
+    assert.deepEqual([n.ollama.shape, n.ollama.type], ['star', 'LLM']);
+    assert.deepEqual([n['mcp-target'].shape, n['mcp-target'].type], ['vee', 'MCP']);
+    const label = id => els.find(e => e.group === 'edges' && e.data.id === id).data.label;
+    assert.equal(label('agentgateway-proxy-ollama'), '780ms · 710 tok/min');
+    assert.equal(label('agentgateway-proxy-mcp-target'), '38ms · fetch');
+    assert.equal(label('bot-agentgateway-proxy'), '700ms');
+});
+
+test('inferred nodes get health from incoming edges, blocked calls count as errors', () => {
+    const graph = {
+        nodes: [node('gw'), node('ollama', { type: 'llm', metrics: {} })],
+        edges: [{ source: 'gw', target: 'ollama', value: 9, p95: 780, error_count: 0, denied_count: 1, blocked: { Guardrail: 1 } }],
+    };
+    const els = buildElements(graph);
+    const n = nodesOf(els);
+    assert.deepEqual(n.ollama.metrics, { duration_p95: 780, error_rate: 10 });
+    assert.equal(n.ollama.color, '#ef4444');
+    const e = els.find(x => x.group === 'edges');
+    assert.equal(e.classes, 'denied');
+    assert.equal(e.data.label, '780ms · 1 blocked');
+});
+
+test('inferred nodes (no spans of their own) get the dashed "inferred" class', () => {
+    const els = buildElements({ nodes: [node('gw'), node('ollama', { type: 'llm' }), node('db', { type: 'database' })],
+                                edges: [{ source: 'gw', target: 'ollama' }, { source: 'gw', target: 'db' }] });
+    const cls = Object.fromEntries(els.filter(e => e.group === 'nodes').map(e => [e.data.id, e.classes]));
+    assert.deepEqual(cls, { gw: '', ollama: 'inferred', db: '' });
+});

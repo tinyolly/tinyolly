@@ -11,6 +11,7 @@ from models import ErrorResponse, MetricDetail, MetricMetadata, MetricQueryResul
 from pydantic import BaseModel, Field
 
 from tinyolly_common import Storage
+from tinyolly_common.graph_infer import annotate_peers
 
 from ..dependencies import get_storage
 
@@ -104,6 +105,7 @@ async def get_trace(
     
     # Sort spans by start time
     spans.sort(key=lambda s: s.get('startTimeUnixNano', s.get('start_time', 0)))
+    annotate_peers(spans)   # inferredPeer on spans whose callee (an LLM, an MCP server) emits no spans
     
     return {
         'trace_id': trace_id,

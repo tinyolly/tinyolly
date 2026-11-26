@@ -195,6 +195,7 @@ export function renderServiceMap(graph) {
             },
             { selector: 'edge.mtls', style: { 'line-color': '#16a34a', 'target-arrow-color': '#16a34a' } },
             { selector: 'edge.plaintext', style: { 'line-color': '#f59e0b', 'target-arrow-color': '#f59e0b', 'line-style': 'dashed' } },
+            { selector: 'node.inferred', style: { 'border-style': 'dashed', 'border-width': 2, 'border-color': '#64748b' } },
             { selector: 'edge.denied', style: { 'line-color': '#ef4444', 'target-arrow-color': '#ef4444', 'width': 4 } },
             {
                 selector: 'node:selected',

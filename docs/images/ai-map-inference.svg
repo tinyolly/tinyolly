@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 330" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13">
+  <title>How TinyOlly draws agent, LLM and MCP hops that emit no spans</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ef4444"/></marker>
+  </defs>
+  <rect width="880" height="330" rx="10" fill="#ffffff" stroke="#e2e8f0"/>
+
+  <!-- agent -->
+  <polygon points="80,95 112,150 48,150" fill="#2563eb"/>
+  <text x="80" y="174" text-anchor="middle" font-weight="600" fill="#0f172a">shopping-agent</text>
+  <text x="80" y="192" text-anchor="middle" fill="#64748b" font-size="11">agent: makes gen_ai calls</text>
+
+  <!-- gateway -->
+  <polygon points="330,92 360,114 349,150 311,150 300,114" fill="#2563eb"/>
+  <text x="330" y="174" text-anchor="middle" font-weight="600" fill="#0f172a">agentgateway-proxy</text>
+  <text x="330" y="192" text-anchor="middle" fill="#64748b" font-size="11">emits SERVER + CLIENT spans</text>
+
+  <line x1="118" y1="125" x2="292" y2="125" stroke="#64748b" stroke-width="2" marker-end="url(#a)"/>
+  <text x="205" y="115" text-anchor="middle" fill="#475569" font-size="11">parent → child span</text>
+
+  <!-- MCP (vee) -->
+  <polygon points="620,40 650,58 680,40 650,92" fill="#2563eb" stroke="#94a3b8" stroke-dasharray="4 3"/>
+  <text x="700" y="62" font-weight="600" fill="#0f172a">mcp-target</text>
+  <text x="700" y="80" fill="#64748b" font-size="11">inferred: mcp.target</text>
+  <line x1="364" y1="112" x2="612" y2="66" stroke="#64748b" stroke-width="2" marker-end="url(#a)"/>
+  <text x="488" y="76" text-anchor="middle" fill="#475569" font-size="11">18.5ms · fetch</text>
+
+  <!-- LLM (star) -->
+  <polygon points="650,170 659,195 685,196 664,211 672,236 650,221 628,236 636,211 615,196 641,195" fill="#ef4444" stroke="#94a3b8" stroke-dasharray="4 3"/>
+  <text x="700" y="200" font-weight="600" fill="#0f172a">ollama</text>
+  <text x="700" y="218" fill="#64748b" font-size="11">inferred: route default/ollama</text>
+  <line x1="364" y1="140" x2="608" y2="200" stroke="#ef4444" stroke-width="2.5" marker-end="url(#r)"/>
+  <text x="470" y="196" text-anchor="middle" fill="#475569" font-size="11">922ms · 2k tok/min · 4 blocked</text>
+
+  <!-- notes -->
+  <line x1="40" y1="258" x2="840" y2="258" stroke="#e2e8f0"/>
+  <text x="40" y="282" fill="#334155" font-size="12">Dashed outline = no spans of its own: named from the gateway's CLIENT span that nothing answered (or its SERVER parent).</text>
+  <text x="40" y="304" fill="#334155" font-size="12">Red = calls the gateway refused (guardrail, tool authorization): an errored SERVER span with no outgoing call.</text>
+</svg>

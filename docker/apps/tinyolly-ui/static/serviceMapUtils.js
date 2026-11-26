@@ -1,4 +1,5 @@
 /** Pure logic for the service map (no DOM / Cytoscape) so it can be unit tested with `node --test`. */
+import { aiEdgeSuffix } from './edgeLabels.js';
 
 // Human-readable duration from milliseconds
 export function formatMs(ms) {
@@ -25,6 +26,8 @@ export function filterSelfServices(graph) {
 }
 
 const NODE_SIZE = 40;
+// Node types TinyOlly infers from callers' spans (tinyolly_common/graph_infer.py): the node itself sends nothing.
+export const INFERRED_TYPES = new Set(['llm', 'mcp', 'external']);
 
 /** Edge style class: denied beats plaintext beats mTLS; anything else is plain. */
 export function edgeClass(edge) {
@@ -76,6 +79,12 @@ export function buildElements(graph) {
             shape = 'barrel'; type = 'Database';
         } else if (node.type === 'messaging') {
             shape = 'rhomboid'; type = 'Messaging';
+        } else if (node.type === 'agent') {                     // GenAI caller (tinyolly_common: service with gen_ai client spans)
+            shape = 'round-triangle'; type = 'Agent';
+        } else if (node.type === 'llm') {                       // inferred from gateway / SDK spans nothing answered
+            shape = 'star'; type = 'LLM';
+        } else if (node.type === 'mcp') {
+            shape = 'vee'; type = 'MCP';
         } else if (inCount === 0 && outCount === 0) {
             shape = 'ellipse'; type = 'Isolated';
         } else if (inCount === 0) {
@@ -90,7 +99,16 @@ export function buildElements(graph) {
         else if (node.role === 'gateway') { shape = 'pentagon'; type = 'Gateway'; }
         else if (node.role === 'ztunnel') { shape = 'tag'; type = 'Ztunnel'; }
 
-        const metrics = node.metrics || {};
+        let metrics = node.metrics || {};
+        // Nodes that emit no spans (LLM, MCP server, database, external host): health from their incoming edges,
+        // counting calls blocked at a gateway as errors.
+        if (!Object.keys(metrics).length && (graph.edges || []).some(e => e.target === node.id)) {
+            const ins = graph.edges.filter(e => e.target === node.id);
+            const calls = ins.reduce((a, e) => a + (e.value || 0) + (e.denied_count || 0), 0);
+            const bad = ins.reduce((a, e) => a + (e.error_count || 0) + (e.denied_count || 0), 0);
+            metrics = { duration_p95: Math.max(...ins.map(e => e.p95 || 0)) || null,
+                        error_rate: calls ? Math.round(1000 * bad / calls) / 10 : 0 };
+        }
         let color = '#2563eb';                                  // healthy
         if (type === 'Isolated') color = '#94a3b8';             // no traffic
         if (metrics.error_rate > 5) color = '#ef4444';          // high error rate
@@ -98,6 +116,7 @@ export function buildElements(graph) {
 
         elements.push({
             group: 'nodes',
+            classes: INFERRED_TYPES.has(node.type) ? 'inferred' : '',   // no spans of its own: drawn with a dashed outline
             data: {
                 id: node.id,
                 label: node.label,
@@ -122,7 +141,7 @@ export function buildElements(graph) {
                     id: `${edge.source}-${edge.target}`,
                     source: edge.source,
                     target: edge.target,
-                    label: edge.p95 ? formatMs(edge.p95) : '',
+                    label: [edge.p95 ? formatMs(edge.p95) : '', aiEdgeSuffix(edge)].filter(Boolean).join(' · '),
                     p95: edge.p95,
                     weight: edge.value,
                     mtls: edge.mtls ?? null,

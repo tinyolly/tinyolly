@@ -51,7 +51,8 @@ SHOTS = [
 # the Istio demo's make-screenshots.py (docs/images of that repo; ui-istio-* and mesh-istio-* are copies).
 EXTERNAL_SHOTS = ["ui-otel-service-map", "ui-otel-catalog", "mesh-otel-service-map",
               "ui-otel-failure-catalog", "ui-otel-failure-service-map", "mesh-otel-failure-map", "mesh-otel-trace-path",
-                  "ui-istio-denied", "mesh-istio-fault-diff"]
+                  "ui-istio-denied", "mesh-istio-fault-diff",
+                  "ui-agent-map", "mesh-agent-trace-path"]          # agentgateway-demo (docs/technical.md#agents-llms-and-mcp-servers)
 EMBED = re.compile(r"\[!\[[^\]]*\]\((?P<thumb>[^)]*images/(?P<n>[\w-]+)\.png)\)\]\((?P<full>[^)]*)\)")
 BARE = re.compile(r"(?<!\[)!\[[^\]]*\]\((?:\.\./|)(?:docs/)?images/(?P<n>(?:ui|mesh)-[\w-]+)\.png\)")
 HTML = re.compile(r"(?P<pre>.{0,160})<img[^>]+src=\"(?:\.\./|)(?:docs/)?images/(?P<n>(?:ui|mesh)-[\w-]+)\.png\"", re.S)

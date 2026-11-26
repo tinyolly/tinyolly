@@ -54,3 +54,12 @@ def test_empty_and_single_span_traces():
 def test_is_proxy_names():
     assert all(journey.is_proxy(n) for n in ("waypoint", "waypoint.boutique", "shop-ingress-istio", "istio-ingressgateway", "ztunnel"))
     assert not any(journey.is_proxy(n) for n in ("frontend", "cartservice", "gatewayservice-app-name-without"))
+
+
+def test_inferred_peers_become_hops_and_keep_blocked_reason():
+    agent, gw_llm, gw_mcp = sp(1, "shopping-agent", 0, 100), sp(2, "agentgateway-proxy", 10, 40, parent=1), sp(3, "agentgateway-proxy", 60, 5, parent=1)
+    gw_llm["inferredPeer"] = {"name": "ollama", "type": "llm", "model": "qwen"}
+    gw_mcp["inferredPeer"] = {"name": "mcp-target", "type": "mcp", "blocked": "Authorization"}
+    hops = [(h["source"], h["target"], h.get("blocked")) for h in journey.journey_hops([agent, gw_llm, gw_mcp])]
+    assert hops == [("shopping-agent", "agentgateway-proxy", None), ("agentgateway-proxy", "ollama", None),
+                    ("shopping-agent", "agentgateway-proxy", None), ("agentgateway-proxy", "mcp-target", "Authorization")]

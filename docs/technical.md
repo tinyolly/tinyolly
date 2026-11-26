@@ -25,8 +25,28 @@ description: "Architecture, storage and retention, OTLP compatibility, UI featur
 - **Deep links:** `?tab=traces&traceId=...`, `?tab=spans&spanId=...`, `?tab=logs&search=...`; "Copy Link" buttons generate them, and IDs copy with one click.
 - **Correlated logs** inline in a trace; trace and span IDs in logs jump to their trace or span.
 - **Service Catalog:** RED metrics; a service name opens a menu (map, traces, spans, logs, metrics) filtered to it.
-- **Service Map:** Cytoscape.js and dagre, left to right, always fitted to the window. Shape is the service type (server, client, external, database, messaging, isolated), colour the health (blue, amber some errors, red >5%); TinyOlly's own services can be hidden. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), with waypoint and gateway shapes ([Istio Ambient Mesh](istio.md)). A selected node shows P50/P95/P99 and rate.
+- **Service Map:** Cytoscape.js and dagre, left to right, always fitted to the window. Shape is the service type (server, client, external, database, messaging, isolated, and [agent, LLM, MCP server](#agents-llms-and-mcp-servers)), colour the health (blue, amber some errors, red >5%); TinyOlly's own services can be hidden. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), with waypoint and gateway shapes ([Istio Ambient Mesh](istio.md)). A selected node shows P50/P95/P99 and rate.
 - **Auto-refresh** every 5 s, paused while a search filter is active; lists scroll with sticky headers.
+
+## Agents, LLMs and MCP servers
+
+An LLM such as Ollama and most MCP servers emit no spans, so the call into them is a CLIENT span that nothing answers and the hop would vanish from the map. TinyOlly infers the callee, as it does for databases (`tinyolly_common/graph_infer.py`):
+
+[![How TinyOlly draws agent, LLM and MCP hops](images/ai-map-inference.svg)](images/ai-map-inference.svg)
+
+- **LLM** (star): an unanswered call marked `agentgateway.outbound.subtype=Llm`, or carrying `gen_ai.request.model` on it or its parent. Named after the gateway route's backend (`default/ollama` → `ollama`), else `gen_ai.provider.name`, else the host. The edge carries input and output tokens, models and endpoints; the label shows tokens per minute.
+- **MCP server** (chevron): `subtype=Mcp` or `mcp.target`. The edge counts calls per method and per tool (`gen_ai.tool.name`); the label shows the busiest tool.
+- **Agent** (triangle): a service that makes GenAI calls (a CLIENT span with `gen_ai.operation.name`, or `gen_ai.agent.name`). Gateways carry `gen_ai.*` on their SERVER spans, so they stay gateways.
+- **Blocked at the gateway** (red edge): a refused call (prompt guard, tool authorization) is an errored SERVER span with `protocol` llm/mcp, a `reason` such as `Guardrail` or `Authorization`, and no outgoing call. It is drawn to the node it was meant for and counted in `blocked`; the node's colour includes it.
+- **Any other uninstrumented upstream:** named by `peer.service`, the gRPC `rpc.service`, or the host (a Kubernetes Service name for `*.svc.*` hosts), unless that is a known service. A call made to an IP is named by reverse DNS, which in Kubernetes gives the Service (`10.96.135.219` → `cartservice`; cached 10 minutes, `SERVICE_MAP_RESOLVE_IPS=0` turns it off); IPs without a name and telemetry exports are skipped. `SERVICE_MAP_INFER_EXTERNAL=0` turns this rule off.
+
+Inferred nodes have a dashed outline in the UI and in the MCP charts.
+
+Trace detail (`/api/traces/{id}`) marks those spans with `inferredPeer`, so `chart_trace_path` shows the hop too. Built and checked on an agentgateway demo (a shopping agent calling Qwen on Ollama and an MCP fetch tool through agentgateway):
+
+[![Service map of the agentgateway demo: agent, gateway, LLM and MCP server, with prompt-guard blocks in red](images/ui-agent-map.png)](images/full/ui-agent-map.png)
+
+[![chart_trace_path of one agent run through the gateway to the MCP server and the LLM](images/mesh-agent-trace-path.png)](images/full/mesh-agent-trace-path.png)
 
 ## MCP server
 
