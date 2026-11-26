@@ -6,30 +6,30 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="GenAI observability with an Ollama-based agent and zero-code instrumentation; what the AI Agents tab shows">
+        <meta name="description" content="An opt-in AI SRE agent that watches TinyOlly, opens incidents, investigates them with read-only MCP tools, proposes fixes and checks recovery; plus a demo shift that injects OpenTelemetry Demo faults and scores the agent">
       
       
         <meta name="author" content="TinyOlly">
       
       
-        <link rel="canonical" href="https://tinyolly.github.io/tinyolly/ai-agent/">
+        <link rel="canonical" href="https://tinyolly.github.io/tinyolly/ai-sre/">
       
       
-        <link rel="prev" href="../ebpf/">
+        <link rel="prev" href="../otel-demo-ai/">
       
       
-        <link rel="next" href="../istio/">
+        <link rel="next" href="../mcp/">
       
       
         
       
       
       <link rel="icon" href="../images/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
-        <title>AI Agent Demo - TinyOlly Documentation</title>
+        <title>TinyOlly AI SRE Agent - TinyOlly Documentation</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ai-agent-demo" class="md-skip">
+        <a href="#tinyolly-ai-sre-agent" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              AI Agent Demo
+              TinyOlly AI SRE Agent
             
           </span>
         </div>
@@ -626,34 +626,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../ebpf/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    eBPF Zero-Code Tracing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -673,7 +645,7 @@
   <span class="md-ellipsis">
     
   
-    AI Agent with Ollama
+    TinyOlly AI SRE Agent
   
 
     
@@ -691,7 +663,7 @@
   <span class="md-ellipsis">
     
   
-    AI Agent with Ollama
+    TinyOlly AI SRE Agent
   
 
     
@@ -717,10 +689,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-is-genai-observability" class="md-nav__link">
+  <a href="#start-it" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What is GenAI Observability?
+        Start it
       
     </span>
   </a>
@@ -728,38 +700,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#choose-a-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Quick Start">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#docker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docker
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How It Works
+        Choose a model
       
     </span>
   </a>
@@ -767,10 +711,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-youll-see" class="md-nav__link">
+  <a href="#the-console" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What You'll See
+        The console
       
     </span>
   </a>
@@ -778,10 +722,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#supported-llms" class="md-nav__link">
+  <a href="#demo-shift" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported LLMs
+        Demo shift
       
     </span>
   </a>
@@ -789,10 +733,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#how-it-decides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        How it decides
       
     </span>
   </a>
@@ -800,10 +744,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+  <a href="#limits" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Troubleshooting
+        Limits
       
     </span>
   </a>
@@ -814,34 +758,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../istio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Istio Ambient Mesh
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1150,6 +1066,95 @@
   
   
   
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Misc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Misc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Istio Ambient Mesh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../licensing/" class="md-nav__link">
         
@@ -1198,10 +1203,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-is-genai-observability" class="md-nav__link">
+  <a href="#start-it" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What is GenAI Observability?
+        Start it
       
     </span>
   </a>
@@ -1209,38 +1214,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#choose-a-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Quick Start">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#docker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docker
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How It Works
+        Choose a model
       
     </span>
   </a>
@@ -1248,10 +1225,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-youll-see" class="md-nav__link">
+  <a href="#the-console" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What You'll See
+        The console
       
     </span>
   </a>
@@ -1259,10 +1236,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#supported-llms" class="md-nav__link">
+  <a href="#demo-shift" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported LLMs
+        Demo shift
       
     </span>
   </a>
@@ -1270,10 +1247,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#how-it-decides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        How it decides
       
     </span>
   </a>
@@ -1281,10 +1258,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+  <a href="#limits" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Troubleshooting
+        Limits
       
     </span>
   </a>
@@ -1311,141 +1288,193 @@
   
 
 
-<h1 id="ai-agent-demo">AI Agent Demo</h1>
-<p>This demo showcases <strong>GenAI observability</strong> with OpenTelemetry - automatic instrumentation of LLM calls using the <code>opentelemetry-instrumentation-ollama</code> package.</p>
-<h2 id="what-is-genai-observability">What is GenAI Observability?</h2>
-<p>GenAI observability captures telemetry from LLM interactions including:</p>
-<ul>
-<li><strong>Prompts and responses</strong> - Full text of user prompts and model outputs</li>
-<li><strong>Token usage</strong> - Input and output token counts</li>
-<li><strong>Latency</strong> - Response time for each LLM call</li>
-<li><strong>Model information</strong> - Which model was used</li>
-</ul>
-<h2 id="quick-start">Quick Start</h2>
-<h3 id="docker">Docker</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Start TinyOlly core first</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>./01-start-core.sh
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Deploy AI agent demo (pulls pre-built images from Docker Hub)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nb">cd</span><span class="w"> </span>../docker-ai-agent-demo
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>./01-deploy-ai-demo.sh
+<h1 id="tinyolly-ai-sre-agent">TinyOlly AI SRE Agent</h1>
+<p>The agent watches TinyOlly's telemetry. When a service fails, slows down or goes quiet, it opens an incident, investigates it with a model and TinyOlly's read-only <a href="../mcp/">MCP tools</a>, and reports the root cause, evidence, blast radius and up to three fixes. Fixes are <strong>proposed, never applied</strong>. When the signals clear, it checks the recovery.</p>
+<div class="admonition note">
+<p class="admonition-title">Built with a local model</p>
+<p>Built and tested with a <strong>local Ollama model</strong>: Qwen3.8 27B (q4, MTP) on one RTX 5090 box on the home network ("Ubuntu RTX 5090 Qwen"). That is the default; any Ollama host works, and OpenAI and Claude are optional.</p>
+</div>
+<p><a href="../images/ai-sre-local-setup.svg"><img alt="How the pieces fit: the OpenTelemetry Demo and TinyOlly on a Mac, the model on a GPU box" src="../images/ai-sre-local-setup.svg" /></a></p>
+<h2 id="start-it">Start it</h2>
+<p>Needs TinyOlly core and the <a href="../otel-demo/">OpenTelemetry Demo</a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>docker
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">SRE_LLM_URL</span><span class="o">=</span>http://&lt;your-ollama-host&gt;:11434/v1<span class="w"> </span>./05-start-sre.sh<span class="w">      </span><span class="c1"># agent only</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nv">SRE_LLM_URL</span><span class="o">=</span>http://&lt;your-ollama-host&gt;:11434/v1<span class="w"> </span>./05-start-sre.sh<span class="w"> </span>--demo<span class="w">   </span><span class="c1"># agent + demo shift (quick profile)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>./05-stop-sre.sh<span class="w">                                                             </span><span class="c1"># stop the agent (flags are reset on exit)</span>
 </code></pre></div>
-<p>This starts:</p>
-<ul>
-<li><strong>Ollama</strong> with TinyLlama model for local LLM inference</li>
-<li><strong>AI Agent</strong> with automatic GenAI span instrumentation</li>
-</ul>
-<p>Access the UI at <code>http://localhost:5005</code> and navigate to the <strong>AI Agents</strong> tab.</p>
-<p><strong>For local development:</strong> Use <code>./01-deploy-ai-demo-local.sh</code> to build locally</p>
-<p><strong>Stop:</strong> <code>./02-stop-ai-demo.sh</code></p>
-<p><strong>Cleanup (remove volumes):</strong> <code>./03-cleanup-ai-demo.sh</code></p>
-<h2 id="how-it-works">How It Works</h2>
-<p>The demo uses zero-code auto-instrumentation - no OpenTelemetry imports in the application code:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># agent.py - NO OpenTelemetry imports needed!</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ollama</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">"http://ollama:11434"</span><span class="p">)</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># This call is AUTO-INSTRUMENTED</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">"tinyllama"</span><span class="p">,</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">messages</span><span class="o">=</span><span class="p">[{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"What is OpenTelemetry?"</span><span class="p">}]</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">)</span>
+<p>Console: <a href="http://localhost:7173">http://localhost:7173</a>. With <code>--demo</code> the first fault starts after about a minute (about 4 minutes with <code>--realistic</code>), once the agent has learned what normal looks like.</p>
+<p>On kind:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>k8s/06-rebuild+deploy-sre.sh<span class="w">          </span><span class="c1"># agent only</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>k8s/06-rebuild+deploy-sre.sh<span class="w"> </span>--demo<span class="w">   </span><span class="c1"># agent + demo shift (quick profile); needs k8s-otel-demo deployed</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>deploy/tinyolly-sre<span class="w"> </span><span class="m">7173</span>:8080
 </code></pre></div>
-<p>The magic happens in the Dockerfile:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c"># Install auto-instrumentation packages</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>opentelemetry-distro<span class="w"> </span>opentelemetry-instrumentation-ollama
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c"># Run with auto-instrumentation wrapper</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">"opentelemetry-instrument"</span><span class="p">,</span><span class="w"> </span><span class="s2">"python"</span><span class="p">,</span><span class="w"> </span><span class="s2">"-u"</span><span class="p">,</span><span class="w"> </span><span class="s2">"agent.py"</span><span class="p">]</span>
-</code></pre></div>
-<h2 id="what-youll-see">What You'll See</h2>
-<p>In the <strong>AI Agents</strong> tab:</p>
+<p>On k8s the shift flips flags through the demo's <code>flagd-ui</code> API (<code>http://flagd:4000</code>), live at once and without extra RBAC. Editing the <code>flagd-config</code> ConfigMap does not work: the Helm chart copies it into flagd only at pod start.</p>
+<h2 id="choose-a-model">Choose a model</h2>
 <table>
 <thead>
 <tr>
-<th>Field</th>
-<th>Description</th>
+<th>Preset</th>
+<th>Default model</th>
+<th>Enable it</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Prompt</strong></td>
-<td>The user's input to the LLM</td>
+<td>Local (Ollama), <strong>default</strong></td>
+<td><code>qwen3.8:27b-mtp-q4_K_M</code></td>
+<td><code>SRE_LLM_URL</code> (any OpenAI-compatible endpoint) and <code>SRE_MODEL</code></td>
 </tr>
 <tr>
-<td><strong>Response</strong></td>
-<td>The model's output</td>
+<td>OpenAI</td>
+<td><code>gpt-5</code> (<code>SRE_OPENAI_MODEL</code>)</td>
+<td><code>OPENAI_API_KEY</code> set in the shell that starts the agent</td>
 </tr>
 <tr>
-<td><strong>Tokens In</strong></td>
-<td>Number of input tokens</td>
-</tr>
-<tr>
-<td><strong>Tokens Out</strong></td>
-<td>Number of output tokens</td>
-</tr>
-<tr>
-<td><strong>Latency</strong></td>
-<td>Response time in milliseconds</td>
-</tr>
-<tr>
-<td><strong>Model</strong></td>
-<td>Model name (e.g., <code>tinyllama</code>)</td>
+<td>Claude</td>
+<td><code>claude-opus-5-5</code> (<code>SRE_ANTHROPIC_MODEL</code>)</td>
+<td><code>ANTHROPIC_API_KEY</code> set in the shell that starts the agent</td>
 </tr>
 </tbody>
 </table>
-<p>Click any row to expand the full span details in JSON format.</p>
-<h2 id="supported-llms">Supported LLMs</h2>
-<p>The OpenTelemetry GenAI semantic conventions work with any instrumented LLM provider:</p>
+<p>Configured presets appear in the console's model picker; switching applies to the next investigation. <code>SRE_PRESET=claude</code> (or <code>openai</code>) starts on a cloud preset; on k8s put the keys in a secret: <code>kubectl create secret generic tinyolly-sre-llm --from-literal=ANTHROPIC_API_KEY=...</code>. Claude uses the official SDK with refusal fallbacks (<code>ANTHROPIC_EFFORT</code>, default <code>medium</code>). Cloud presets send telemetry excerpts (span and service names, error messages) to the provider; the local default keeps everything on your network.</p>
+<h2 id="the-console">The console</h2>
+<p><a href="../images/ai-sre-console-light.png"><img alt="Console, light theme: live investigation stream on the left, investigation cards on the right" src="../images/ai-sre-console-light.png" /></a></p>
 <ul>
-<li><strong>Ollama</strong> - Local LLM inference (this demo)</li>
-<li><strong>OpenAI</strong> - GPT models via <code>opentelemetry-instrumentation-openai</code></li>
-<li><strong>Anthropic</strong> - Claude models</li>
-<li><strong>Other providers</strong> - Any with OpenTelemetry instrumentation</li>
+<li><strong>Live stream</strong> (left): every step as it happens: signals, evidence, prompt, tool calls and results, finding. Click a line for the full text.</li>
+<li><strong>Investigation cards</strong> (right), one per incident:<ul>
+<li><strong>Triage:</strong> <code>act now</code>, <code>watch</code> or <code>noise</code>, and whether it <strong>would page</strong> (shadow mode: nothing is paged; the shift report scores it).</li>
+<li><strong>Conclusion</strong> with confidence, and the <strong>theories</strong> considered: confirmed ✓, ruled out ✗ with the deciding fact, or open.</li>
+<li><strong>Evidence trail:</strong> the cited trace and every query the agent ran; each chip opens that view in TinyOlly, and hovering shows the result.</li>
+<li><strong>Timeline:</strong> related change marker, detection, new symptoms, investigation, conclusion, fix, recovery.</li>
+<li>Blast radius, proposed fixes, recovery result and time to resolve.</li>
+<li><strong>Write postmortem:</strong> a blameless draft (summary, impact, timeline, root cause, theories, 5 whys, evidence, action items) to copy or download as markdown.</li>
 </ul>
-<h2 id="configuration">Configuration</h2>
-<p>The demo is configured via environment variables in <code>docker-compose.yml</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">ai-agent</span><span class="p">:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">environment</span><span class="p">:</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OTEL_SERVICE_NAME=ai-agent-demo</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OLLAMA_HOST=http://ollama:11434</span>
-</code></pre></div>
-<h2 id="troubleshooting">Troubleshooting</h2>
-<p><strong>No AI traces appearing?</strong></p>
-<ul>
-<li>Ensure TinyOlly core is running</li>
-<li>
-<p>Check agent logs:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">cd</span><span class="w"> </span>docker-ai-agent-demo
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>ai-agent
-</code></pre></div>
 </li>
-<li>
-<p>Verify Ollama is ready:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>ollama
-</code></pre></div>
-</li>
+<li><strong>Ask</strong> (bottom): free-form questions about your telemetry.</li>
 </ul>
-<p><strong>Model download taking long?</strong></p>
+<p><a href="../images/ai-sre-console-dark.png"><img alt="Console, dark theme" src="../images/ai-sre-console-dark.png" /></a></p>
+<h2 id="demo-shift">Demo shift</h2>
+<p>The demo shift flips <a href="../otel-demo/#failure-injection-with-feature-flags">OpenTelemetry Demo feature flags</a> on a timer, so problems come and go. All flags reset to <code>off</code> on start, stop and exit.</p>
+<p>The agent is never told what was injected. It learns of a flip as it would in production: from a <strong>change marker</strong> (<code>flag paymentFailure: off -&gt; 50%</code>) it reads with <code>what_changed</code>. <code>DEMO_ANNOUNCE=0</code> withholds the markers for a harder run.</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Flag</th>
+<th>What the agent should find</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>payment-degraded</code></td>
+<td><code>paymentFailure=50%</code></td>
+<td>checkout errors; the cause is payment</td>
+</tr>
+<tr>
+<td><code>payment-down</code></td>
+<td><code>paymentUnreachable=on</code></td>
+<td>hard dependency outage</td>
+</tr>
+<tr>
+<td><code>cart-flaky</code></td>
+<td><code>cartFailure=25%</code></td>
+<td>partial errors seen by several callers</td>
+</tr>
+<tr>
+<td><code>ad-failure</code></td>
+<td><code>adFailure=on</code></td>
+<td>errors in one service</td>
+</tr>
+<tr>
+<td><code>slow-images</code></td>
+<td><code>imageSlowLoad=5sec</code></td>
+<td>frontend latency, cause upstream</td>
+</tr>
+<tr>
+<td><code>slow-shipping</code></td>
+<td><code>intlShippingSlowdown=5sec</code></td>
+<td>latency on one path only</td>
+</tr>
+<tr>
+<td><code>catalog-lock</code></td>
+<td><code>productCatalogLockContention=on</code></td>
+<td>latency from the database</td>
+</tr>
+<tr>
+<td><code>catalog-bad-product</code></td>
+<td><code>productCatalogFailure=on</code></td>
+<td>errors on one product only</td>
+</tr>
+<tr>
+<td><code>recommendation-cache</code></td>
+<td><code>recommendationCacheFailure=on</code></td>
+<td>slow path, subtle</td>
+</tr>
+<tr>
+<td><code>traffic-flood</code></td>
+<td><code>loadGeneratorFloodHomepage=on</code></td>
+<td>load, not a bug: capacity</td>
+</tr>
+<tr>
+<td><code>quiet</code></td>
+<td>none</td>
+<td><strong>control</strong>: the agent should open nothing</td>
+</tr>
+</tbody>
+</table>
+<p>Scenarios are data: <code>docker/apps/tinyolly-sre/sre/scenarios.json</code>.</p>
 <ul>
-<li>TinyLlama is ~600MB, first download may take a few minutes</li>
-<li>
-<p>The Ollama container is limited to 4 GB of RAM, so the default 4 GB Colima VM is too small. Restart it larger, for example:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>colima<span class="w"> </span>stop<span class="w"> </span>-p<span class="w"> </span>tinyolly
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">COLIMA_MEMORY</span><span class="o">=</span><span class="m">8</span><span class="w"> </span>./scripts/colima-up.sh
-</code></pre></div>
-</li>
-<li>
-<p>Check Ollama logs for download progress</p>
-</li>
+<li><strong>Order:</strong> random (never the same fault twice in a row, a quiet period every 4 faults; <code>DEMO_SEED</code> makes it repeatable), or fixed for a rehearsed demo: <code>DEMO_SCRIPT=payment-degraded,slow-shipping,quiet ./05-start-sre.sh --demo</code> (the shift ends with the script).</li>
+<li><strong>Controls:</strong> <code>POST /demo/start</code>, <code>/demo/pause</code>, <code>/demo/stop</code>, <code>/demo/reset</code> (all flags off), <code>/demo/trigger</code> with <code>{"id": "slow-images"}</code>. <code>GET /demo/status</code> shows what runs; the header shows only <code>demo: running · next fault in 2:40</code>, so the room does not see the answer first.</li>
+<li><strong>Scores:</strong> <strong>Reveal scores</strong> marks each card against the injected fault: <code>correct</code> (service and cause), <code>partial</code>, <code>wrong</code>, <code>false positive</code>, <code>no answer</code>; faults with no incident count as missed. <code>GET /demo/report</code> is the shift report: counts, paging decisions, time to detect and resolve, tool calls and tokens. Samples are small, so it gives counts, not percentages.</li>
 </ul>
-<p><strong>Agent errors?</strong></p>
+<p><strong>Profiles.</strong> <strong>Quick</strong> is the default: a scenario takes about 2 minutes (all 11 in about 25).</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Quick (default)</th>
+<th>Realistic (<code>--realistic</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Faults</td>
+<td>stronger variants (<code>paymentFailure=90%</code>, <code>cartFailure=75%</code>, <code>10sec</code> slowdowns), 75-90 s each</td>
+<td>the variants in the table above, 4-6 min each</td>
+</tr>
+<tr>
+<td>Between faults</td>
+<td>30 s cooldown and a clean cutoff (earlier telemetry is ignored), 20-30 s gap</td>
+<td>2.5-3 min cooldown for errors to age out, 1-2 min gap</td>
+</tr>
+<tr>
+<td>Shop load</td>
+<td>20 simulated users (<code>DEMO_LOAD_USERS</code>)</td>
+<td>the demo's default (3 users)</td>
+</tr>
+<tr>
+<td>Detection</td>
+<td>every 5 s; error rate, rate and p95 from the last 30 s of spans</td>
+<td>every 30 s; rate and p95 from the service catalog</td>
+</tr>
+<tr>
+<td>Change notes</td>
+<td>off (the model stays free for investigations)</td>
+<td>a change-risk note and a post-change check per flip</td>
+</tr>
+</tbody>
+</table>
+<p>To tune without waiting, record a shift once (<code>SRE_RECORD=/tmp/shift.jsonl</code>) and replay it through the detectors in seconds or the model in minutes: see "Fast iteration" in the <a href="https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre">agent's README</a>.</p>
+<h2 id="how-it-decides">How it decides</h2>
+<p>Detectors run without a model: error spans, error rate (per service and per operation), p95 latency, traffic drop, a service that stops reporting, error logs, mesh denials, and TinyOlly's storage pressure. Each service learns its normal; a change must hold for two polls. Signals on a service and its direct callers or callees join one incident, investigated from the deepest service. Settings are in the <a href="https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre">agent's README</a>.</p>
+<p><strong>Guardrails:</strong> at most 8 tool calls and 120 s per investigation, 12 investigations an hour, read-only tools, and cited traces and services are kept only if they appeared in the evidence.</p>
+<h2 id="limits">Limits</h2>
 <ul>
-<li>Ollama needs time to load the model after container starts</li>
-<li>The agent waits 10 seconds before first call</li>
+<li>Synthetic faults are not production; a good score says little about real incidents.</li>
+<li>With <code>--realistic</code>, several faults leave too little signal at the demo's low traffic to detect.</li>
+<li>Two unrelated faults close together can merge into one incident through a shared caller such as <code>frontend</code>.</li>
+<li>One model run at a time: a review can delay an investigation by up to a minute.</li>
 </ul>
 
 

@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="images/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -742,70 +742,14 @@
   
   
     <li class="md-nav__item">
-      <a href="ebpf/" class="md-nav__link">
+      <a href="ai-sre/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    eBPF Zero-Code Tracing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="ai-agent/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    AI Agent with Ollama
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="istio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Istio Ambient Mesh
+    TinyOlly AI SRE Agent
   
 
     
@@ -1122,6 +1066,95 @@
   
   
   
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Misc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Misc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="istio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Istio Ambient Mesh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="licensing/" class="md-nav__link">
         
@@ -1291,7 +1324,7 @@
 - REST API with OpenAPI documentation</p>
 <p><em>Demos</em>
 - Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags (<a href="otel-demo/">docs</a>)
-- Istio ambient mesh demo: Online Boutique on a sidecar-less mesh, with scenarios for waypoints, canary, faults and authorization policy, and an AI assistant that investigates them through MCP (<a href="https://github.com/stevelerner/istio-ambient-demo">demo repo</a>, <a href="istio/">mesh features</a>)</p>
+- TinyOlly AI SRE Agent: an agent on shift over the shop that triages, investigates, proposes fixes and writes postmortems, scored against injected faults (<a href="ai-sre/">docs</a>)</p>
 <p><em>Built with</em> Python (FastAPI), SQLite and JavaScript.</p>
 <div class="admonition note">
 <p class="admonition-title">Local Development Only</p>
@@ -1332,18 +1365,18 @@
     </tr>
     <tr>
       <td align="center" width="50%">
-        <a href="images/full/ui-service-map.png"><img src="images/ui-service-map.png" width="460" alt="Service map: mTLS, plaintext and denied edges"></a><br>
-        <em>Service map: mTLS, plaintext and denied edges</em>
+        <a href="images/full/ui-service-map.png"><img src="images/ui-service-map.png" width="460" alt="Service map of the OpenTelemetry Demo"></a><br>
+        <em>Service map of the OpenTelemetry Demo</em>
       </td>
       <td align="center" width="50%">
-        <a href="images/full/mesh-service-map.png"><img src="images/mesh-service-map.png" width="460" alt="The same map drawn by the MCP server"></a><br>
+        <a href="images/full/mesh-otel-service-map.png"><img src="images/mesh-otel-service-map.png" width="460" alt="The same map drawn by the MCP server"></a><br>
         <em>The same map drawn by the MCP server</em>
       </td>
     </tr>
     <tr>
       <td align="center" width="50%">
-        <a href="images/full/mesh-map-diff.png"><img src="images/mesh-map-diff.png" width="460" alt="What changed after a fault: failing edge in red"></a><br>
-        <em>What changed after a fault: failing edge in red</em>
+        <a href="images/full/mesh-otel-failure-map.png"><img src="images/mesh-otel-failure-map.png" width="460" alt="After a fault: failing services in red"></a><br>
+        <em>After a fault: failing services in red</em>
       </td>
       <td align="center" width="50%">
         <a href="images/full/ui-collector.png"><img src="images/ui-collector.png" width="460" alt="OpenTelemetry Collector configuration (OpAMP)"></a><br>

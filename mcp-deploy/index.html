@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../images/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -577,32 +577,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#docker-compose" class="md-nav__link">
+  <a href="#rebuild-after-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Docker Compose
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#kubernetes-kind" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kubernetes (kind)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#switching-between-docker-and-kubernetes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Switching between Docker and Kubernetes
+        Rebuild after changes
       
     </span>
   </a>
@@ -764,70 +742,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../ebpf/" class="md-nav__link">
+      <a href="../ai-sre/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    eBPF Zero-Code Tracing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ai-agent/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    AI Agent with Ollama
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../istio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Istio Ambient Mesh
+    TinyOlly AI SRE Agent
   
 
     
@@ -1144,6 +1066,95 @@
   
   
   
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Misc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Misc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Istio Ambient Mesh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../licensing/" class="md-nav__link">
         
@@ -1225,32 +1236,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#docker-compose" class="md-nav__link">
+  <a href="#rebuild-after-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Docker Compose
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#kubernetes-kind" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kubernetes (kind)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#switching-between-docker-and-kubernetes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Switching between Docker and Kubernetes
+        Rebuild after changes
       
     </span>
   </a>
@@ -1300,8 +1289,7 @@
 
 
 <h1 id="mcp-server">MCP Server</h1>
-<p>The TinyOlly MCP server lets an AI assistant (Claude Code, Claude Desktop, Zed, any MCP client) query your traces, logs, metrics and service map, draw charts, and follow built-in investigation playbooks. It is <strong>read-only</strong> and ships with every TinyOlly deployment, so there is usually nothing to install: start TinyOlly and point your client at it.</p>
-<p>This page covers running and connecting it. For what it can do, see <a href="../mcp/">MCP tools and playbooks</a>.</p>
+<p>The <strong>read-only</strong> TinyOlly MCP server lets an AI assistant (Claude Code, Claude Desktop, Zed, any MCP client) query traces, logs, metrics and the service map, draw charts and follow investigation playbooks. It ships with every TinyOlly deployment: start TinyOlly and point your client at it. What it can do: <a href="../mcp/">MCP tools and playbooks</a>.</p>
 <h2 id="where-it-runs">Where it runs</h2>
 <table>
 <thead>
@@ -1314,100 +1302,70 @@
 <tbody>
 <tr>
 <td><strong>Docker Compose</strong></td>
-<td>A <code>tinyolly-mcp</code> service in the core compose files (<code>docker/</code> and <code>docker-core-only/</code>). It starts and stops with the stack.</td>
+<td>A <code>tinyolly-mcp</code> service in the core compose files (<code>docker/</code> and <code>misc/docker-core-only/</code>), started and stopped with the stack.</td>
 <td><code>http://localhost:8765/mcp</code></td>
 </tr>
 <tr>
 <td><strong>Kubernetes (kind)</strong></td>
-<td>A <code>tinyolly-mcp</code> Deployment and NodePort Service (<code>k8s/tinyolly-mcp.yaml</code>, <code>k8s-core-only/tinyolly-mcp.yaml</code>). The kind config maps host port 8765 to it.</td>
+<td>A <code>tinyolly-mcp</code> Deployment and NodePort Service (<code>k8s/tinyolly-mcp.yaml</code>, <code>misc/k8s-core-only/tinyolly-mcp.yaml</code>); the kind config maps host port 8765 to it.</td>
 <td><code>http://localhost:8765/mcp</code></td>
 </tr>
 <tr>
 <td><strong>Standalone</strong></td>
-<td>You run <code>server.py</code> yourself, or the client starts it over stdio (see below).</td>
+<td>You run <code>server.py</code>, or the client starts it over stdio (see below).</td>
 <td>your choice</td>
 </tr>
 </tbody>
 </table>
-<p>Docker and Kubernetes use the same port and URL, so client configuration is identical for both. Every client shares one server over streamable HTTP. The container reads TinyOlly through its REST API (<code>TINYOLLY_URL</code>, <code>http://tinyolly-ui:5002</code> inside the stack), bundles the TinyOlly docs and the investigation skills, and binds to <code>127.0.0.1</code> on the host in Docker.</p>
+<p>Docker and Kubernetes use the same URL, so client setup is identical. All clients share one server over streamable HTTP. It reads TinyOlly through the REST API (<code>TINYOLLY_URL</code>, <code>http://tinyolly-ui:5002</code> inside the stack), bundles the docs and playbooks, and binds to <code>127.0.0.1</code> in Docker.</p>
 <h2 id="check-that-it-is-up">Check that it is up</h2>
-<p>An <code>initialize</code> call should return a JSON result that lists <code>tools</code> and <code>instructions</code>:</p>
+<p>An <code>initialize</code> call returns JSON listing <code>tools</code> and <code>instructions</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8765/mcp<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">'content-type: application/json'</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">'accept: application/json, text/event-stream'</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"check","version":"1"}}}'</span>
 </code></pre></div>
 <p>Docker: <code>docker ps --filter name=tinyolly-mcp</code>. Kubernetes: <code>kubectl get deploy tinyolly-mcp</code>.</p>
 <h2 id="connect-a-client">Connect a client</h2>
-<p>Register the URL once per client.</p>
-<p><strong>Claude Code</strong></p>
+<p><strong>Claude Code:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>tinyolly<span class="w"> </span>http://127.0.0.1:8765/mcp
 </code></pre></div>
-<p><strong>Claude Desktop</strong> cannot call a local URL directly (its URL connectors are called from Anthropic's cloud, which cannot reach <code>localhost</code>), so bridge it with <code>mcp-remote</code>. Add this to <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> under <code>"mcpServers"</code>. Use the absolute path to <code>npx</code> (for nvm: <code>~/.nvm/versions/node/&lt;version&gt;/bin/npx</code>) and set <code>PATH</code>, because the app does not load your shell profile:</p>
+<p><strong>Claude Desktop</strong> cannot reach a local URL (its URL connectors run in Anthropic's cloud), so bridge it with <code>mcp-remote</code> under <code>"mcpServers"</code> in <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>. Use the absolute path to <code>npx</code> (nvm: <code>~/.nvm/versions/node/&lt;version&gt;/bin/npx</code>) and set <code>PATH</code>, because the app does not load your shell profile. Then quit (Cmd+Q) and reopen it:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">"tinyolly"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/absolute/path/to/npx"</span><span class="p">,</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"-y"</span><span class="p">,</span><span class="w"> </span><span class="s2">"mcp-remote"</span><span class="p">,</span><span class="w"> </span><span class="s2">"http://127.0.0.1:8765/mcp"</span><span class="p">],</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">"env"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"PATH"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/directory/containing/node:/usr/bin:/bin"</span><span class="w"> </span><span class="p">}</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">}</span>
 </code></pre></div>
-<p>Quit (Cmd+Q) and reopen Claude Desktop after editing.</p>
-<p><strong>Zed</strong> can keep using the stdio command (see Standalone below), or add the HTTP URL as a context server.</p>
-<p>Then ask: "pretty print the service catalog".</p>
-<h2 id="docker-compose">Docker Compose</h2>
-<p>The service starts with the stack:</p>
+<p><strong>Zed:</strong> add the URL as a context server, or use the stdio command (Standalone below). Then ask: "pretty print the service catalog".</p>
+<h2 id="rebuild-after-changes">Rebuild after changes</h2>
+<p>Docker (the service starts with the stack; rebuild only it after changing <code>docker/apps/tinyolly-mcp</code> or <code>docs/</code>, then restart your client so it reloads the tool list):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose-tinyolly-core-local.yml<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
-<p>After you change <code>docker/apps/tinyolly-mcp</code> or <code>docs/</code>, rebuild just this service and restart your client so it reloads the tool list:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose-tinyolly-core-local.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build<span class="w"> </span>tinyolly-mcp
 </code></pre></div>
-<h2 id="kubernetes-kind">Kubernetes (kind)</h2>
-<p>The Deployment and Service come with <code>k8s/02-deploy-tinyolly.sh</code>. To rebuild and redeploy after changes:</p>
+<p>Kubernetes (deployed by <code>k8s/02-deploy-tinyolly.sh</code>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>k8s/05-rebuild+deploy-mcp.sh
 </code></pre></div>
-<p><strong>A cluster created before the 8765 mapping existed</strong> (<code>scripts/kind-config.yaml</code>): kind cannot add a host port to a running cluster, so bridge it instead of recreating the cluster. With the Colima docker context:</p>
+<p>A kind cluster created before the 8765 mapping in <code>scripts/kind-config.yaml</code> cannot gain a host port; bridge it instead (Colima docker context):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--restart<span class="o">=</span>always<span class="w"> </span>--network<span class="w"> </span>kind<span class="w"> </span>-p<span class="w"> </span><span class="m">8765</span>:8765<span class="w"> </span>alpine/socat<span class="w"> </span>tcp-listen:8765,fork,reuseaddr<span class="w"> </span>tcp:tinyolly-control-plane:30876
 </code></pre></div>
-<h2 id="switching-between-docker-and-kubernetes">Switching between Docker and Kubernetes</h2>
-<p>Run one at a time: stop one stack before starting the other. When moving from Kubernetes to Docker on an existing cluster, also remove the helper that forwards 8765 to the cluster (colima context):</p>
+<p>Run Docker or Kubernetes, not both. When moving from Kubernetes to Docker, remove that bridge, and restart your clients after any switch:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>rm<span class="w"> </span>-f<span class="w"> </span>tinyolly-mcp-bridge
 </code></pre></div>
-<p>Clients do not reconnect on their own after a switch: restart them.</p>
 <h2 id="standalone">Standalone</h2>
-<p>Without containers, the client starts the server itself over stdio. The installer creates a venv and prints the exact lines for your client, with your paths filled in:</p>
+<p>Without containers, the client starts the server over stdio. The installer creates a venv and prints the lines for each client (<a href="../mcp/#install">details</a>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker/apps/tinyolly-mcp/install.sh
 </code></pre></div>
-<table>
-<thead>
-<tr>
-<th>Client</th>
-<th>What to do</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Claude Code</strong></td>
-<td>Paste the <code>claude mcp add tinyolly -- ...</code> line the installer printed.</td>
-</tr>
-<tr>
-<td><strong>Claude Desktop</strong></td>
-<td>Paste the <code>"tinyolly": {...}</code> entry under <code>"mcpServers"</code> in <code>claude_desktop_config.json</code> (Settings, Developer, Edit Config opens it), then quit and reopen Claude.</td>
-</tr>
-<tr>
-<td><strong>Zed</strong></td>
-<td>Paste the <code>context_servers</code> entry into <code>~/.config/zed/settings.json</code>.</td>
-</tr>
-</tbody>
-</table>
-<p>Or run the HTTP server yourself and register the same URL:</p>
+<p>Or run the HTTP server yourself (<code>TINYOLLY_URL</code> points it at TinyOlly, default <code>http://localhost:5005</code>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python<span class="w"> </span>server.py<span class="w"> </span>--http<span class="w"> </span>--port<span class="w"> </span><span class="m">8765</span>
 </code></pre></div>
-<p>Set <code>TINYOLLY_URL</code> to point at a TinyOlly on another address (default <code>http://localhost:5005</code>).</p>
-<p>Prefer the container over per-client stdio: stdio keeps a stale copy of the server running until the client restarts.</p>
+<p>Prefer the container: stdio keeps a stale server running until the client restarts.</p>
 <h2 id="troubleshooting">Troubleshooting</h2>
 <ul>
-<li><strong>The client shows old or missing tools:</strong> restart the client after any rebuild. Check the container is the new image (<code>docker compose ... up -d --build tinyolly-mcp</code>, or <code>k8s/05-rebuild+deploy-mcp.sh</code>).</li>
-<li><strong>Connection refused on 8765:</strong> the stack is not running, or you are on a kind cluster created before the port mapping (use the <code>socat</code> bridge above).</li>
-<li><strong>Port 8765 already in use:</strong> the other stack (Docker or Kubernetes) or a leftover <code>tinyolly-mcp-bridge</code> is running; see Switching above.</li>
-<li><strong>Mesh tools or charts are missing:</strong> the image is stale. Rebuild the shared <code>python-base</code> image first, then the MCP image.</li>
+<li><strong>Old or missing tools:</strong> restart the client after a rebuild, and check the container runs the new image.</li>
+<li><strong>Connection refused on 8765:</strong> the stack is down, or the kind cluster predates the port mapping (use the bridge above).</li>
+<li><strong>Port 8765 in use:</strong> the other stack or a leftover <code>tinyolly-mcp-bridge</code> is running.</li>
+<li><strong>Mesh tools or charts missing:</strong> the image is stale; rebuild <code>python-base</code> first, then the MCP image.</li>
 </ul>
 
 

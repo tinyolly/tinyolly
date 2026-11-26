@@ -18,14 +18,14 @@
         <link rel="prev" href="../otel-demo/">
       
       
-        <link rel="next" href="../ebpf/">
+        <link rel="next" href="../ai-sre/">
       
       
         
       
       
       <link rel="icon" href="../images/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -792,70 +792,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../ebpf/" class="md-nav__link">
+      <a href="../ai-sre/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    eBPF Zero-Code Tracing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ai-agent/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    AI Agent with Ollama
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../istio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Istio Ambient Mesh
+    TinyOlly AI SRE Agent
   
 
     
@@ -1172,6 +1116,95 @@
   
   
   
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Misc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Misc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Istio Ambient Mesh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../licensing/" class="md-nav__link">
         
@@ -1356,16 +1389,10 @@
 
 
 <h1 id="ask-an-ai-about-the-opentelemetry-demo">Ask an AI about the OpenTelemetry Demo</h1>
-<p>The <a href="../otel-demo/">OpenTelemetry Demo</a> is a good place to try TinyOlly's <a href="../mcp/">MCP server</a>: it has real services, real traces and logs, and failures you can switch on with a feature flag. Connect an assistant (Claude Code, Claude Desktop, Zed) and ask in plain English; it answers from TinyOlly's data instead of guessing.</p>
-<p><strong>Before you start</strong></p>
-<ol>
-<li>TinyOlly and the demo are running (<a href="../otel-demo/">run the demo</a>), on Docker or kind.</li>
-<li>The assistant is connected to the MCP server (<a href="../mcp-deploy/">set up and connect it</a>): <code>http://localhost:8765/mcp</code>.</li>
-<li>Ask it: "List the TinyOlly playbooks you have." You should see <code>tinyolly-demo-failure-injection</code>, the playbook for everything on this page.</li>
-</ol>
+<p>Try TinyOlly's <a href="../mcp/">MCP server</a> on the <a href="../otel-demo/">OpenTelemetry Demo</a>: real services, traces and logs, and failures you switch on with a flag. Ask an assistant (Claude Code, Claude Desktop, Zed) in plain English; it answers from TinyOlly's data.</p>
+<p>Before you start: TinyOlly and the demo run on Docker or kind (<a href="../otel-demo/">run the demo</a>), and the assistant is connected to <code>http://localhost:8765/mcp</code> (<a href="../mcp-deploy/">set up and connect it</a>). "List the TinyOlly playbooks you have" should show <code>tinyolly-demo-failure-injection</code>.</p>
 <p><a href="../images/full/mesh-otel-service-map.png"><img alt="The OpenTelemetry Demo as drawn by the MCP chart_service_map tool" src="../images/mesh-otel-service-map.png" /></a></p>
 <h2 id="prompts-to-try">Prompts to try</h2>
-<p>The tool or playbook behind each prompt is on the right.</p>
 <p><strong>Explore</strong></p>
 <table>
 <thead>
@@ -1475,30 +1502,29 @@
 </tbody>
 </table>
 <h2 id="worked-example-payments-start-failing">Worked example: payments start failing</h2>
-<p>This is a real run on kind, with the <code>paymentFailure</code> flag at 50%.</p>
+<p>A real run on kind with <code>paymentFailure</code> at 50%.</p>
 <h3 id="1-break-it">1. Break it</h3>
 <p>On Docker:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>docker-otel-demo
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./03-set-flag.sh<span class="w"> </span>paymentFailure<span class="w"> </span><span class="m">50</span>%
 </code></pre></div>
-<p>On kind, edit the flag in the <code>flagd-config</code> ConfigMap and restart flagd (see <a href="../otel-demo/#kubernetes-kind">Kubernetes</a>). Give it a minute or two for errors to show.</p>
+<p>On kind, edit <code>flagd-config</code> and restart flagd (see <a href="../otel-demo/#kubernetes-kind">Kubernetes</a>). Errors show within a minute or two.</p>
 <h3 id="2-ask-what-is-wrong">2. Ask what is wrong</h3>
 <blockquote>
 <p>Something is wrong with checkout. What is failing and why?</p>
 </blockquote>
-<p>The assistant starts with the whole system. TinyOlly's catalog shows the two services whose error rate jumped, and <code>get_service_map</code> with <code>only="errors"</code> returns just the failing path (trimmed here):</p>
+<p>The catalog shows the two services whose error rate jumped, and <code>get_service_map</code> with <code>only="errors"</code> returns just the failing path (trimmed):</p>
 <p><a href="../images/full/ui-otel-failure-catalog.png"><img alt="TinyOlly service catalog: checkout and payment at 15% errors" src="../images/ui-otel-failure-catalog.png" /></a></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span><span class="nt">"nodes"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"frontend"</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"checkout"</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"payment"</span><span class="p">}],</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w"> </span><span class="nt">"edges"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"frontend"</span><span class="p">,</span><span class="w"> </span><span class="nt">"target"</span><span class="p">:</span><span class="w"> </span><span class="s2">"checkout"</span><span class="p">,</span><span class="w"> </span><span class="nt">"error_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">"p95"</span><span class="p">:</span><span class="w"> </span><span class="mf">59.03</span><span class="p">},</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">           </span><span class="p">{</span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"checkout"</span><span class="p">,</span><span class="w"> </span><span class="nt">"target"</span><span class="p">:</span><span class="w"> </span><span class="s2">"payment"</span><span class="p">,</span><span class="w">  </span><span class="nt">"error_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">"p95"</span><span class="p">:</span><span class="w"> </span><span class="mf">8.6</span><span class="p">}]}</span>
 </code></pre></div>
-<p>The picture makes it obvious which services are red:</p>
 <p><a href="../images/full/mesh-otel-failure-map.png"><img alt="chart_service_map with checkout and payment in red" src="../images/mesh-otel-failure-map.png" /></a></p>
 <h3 id="3-look-at-a-failing-order">3. Look at a failing order</h3>
 <blockquote>
 <p>Show me a failing order as a waterfall.</p>
 </blockquote>
-<p><code>search_traces</code> (errors only, service <code>payment</code>) finds the traces, then <code>get_trace</code> draws one. Only the spans with errors (<code>✗</code>) are shown here; the tool also shows the slowest spans and says how many it hid:</p>
+<p><code>search_traces</code> (errors only, service <code>payment</code>) finds the traces and <code>get_trace</code> draws one (error spans <code>✗</code> shown; the tool also lists the slowest spans and how many it hid):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Trace f8ff6711ece8e830e65a3142885cd309: 47.8ms, 100 spans, 7 errors, 9 services
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  └ frontend-proxy: router frontend egress   │                   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│  21.9ms ✗
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        └ frontend: executing api route (pa… │                   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│  21.2ms ✗
@@ -1508,24 +1534,24 @@
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>                └ payment: grpc.oteldemo.Pa… │                                 ▓▓ │  1.86ms ✗
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>                  └ payment: charge          │                                 ▓▓ │   902µs ✗
 </code></pre></div>
-<p>The failure starts in <code>payment: charge</code> and bubbles up through <code>checkout</code> and <code>frontend</code> to the proxy.</p>
+<p>The failure starts in <code>payment: charge</code> and bubbles up to the proxy.</p>
 <h3 id="4-see-the-journey">4. See the journey</h3>
 <blockquote>
 <p>Draw the journey of that failing request over the map.</p>
 </blockquote>
-<p><code>chart_trace_path</code> marks each hop of the request in order, with the time spent, and the failing services in red:</p>
+<p><code>chart_trace_path</code> numbers each hop with its time, failing services in red:</p>
 <p><a href="../images/full/mesh-otel-trace-path.png"><img alt="chart_trace_path: the failing order's journey, with checkout and payment in red" src="../images/mesh-otel-trace-path.png" /></a></p>
 <h3 id="5-confirm-with-the-edge">5. Confirm with the edge</h3>
 <blockquote>
 <p>Explain the edge from checkout to payment.</p>
 </blockquote>
-<p><code>get_edge</code> reports an error rate of 18.18% on both ends of the edge and a p95 of about 7.5 ms on the payment side: the failures are fast, which points to payment rejecting charges rather than timing out.</p>
+<p><code>get_edge</code> reports 18.18% errors on both ends and a p95 of about 7.5 ms at payment: the failures are fast, so payment rejects charges rather than timing out.</p>
 <h3 id="6-turn-it-off-and-check">6. Turn it off and check</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./03-set-flag.sh<span class="w"> </span>--reset
 </code></pre></div>
-<p>Ask the same question a minute or two later. New orders stop failing (the error rate figure in the catalog decays as the window moves on).</p>
+<p>A minute or two later new orders stop failing, and the catalog's error rate decays as the window moves on.</p>
 <h2 id="what-the-tools-do-not-cover-for-this-demo">What the tools do not cover for this demo</h2>
-<p><code>what_changed</code> and <code>chart_map_diff</code> compare Istio request metrics before and after a change marker, so they show nothing for the OpenTelemetry Demo, which has no mesh. Use the catalog, <code>get_service_map</code>, <code>search_traces</code> and <code>get_trace</code> as above. They work from traces.</p>
+<p><code>what_changed</code> lists change markers (such as the flag flips the AI SRE Agent's demo shift records), but its before/after comparison and <code>chart_map_diff</code> read Istio request metrics, so they show no differences for this demo, which has no mesh. The trace-based tools above work.</p>
 <h2 id="see-also">See also</h2>
 <ul>
 <li><a href="../otel-demo/">Run the OpenTelemetry Demo</a>: Docker and kind setup, failure flags</li>

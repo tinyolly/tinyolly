@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../images/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -629,70 +629,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../ebpf/" class="md-nav__link">
+      <a href="../ai-sre/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    eBPF Zero-Code Tracing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ai-agent/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    AI Agent with Ollama
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../istio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Istio Ambient Mesh
+    TinyOlly AI SRE Agent
   
 
     
@@ -962,21 +906,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data-storage" class="md-nav__link">
+  <a href="#data-and-otlp" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data Storage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#otlp-compatibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OTLP Compatibility
+        Data and OTLP
       
     </span>
   </a>
@@ -987,7 +920,7 @@
   <a href="#ui-features" class="md-nav__link">
     <span class="md-ellipsis">
       
-        UI Features
+        UI features
       
     </span>
   </a>
@@ -998,7 +931,7 @@
   <a href="#mcp-server" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MCP Server
+        MCP server
       
     </span>
   </a>
@@ -1122,6 +1055,95 @@
   
   
   
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Misc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Misc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Istio Ambient Mesh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../licensing/" class="md-nav__link">
         
@@ -1181,21 +1203,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data-storage" class="md-nav__link">
+  <a href="#data-and-otlp" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data Storage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#otlp-compatibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OTLP Compatibility
+        Data and OTLP
       
     </span>
   </a>
@@ -1206,7 +1217,7 @@
   <a href="#ui-features" class="md-nav__link">
     <span class="md-ellipsis">
       
-        UI Features
+        UI features
       
     </span>
   </a>
@@ -1217,7 +1228,7 @@
   <a href="#mcp-server" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MCP Server
+        MCP server
       
     </span>
   </a>
@@ -1261,45 +1272,28 @@
   <a href="../images/architecture.png"><img src="../images/architecture.png" alt="TinyOlly Architecture" width="700"></a>
 </div>
 
-<hr />
-<h2 id="data-storage">Data Storage</h2>
+<h2 id="data-and-otlp">Data and OTLP</h2>
 <ul>
-<li><strong>Format</strong>: Full OpenTelemetry (OTEL) format for traces, logs, and metrics  </li>
-<li><strong>SQLite</strong>: All telemetry stored in an embedded SQLite database (compressed with ZSTD + msgpack)  </li>
-<li><strong>WAL Mode</strong>: Write-Ahead Logging for concurrent reads during writes  </li>
-<li><strong>Retention</strong>: Records expire after 30 minutes by default (<code>SQLITE_TTL_SECONDS</code>), and the database is also capped at 256 MB (<code>MAX_DB_SIZE_MB</code>); when full, the oldest records are evicted first  </li>
-<li><strong>Correlation</strong>: Native trace-metric-log correlation via trace/span IDs  </li>
-<li><strong>Cardinality Protection</strong>: Prevents metric explosion  </li>
-<li><strong>Ephemeral by Design</strong>: Designed for local development — data persists across restarts until it expires or storage fills up  </li>
+<li><strong>Ingestion:</strong> OTLP/gRPC (primary) and OTLP/HTTP. The OpenTelemetry Collector's config is managed over OpAMP.</li>
+<li><strong>Storage:</strong> traces, logs and metrics in full OpenTelemetry format (resources, scopes, attributes) in embedded SQLite, compressed with ZSTD and msgpack, in WAL mode so reads continue during writes.</li>
+<li><strong>Retention:</strong> records expire after 30 minutes (<code>SQLITE_TTL_SECONDS</code>) and the database is capped at 256 MB (<code>MAX_DB_SIZE_MB</code>, oldest evicted first). Data survives restarts until it expires.</li>
+<li><strong>Correlation:</strong> traces, spans, logs and metrics linked by trace and span IDs; <a href="../CARDINALITY-PROTECTION/">cardinality protection</a> stops metric explosions.</li>
+<li><strong>REST API:</strong> OpenTelemetry-formatted JSON (<a href="../api/">REST API</a>).</li>
 </ul>
-<hr />
-<h2 id="otlp-compatibility">OTLP Compatibility</h2>
-<p>TinyOlly is <strong>fully OpenTelemetry-native</strong>:<br />
-- <strong>Ingestion</strong>: Accepts OTLP/gRPC (primary) and OTLP/HTTP<br />
-- <strong>Storage</strong>: Stores traces, logs, and metrics in full OTEL format with resources, scopes, and attributes<br />
-- <strong>Correlation</strong>: Native support for trace/span ID correlation across all telemetry types<br />
-- <strong>REST API</strong>: Exposes OTEL-formatted JSON for programmatic access
-- <strong>Control Plane</strong>: OpenTelemetry Collector OpAmp for dynamic configuration  </p>
-<hr />
-<h2 id="ui-features">UI Features</h2>
+<h2 id="ui-features">UI features</h2>
 <ul>
-<li><strong>Trace Waterfall</strong>: Distributed trace visualization with automatic filtering of noisy ASGI sub-spans (http send/receive)  </li>
-<li><strong>Trace Map</strong>: Per-trace service dependency graph rendered above the waterfall using Cytoscape.js. Detects inferred external clients from orphan parent span IDs (e.g., test clients that propagate trace context but don't export spans)  </li>
-<li><strong>Deep Linking</strong>: Shareable URLs that open directly to a specific trace detail view (<code>?tab=traces&amp;traceId=...</code>), span search (<code>?tab=spans&amp;spanId=...</code>), or filtered tab (<code>?tab=logs&amp;search=...</code>). "Copy Link" buttons in trace and span detail views generate these URLs  </li>
-<li><strong>Click-to-Copy IDs</strong>: Trace and span IDs are copyable with a single click throughout the UI  </li>
-<li><strong>Correlated Logs</strong>: Trace detail view shows correlated logs inline — click any log row to navigate to the Logs tab filtered by trace ID  </li>
-<li><strong>Cross-Tab Navigation</strong>: Click trace/span IDs in logs to jump to the corresponding trace or span view  </li>
-<li><strong>Service Catalog</strong>: RED metrics; clicking a service name opens a menu (Service map, Traces, Spans, Logs, Metrics) filtered to that service  </li>
-<li><strong>Service Map</strong>: Cytoscape.js dependency graph laid out left-to-right (dagre), sized to always fit the window. Shape = service type (server, client, external, database, messaging, isolated), color = health (blue healthy, amber some errors, red &gt;5% errors). Isolated services sit in a grid to the right; an option hides TinyOlly's own services. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), waypoint and gateway nodes get their own shapes, and a checkbox merges proxy and app nodes; see <a href="../istio/">Istio Ambient Mesh</a>. Selecting a node shows P50/P95/P99 latency and rate with a link back to the catalog  </li>
-<li><strong>Smart Auto-Refresh</strong>: 5-second polling pauses automatically when a search filter is active, preventing result disruption  </li>
-<li><strong>Scrollable Lists</strong>: Trace, span, and log lists support scrolling with sticky headers for large datasets</li>
+<li><strong>Trace waterfall</strong> with noisy ASGI sub-spans (http send/receive) filtered out, and a per-trace service graph above it; inferred external clients come from orphan parent span IDs.</li>
+<li><strong>Deep links:</strong> <code>?tab=traces&amp;traceId=...</code>, <code>?tab=spans&amp;spanId=...</code>, <code>?tab=logs&amp;search=...</code>; "Copy Link" buttons generate them, and IDs copy with one click.</li>
+<li><strong>Correlated logs</strong> inline in a trace; trace and span IDs in logs jump to their trace or span.</li>
+<li><strong>Service Catalog:</strong> RED metrics; a service name opens a menu (map, traces, spans, logs, metrics) filtered to it.</li>
+<li><strong>Service Map:</strong> Cytoscape.js and dagre, left to right, always fitted to the window. Shape is the service type (server, client, external, database, messaging, isolated), colour the health (blue, amber some errors, red &gt;5%); TinyOlly's own services can be hidden. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), with waypoint and gateway shapes (<a href="../istio/">Istio Ambient Mesh</a>). A selected node shows P50/P95/P99 and rate.</li>
+<li><strong>Auto-refresh</strong> every 5 s, paused while a search filter is active; lists scroll with sticky headers.</li>
 </ul>
-<hr />
-<h2 id="mcp-server">MCP Server</h2>
-<p><code>docker/apps/tinyolly-mcp</code> is a read-only MCP server over the REST API (traces, spans, logs, metrics, service catalog/map) that also serves these docs (<code>list_docs</code>, <code>search_docs</code>, <code>read_doc</code>) renders pretty tables, a trace waterfall and PNG charts (metrics, service map with mesh styling), Istio mesh tools (posture, denied and plaintext edges, per-trace mesh time and retries, version split, what changed), and ships investigation skills (<code>skills/</code>) that it serves as MCP tools, prompts and resources. Every response is size-bounded; large traces are summarized and paged. It runs either as a stdio process started by the client or as the <code>tinyolly-mcp</code> container (Docker Compose and Kubernetes, streamable HTTP on port 8765) that reads the UI's REST API. See the <a href="../mcp/">MCP guide</a>.</p>
-<hr />
+<h2 id="mcp-server">MCP server</h2>
+<p><code>docker/apps/tinyolly-mcp</code> is a read-only MCP server over the REST API: telemetry queries, these docs (<code>list_docs</code>, <code>search_docs</code>, <code>read_doc</code>), tables, waterfalls and PNG charts, Istio mesh tools, and investigation playbooks served as tools, prompts and resources. Responses are size-bounded; large traces are summarized and paged. It runs as a stdio process started by the client or as the <code>tinyolly-mcp</code> container (streamable HTTP on 8765). See the <a href="../mcp/">MCP guide</a>.</p>
+<p>The opt-in <a href="../ai-sre/">TinyOlly AI SRE Agent</a> uses these tools to investigate incidents on its own.</p>
 <h2 id="testing">Testing</h2>
-<p>Everything runs locally (no CI): <code>./scripts/test-all.sh</code> runs the unit suites (storage library, UI/API, OTLP receiver, MCP server, frontend JS, OpAMP Go server, collector configs, kubectl-context guard). <code>--stack</code> adds an end-to-end run against the live stack (88 checks including every collector preset) and <code>--kind</code> adds a Kubernetes smoke test on kind. See the <a href="../development/">development notes</a>.</p>
+<p>Everything runs locally (no CI): <code>./scripts/test-all.sh</code> runs the unit suites (storage library, UI/API, OTLP receiver, MCP server, frontend JS, OpAMP Go server, collector configs, kubectl guard); <code>--stack</code> adds the end-to-end run against the live stack (88 checks including every collector preset) and <code>--kind</code> a kind smoke test. See the <a href="../development/">development notes</a>.</p>
 
 
 

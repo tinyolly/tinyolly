@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Run TinyOlly core and the demo apps with Docker on Colima in about 5 minutes, then tour the UI">
+        <meta name="description" content="Run TinyOlly core and the OpenTelemetry Demo with Docker on Colima, then tour the UI">
       
       
         <meta name="author" content="TinyOlly">
@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../images/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -351,17 +351,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-youll-get" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What You'll Get
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -373,10 +362,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-1-clone-the-repository" class="md-nav__link">
+  <a href="#1-clone" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Clone the Repository
+        1. Clone
       
     </span>
   </a>
@@ -384,10 +373,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-start-tinyolly-core" class="md-nav__link">
+  <a href="#2-start-tinyolly-core" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Start TinyOlly Core
+        2. Start TinyOlly core
       
     </span>
   </a>
@@ -395,10 +384,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-deploy-demo-apps-optional-but-recommended" class="md-nav__link">
+  <a href="#3-start-the-opentelemetry-demo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Deploy Demo Apps (Optional but Recommended)
+        3. Start the OpenTelemetry Demo
       
     </span>
   </a>
@@ -406,10 +395,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-4-open-the-ui" class="md-nav__link">
+  <a href="#4-tour-the-ui" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Open the UI
+        4. Tour the UI
       
     </span>
   </a>
@@ -417,93 +406,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-5-explore-the-features" class="md-nav__link">
+  <a href="#5-send-your-own-app" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 5: Explore the Features
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 5: Explore the Features">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#traces-tab" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Traces Tab
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#logs-tab" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Logs Tab
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#metrics-tab" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Metrics Tab
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#service-catalog" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Service Catalog
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#service-map" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Service Map
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#opentelemetry-collector-opamp-config" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpenTelemetry Collector + OpAMP Config
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-6-use-your-own-application" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 6: Use Your Own Application
+        5. Send your own app
       
     </span>
   </a>
@@ -511,21 +417,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cleanup" class="md-nav__link">
+  <a href="#stop" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cleanup
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
+        Stop
       
     </span>
   </a>
@@ -540,45 +435,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ui-shows-no-traceslogsmetrics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        UI shows "No traces/logs/metrics"
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#port-conflicts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Port conflicts
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#demo-apps-not-generating-traffic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Demo apps not generating traffic
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -908,70 +764,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../ebpf/" class="md-nav__link">
+      <a href="../ai-sre/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    eBPF Zero-Code Tracing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ai-agent/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    AI Agent with Ollama
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../istio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Istio Ambient Mesh
+    TinyOlly AI SRE Agent
   
 
     
@@ -1288,6 +1088,95 @@
   
   
   
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Misc
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Misc
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Istio Ambient Mesh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../licensing/" class="md-nav__link">
         
@@ -1336,17 +1225,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-youll-get" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What You'll Get
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1358,10 +1236,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-1-clone-the-repository" class="md-nav__link">
+  <a href="#1-clone" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Clone the Repository
+        1. Clone
       
     </span>
   </a>
@@ -1369,10 +1247,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-start-tinyolly-core" class="md-nav__link">
+  <a href="#2-start-tinyolly-core" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Start TinyOlly Core
+        2. Start TinyOlly core
       
     </span>
   </a>
@@ -1380,10 +1258,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-deploy-demo-apps-optional-but-recommended" class="md-nav__link">
+  <a href="#3-start-the-opentelemetry-demo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Deploy Demo Apps (Optional but Recommended)
+        3. Start the OpenTelemetry Demo
       
     </span>
   </a>
@@ -1391,10 +1269,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-4-open-the-ui" class="md-nav__link">
+  <a href="#4-tour-the-ui" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Open the UI
+        4. Tour the UI
       
     </span>
   </a>
@@ -1402,93 +1280,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-5-explore-the-features" class="md-nav__link">
+  <a href="#5-send-your-own-app" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 5: Explore the Features
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 5: Explore the Features">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#traces-tab" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Traces Tab
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#logs-tab" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Logs Tab
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#metrics-tab" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Metrics Tab
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#service-catalog" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Service Catalog
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#service-map" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Service Map
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#opentelemetry-collector-opamp-config" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpenTelemetry Collector + OpAMP Config
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-6-use-your-own-application" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 6: Use Your Own Application
+        5. Send your own app
       
     </span>
   </a>
@@ -1496,21 +1291,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cleanup" class="md-nav__link">
+  <a href="#stop" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cleanup
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
+        Stop
       
     </span>
   </a>
@@ -1525,45 +1309,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ui-shows-no-traceslogsmetrics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        UI shows "No traces/logs/metrics"
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#port-conflicts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Port conflicts
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#demo-apps-not-generating-traffic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Demo apps not generating traffic
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1588,202 +1333,84 @@
 
 
 <h1 id="quick-start">Quick Start</h1>
-<p>Get TinyOlly running in under 5 minutes!</p>
-<h2 id="what-youll-get">What You'll Get</h2>
-<ul>
-<li><strong>TinyOlly UI</strong> at <code>http://localhost:5005</code></li>
-<li><strong>OpenTelemetry Collector</strong> listening on ports 4317 (gRPC) and 4318 (HTTP)</li>
-<li><strong>OpAMP Server</strong> for remote collector configuration management</li>
-<li><strong>Demo microservices</strong> generating automatic telemetry</li>
-</ul>
-<hr />
+<p>Run TinyOlly and the OpenTelemetry Demo on your Mac in about five minutes: the UI on <code>http://localhost:5005</code>, an OpenTelemetry Collector on 4317 (gRPC) and 4318 (HTTP), an OpAMP server for collector config, and the Astronomy Shop sending real traces, logs and metrics.</p>
 <h2 id="prerequisites">Prerequisites</h2>
-<ul>
-<li>
-<p>Colima + docker CLI installed and running. The scripts use the <code>colima-tinyolly</code> Docker context, so they work even if another Docker context or VM is active:</p>
+<p>Colima and the docker CLI. The scripts use the <code>colima-tinyolly</code> Docker context, so another active context or VM does not get in the way:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>brew<span class="w"> </span>install<span class="w"> </span>colima<span class="w"> </span>docker<span class="w"> </span>docker-compose<span class="w"> </span>docker-buildx<span class="w"> </span>docker-credential-helper
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./scripts/colima-up.sh
 </code></pre></div>
-</li>
-<li>
-<p>Git (to clone the repository)</p>
-</li>
-<li>5 minutes of your time</li>
-</ul>
-<hr />
-<h2 id="step-1-clone-the-repository">Step 1: Clone the Repository</h2>
+<h2 id="1-clone">1. Clone</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tinyolly/tinyolly
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>tinyolly
 </code></pre></div>
-<hr />
-<h2 id="step-2-start-tinyolly-core">Step 2: Start TinyOlly Core</h2>
+<h2 id="2-start-tinyolly-core">2. Start TinyOlly core</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>docker
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./01-start-core.sh
 </code></pre></div>
-<p>This pulls pre-built images from Docker Hub and starts:</p>
-<ul>
-<li><strong>OpenTelemetry Collector</strong> (ports 4317/4318)</li>
-<li><strong>OpAMP Server</strong> (ports 4320/4321)</li>
-<li><strong>TinyOlly OTLP Receiver</strong> (internal)</li>
-<li><strong>TinyOlly UI</strong> (port 5005)</li>
-<li><strong>TinyOlly MCP server</strong> (port 8765, for AI agents: <a href="../mcp/">MCP guide</a>)</li>
-<li><strong>SQLite storage</strong> (embedded)</li>
-</ul>
-<p><strong>Deployment time:</strong> ~30 seconds (pulls from Docker Hub)</p>
-<p><strong>For local development:</strong> Use <code>./01-start-core-local.sh</code> to build images locally.</p>
-<hr />
-<h2 id="step-3-deploy-demo-apps-optional-but-recommended">Step 3: Deploy Demo Apps (Optional but Recommended)</h2>
-<p>In a new terminal:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>./01-deploy-demo.sh
+<p>This pulls the images from Docker Hub (about 30 seconds) and starts the collector (4317/4318), the OpAMP server (4320/4321), the OTLP receiver, the UI (5005) and the <a href="../mcp/">MCP server</a> (8765, for AI agents), with embedded SQLite storage. <code>./01-start-core-local.sh</code> builds the images from your checkout instead.</p>
+<h2 id="3-start-the-opentelemetry-demo">3. Start the OpenTelemetry Demo</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">cd</span><span class="w"> </span>../docker-otel-demo
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>./01-start-otel-demo.sh
 </code></pre></div>
-<p>This pulls demo images from Docker Hub and deploys two Flask microservices that automatically generate traffic.</p>
-<p><strong>Wait 30 seconds</strong> for telemetry to appear!</p>
-<p><strong>For local development:</strong> Use <code>./01-deploy-demo-local.sh</code> to build images locally.</p>
-<hr />
-<h2 id="step-4-open-the-ui">Step 4: Open the UI</h2>
-<p>Open your browser to: <strong><code>http://localhost:5005</code></strong></p>
-<p>You should see:</p>
+<p>This starts a 16-service subset of the <a href="../otel-demo/">OpenTelemetry Demo</a> and a small load generator, all sending to TinyOlly (the first run pulls about 16 images). Services appear within a minute or two; the shop is at <code>http://localhost:8080</code>. To have an AI SRE agent investigate faults in the shop as they happen, see the <a href="../ai-sre/">TinyOlly AI SRE Agent</a>.</p>
+<h2 id="4-tour-the-ui">4. Tour the UI</h2>
+<p>Open <code>http://localhost:5005</code>.</p>
+<p><strong>Traces:</strong> each trace's span waterfall with its correlated logs; click a span for its full JSON.</p>
 <div align="center">
-  <a href="../images/traces.png"><img src="../images/traces.png" alt="TinyOlly Traces View" width="700"></a>
-  <p><em>Trace waterfall with correlated logs and span timing</em></p>
+  <a href="../images/full/ui-traces.png"><img src="../images/ui-traces.png" alt="TinyOlly Traces View" width="700"></a>
 </div>
 
-<hr />
-<h2 id="step-5-explore-the-features">Step 5: Explore the Features</h2>
-<h3 id="traces-tab">Traces Tab</h3>
-<p>View distributed traces across microservices with timing waterfall.</p>
+<p><strong>Logs:</strong> linked to their trace and span, filterable by severity.</p>
 <div align="center">
-  <a href="../images/spans.png"><img src="../images/spans.png" alt="Span Waterfall" width="700"></a>
-  <p><em>Span waterfall showing request timing breakdown with correlated logs</em></p>
+  <a href="../images/full/ui-logs.png"><img src="../images/ui-logs.png" alt="Logs View" width="700"></a>
 </div>
 
-<p>Click on a span to view detailed JSON data:</p>
+<p><strong>Metrics:</strong> every metric with charts and cardinality.</p>
 <div align="center">
-  <a href="../images/traces1.png"><img src="../images/traces1.png" alt="Span Details" width="700"></a>
-  <p><em>Span detail view with full OpenTelemetry attributes</em></p>
+  <a href="../images/full/ui-metrics.png"><img src="../images/ui-metrics.png" alt="Metrics View" width="700"></a>
 </div>
 
-<h3 id="logs-tab">Logs Tab</h3>
-<p>Browse logs with trace/span correlation. Filter by severity (Error, Warn, Info, Debug).</p>
+<p><strong>Service Catalog:</strong> rate, errors and duration per service; click a name to jump to its map node, traces, spans, logs or metrics.</p>
 <div align="center">
-  <a href="../images/logs.png"><img src="../images/logs.png" alt="Logs View" width="700"></a>
-  <p><em>Real-time logs with trace and span correlation</em></p>
+  <a href="../images/full/ui-otel-catalog.png"><img src="../images/ui-otel-catalog.png" alt="Service Catalog" width="700"></a>
 </div>
 
-<p>Click on a log entry to view full details:</p>
+<p><strong>Service Map:</strong> dependencies with shape for service type and colour for health (legend above the map); click a node for latency.</p>
 <div align="center">
-  <a href="../images/logs2.png"><img src="../images/logs2.png" alt="Log Details" width="700"></a>
-  <p><em>Log detail view with full attributes and resource info</em></p>
+  <a href="../images/full/ui-otel-service-map.png"><img src="../images/ui-otel-service-map.png" alt="Service Map" width="700"></a>
 </div>
 
-<p>Filter to show only errors:</p>
+<p><strong>OpenTelemetry Collector + OpAMP Config:</strong> view a connected collector's config, apply changes with validation and a diff preview, or apply a <a href="../collector-presets/">collector preset</a> (sampling, PII redaction, transforms, connectors and more). The collector needs the OpAMP extension (see <a href="../docker/#opamp-configuration-optional">Docker Deployment</a> or <a href="../otel-collector/#opamp-configuration-optional">OpenTelemetry Collector</a>).</p>
 <div align="center">
-  <a href="../images/logs3.png"><img src="../images/logs3.png" alt="Error Logs" width="700"></a>
-  <p><em>Filtered error logs with trace correlation</em></p>
+  <a href="../images/full/ui-collector.png"><img src="../images/ui-collector.png" alt="OpAMP Config" width="700"></a>
 </div>
 
-<h3 id="metrics-tab">Metrics Tab</h3>
-<p>Visualize metrics with automatic charting.</p>
-<div align="center">
-  <a href="../images/metrics.png"><img src="../images/metrics.png" alt="Metrics View" width="700"></a>
-  <p><em>Time-series metrics visualization with rate charts</em></p>
-</div>
-
-<h3 id="service-catalog">Service Catalog</h3>
-<p>View all services with RED metrics (Rate, Errors, Duration). Click a service name for a menu that jumps to its map node, traces, spans, logs or metrics.</p>
-<div align="center">
-  <a href="../images/servicecatalog.png"><img src="../images/servicecatalog.png" alt="Service Catalog" width="700"></a>
-  <p><em>Service catalog with RED metrics for all services</em></p>
-</div>
-
-<h3 id="service-map">Service Map</h3>
-<p>Visualize service dependencies with an interactive graph. Shape shows the service type and color shows health (see the legend above the map); click a node for latency and a link to the Service Catalog, and use the checkbox to hide TinyOlly's own services.</p>
-<div align="center">
-  <a href="../images/servicemap.png"><img src="../images/servicemap.png" alt="Service Map" width="700"></a>
-  <p><em>Interactive service dependency map with latency information</em></p>
-</div>
-
-<h3 id="opentelemetry-collector-opamp-config">OpenTelemetry Collector + OpAMP Config</h3>
-<p>View and manage your OpenTelemetry Collector configuration remotely via the OpAMP protocol.</p>
-<div align="center">
-  <a href="../images/collector.png"><img src="../images/collector.png" alt="OpAMP Config" width="700"></a>
-  <p><em>OpenTelemetry Collector configuration management via OpAMP</em></p>
-</div>
-
-<p>This page allows you to:</p>
-<ul>
-<li><strong>View current configuration</strong> from connected collectors</li>
-<li><strong>Apply configuration changes</strong> with validation and diff preview</li>
-<li><strong>Use collector presets</strong> for common scenarios (sampling, PII redaction, transforms, connectors, prometheus-remote-write...); see <a href="../collector-presets/">Collector presets</a></li>
-<li><strong>Check OpAMP server status</strong> and see connected collector agents</li>
-<li><strong>Validate configurations</strong> before applying to catch errors early</li>
-</ul>
-<p>To use this feature, your OpenTelemetry Collector must be configured with the OpAMP extension (see <a href="../docker/#opamp-configuration-optional">Docker Deployment</a> or <a href="../otel-collector/#opamp-configuration-optional">OpenTelemetry Collector</a> documentation).</p>
-<hr />
-<h2 id="step-6-use-your-own-application">Step 6: Use Your Own Application</h2>
-<p>Point your application's OpenTelemetry exporter to:</p>
-<p><strong>For apps running on your host machine (outside Docker):</strong>
+<h2 id="5-send-your-own-app">5. Send your own app</h2>
+<p>Point your app's OpenTelemetry exporter at the collector, from your Mac:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://localhost:4318
-</code></pre></div></p>
-<p><strong>For apps running inside Docker:</strong>
+</code></pre></div>
+<p>or from a container:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://otel-collector:4318
+</code></pre></div>
+<h2 id="stop">Stop</h2>
+<p>From the <code>tinyolly</code> directory, stop the OpenTelemetry Demo (keeps TinyOlly running):
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker-otel-demo/02-stop-otel-demo.sh
 </code></pre></div></p>
-<p>TinyOlly will automatically capture and display your telemetry!</p>
-<hr />
-<h2 id="cleanup">Cleanup</h2>
-<p>Stop demo apps (keeps TinyOlly running):
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>./02-cleanup-demo.sh
+<p>Stop TinyOlly too:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker/02-stop-core.sh
 </code></pre></div></p>
-<p>Stop everything:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>./02-stop-core.sh
-</code></pre></div></p>
-<hr />
-<h2 id="next-steps">Next Steps</h2>
-<ul>
-<li><a href="../otel-collector/">Configure your own OpenTelemetry Collector</a></li>
-<li><a href="../api/">Explore the REST API</a> at <code>http://localhost:5005/docs</code></li>
-<li><a href="../kubernetes/">Deploy on Kubernetes</a></li>
-<li><a href="../technical/">Learn about the architecture</a></li>
-</ul>
-<hr />
+<p>Next: <a href="../otel-collector/">your own collector</a> · <a href="../api/">REST API</a> (<code>http://localhost:5005/docs</code>) · <a href="../kubernetes/">Kubernetes</a> · <a href="../technical/">architecture</a>.</p>
 <h2 id="troubleshooting">Troubleshooting</h2>
-<h3 id="ui-shows-no-traceslogsmetrics">UI shows "No traces/logs/metrics"</h3>
-<ul>
-<li>Wait 30 seconds after starting demo apps</li>
-<li>
-<p>Check containers are running in the TinyOlly VM (plain <code>docker ps</code> shows whichever context is active, possibly another Colima VM):</p>
+<p><strong>No traces, logs or metrics:</strong> wait a minute or two after starting the demo, then check the containers in the TinyOlly VM (plain <code>docker ps</code> shows whichever context is active) and the load generator:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>--context<span class="w"> </span>colima-tinyolly<span class="w"> </span>ps
 </code></pre></div>
-</li>
-<li>
-<p>Check demo app logs:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-demo/docker-compose-demo.yml<span class="w"> </span>logs
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>docker<span class="w"> </span>--context<span class="w"> </span>colima-tinyolly<span class="w"> </span>logs<span class="w"> </span>load-generator<span class="w"> </span>--tail<span class="w"> </span><span class="m">20</span>
 </code></pre></div>
-</li>
-</ul>
-<h3 id="port-conflicts">Port conflicts</h3>
-<ul>
-<li>TinyOlly uses ports 4317, 4318, 4320, 4321, 4343, 5005, 8765, 19291</li>
-<li>Stop conflicting services or modify ports in <code>docker-compose-tinyolly-core.yml</code></li>
-</ul>
-<h3 id="demo-apps-not-generating-traffic">Demo apps not generating traffic</h3>
-<ul>
-<li>
-<p>Restart demo:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">cd</span><span class="w"> </span>docker-demo
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>./02-cleanup-demo.sh
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>./01-deploy-demo.sh
+<p><strong>Port conflicts:</strong> TinyOlly uses 4317, 4318, 4320, 4321, 4343, 5005, 8765 and 19291; stop what conflicts or change the ports in <code>docker-compose-tinyolly-core.yml</code>. The <a href="../kubernetes/">kind cluster</a> maps 4317, 4318, 5005 and 8765 too, so run one at a time: <code>scripts/teardown.sh --level cluster</code> removes it.</p>
+<p><strong>The shop sends no traffic:</strong> restart the demo:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>docker-otel-demo/02-stop-otel-demo.sh
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>docker-otel-demo/01-start-otel-demo.sh
 </code></pre></div>
-</li>
-<li>
-<p>Check logs:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-demo/docker-compose-demo.yml<span class="w"> </span>logs<span class="w"> </span>demo-frontend
-</code></pre></div>
-</li>
-</ul>
 <p>For more help, <a href="https://github.com/tinyolly/tinyolly/issues">open an issue on GitHub</a>.</p>
 
 
