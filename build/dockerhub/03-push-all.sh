@@ -9,7 +9,7 @@ set -e
 # Usage: ./03-push-all.sh [version]
 # Example: ./03-push-all.sh v2.1.0
 #
-# This pushes: core images (the old demo images are in archive/build)
+# This pushes: core images and the TinyOlly AI SRE Agent image (the old demo images are in archive/build)
 # Run ./02-build-all.sh first to build the images
 
 VERSION=${1:-"latest"}
@@ -27,8 +27,11 @@ echo ">>> Pushing Core Images..."
 echo ""
 "$SCRIPT_DIR/03-push-core.sh" "$VERSION"
 
-
-
+# Push the TinyOlly AI SRE Agent image
+echo ""
+echo ">>> Pushing AI SRE Agent Image..."
+echo ""
+"$SCRIPT_DIR/03-push-sre.sh" "$VERSION"
 
 echo ""
 echo "=========================================="
@@ -42,4 +45,5 @@ echo "  - tinyolly/ui:$VERSION"
 echo "  - tinyolly/mcp:$VERSION"
 echo "  - tinyolly/opamp-server:$VERSION"
 echo "  - tinyolly/otel-supervisor:$VERSION"
+echo "  - tinyolly/sre:$VERSION   (TinyOlly AI SRE Agent)"
 echo ""

@@ -105,7 +105,10 @@ async def opamp_get_config(
                 timeout=aiohttp.ClientTimeout(total=5)
             ) as response:
                 if response.status == 200:
-                    return await response.json()
+                    data = await response.json()
+                    if isinstance(data, dict) and isinstance(data.get("config"), str):
+                        data["config"] = drop_conflicting_defaults(data["config"])
+                    return data
                 else:
                     raise HTTPException(
                         status_code=response.status,
@@ -136,6 +139,35 @@ async def opamp_validate_config(request: ConfigValidateRequest):
     - Component-specific validation rules
     """
     return await _validate_config_text(request.config)
+
+
+def _prune_empty(o):
+    if isinstance(o, dict):
+        out = {}
+        for k, v in o.items():
+            v = _prune_empty(v)
+            if v is None or v == [] or v == {}:
+                continue
+            out[k] = v
+        return out
+    if isinstance(o, list):
+        return [_prune_empty(x) for x in o]
+    return o
+
+
+def drop_conflicting_defaults(config_text: str) -> str:
+    """The collector's *effective* config spells out every default, including empty ones its own validator rejects
+    (`debug: output_paths: []` with `use_internal_logger: true`; `resourcedetection ... attributes: {included: []}`).
+    Empty lists, empty maps and nulls in an effective config only restate defaults, so drop them: the config shown in
+    the UI then validates and can be applied as is (and is about a third shorter)."""
+    try:
+        cfg = yaml.safe_load(config_text)
+    except yaml.YAMLError:
+        return config_text
+    if not isinstance(cfg, dict):
+        return config_text
+    pruned = _prune_empty(cfg)
+    return config_text if pruned == cfg else yaml.safe_dump(pruned, sort_keys=False, default_flow_style=False)
 
 
 def _run_otelcol_validate(config_text: str) -> subprocess.CompletedProcess:

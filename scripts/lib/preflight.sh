@@ -14,3 +14,18 @@ tinyolly_preflight() {
   fi
   echo "preflight OK (context: $(docker context show), arch: $(uname -m), vm mem: $((mem_bytes/1024/1024)) MiB)"
 }
+
+# Fail fast if another container in this Docker VM publishes one of TinyOlly core's host ports (the kind cluster
+# maps 4317/4318/5005/8765). TinyOlly's own containers (compose project "docker") are fine: they get re-created.
+tinyolly_ports_free() {
+  local ports="4317 4318 4320 4321 4343 5005 8765 19291" busy
+  busy=$(docker ps --format '{{.Names}}|{{.Label "com.docker.compose.project"}}|{{.Ports}}' 2>/dev/null | awk -F'|' -v ports="$ports" '
+    $2 != "docker" { n = split(ports, p, " "); for (i = 1; i <= n; i++) if ($3 ~ (":" p[i] "->")) print "  " $1 " uses port " p[i] }')
+  [ -z "$busy" ] && return 0
+  echo "ERROR: TinyOlly core's ports are taken:" >&2
+  echo "$busy" >&2
+  if echo "$busy" | grep -q -- '-control-plane '; then
+    echo "That is the kind cluster (docs/kubernetes.md): run one or the other. Remove it with: scripts/teardown.sh --level cluster" >&2
+  fi
+  return 1
+}

@@ -65,7 +65,7 @@ fi
 # ---- level 2: TinyOlly itself
 if [ "$N" -ge 2 ]; then
   if kube_up && [ "$KUBE_OK" = 1 ] && kubectl --context "$KCTX" get deploy tinyolly-ui >/dev/null 2>&1; then
-    add "TinyOlly on kind (deployments, services, data volume)" "k8s/03-cleanup.sh"
+    add "TinyOlly on kind (deployments, services, data volume)" "k8s/03-cleanup.sh --yes"
   fi
   for c in $CTXS; do
     docker_up "$c" || continue

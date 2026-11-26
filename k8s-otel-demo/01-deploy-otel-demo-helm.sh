@@ -42,6 +42,8 @@ fi
 # re-running this script should reset them, so force it where the flag exists.
 FORCE_ARGS=()
 helm upgrade --help 2>/dev/null | grep -q -- --force-conflicts && FORCE_ARGS=(--force-conflicts)
+# The chart's own notes list Jaeger, Grafana and other UIs this lean install does not run; print our own summary instead.
+helm upgrade --help 2>/dev/null | grep -q -- --hide-notes && FORCE_ARGS+=(--hide-notes)
 
 helm upgrade --install my-otel-demo open-telemetry/opentelemetry-demo --version 0.42.6 \
   --set opentelemetry-collector.enabled=false \
@@ -54,3 +56,10 @@ helm upgrade --install my-otel-demo open-telemetry/opentelemetry-demo --version 
   --set-string 'components.load-generator.envOverrides[0].value=false' \
   --set 'components.load-generator.envOverrides[1].name=LOCUST_USERS' \
   --set-string "components.load-generator.envOverrides[1].value=${LOCUST_USERS:-3}"
+
+echo ""
+echo "OpenTelemetry Demo deployed (release my-otel-demo, sending to TinyOlly's otel-collector)."
+echo "  Pods:     kubectl get pods -l app.kubernetes.io/part-of=opentelemetry-demo   (first run pulls images for a few minutes)"
+echo "  TinyOlly: http://localhost:5005"
+echo "  Shop:     kubectl port-forward svc/frontend-proxy 8080:8080, then http://localhost:8080"
+echo "  Remove:   k8s-otel-demo/02-cleanup-otel-demo-helm.sh"

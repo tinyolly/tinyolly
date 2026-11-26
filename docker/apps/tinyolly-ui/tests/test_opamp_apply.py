@@ -158,3 +158,15 @@ def test_opamp_server_timeouts_and_errors_are_503_without_leaking_details(env, e
     for r in (client.get("/api/opamp/config"), client.post("/api/opamp/config", json={"config": GOOD})):
         assert r.status_code == 503, r.text
         assert "opamp-server" not in r.text and "4321" not in r.text
+
+
+def test_effective_config_drops_debug_output_paths_default():
+    import yaml
+    from app.routers.opamp import drop_conflicting_defaults
+    eff = ("exporters:\n  debug:\n    output_paths: []\n    use_internal_logger: true\n    sending_queue: null\n  debug/2:\n    output_paths: [stdout]\n"
+           "processors:\n  resourcedetection:\n    detectors: [env]\n    env:\n      resource_attributes: {}\n      attributes:\n        included: []\n")
+    out = yaml.safe_load(drop_conflicting_defaults(eff))
+    assert out["exporters"]["debug"] == {"use_internal_logger": True} and out["exporters"]["debug/2"]["output_paths"] == ["stdout"]
+    assert out["processors"]["resourcedetection"] == {"detectors": ["env"]}
+    same = "receivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: 0.0.0.0:4317\n"
+    assert drop_conflicting_defaults(same) == same                                      # untouched (byte for byte) when nothing to drop

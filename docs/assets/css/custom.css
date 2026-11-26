@@ -64,6 +64,11 @@
   color: #0000AA !important;
 }
 
+[data-md-color-scheme="slate"] .md-nav__link--active,
+[data-md-color-scheme="slate"] .md-nav__item .md-nav__link--active {
+  color: #7aa7ff !important;
+}
+
 /* Header styling - using #0000AA as darkest */
 .md-header {
   background-color: #0000AA !important;

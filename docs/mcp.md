@@ -5,12 +5,12 @@ description: "Read-only MCP server so AI agents can query TinyOlly telemetry and
 
 # MCP server (AI agents)
 
-`docker/apps/tinyolly-mcp` is a small, **read-only** [MCP](https://modelcontextprotocol.io) server. It lets Claude Code, Zed or any MCP client query the telemetry in your running TinyOlly (traces, spans, logs, metrics, the service catalog and the service map) and read these docs, so an agent can also answer "how do I set up / configure / use TinyOlly?". It is telemetry only: no collector config or admin operations.
+`docker/apps/tinyolly-mcp` is a **read-only** [MCP](https://modelcontextprotocol.io) server. Claude Code, Zed or any MCP client can query your running TinyOlly (traces, spans, logs, metrics, service catalog and map) and read these docs. It has no collector config or admin operations.
 
 ## Install
 
 1. Start TinyOlly (UI on `http://localhost:5005`).
-2. Run the installer. It creates a venv and prints the exact lines to copy for your client, with your paths filled in:
+2. Run the installer. It creates a venv and prints the lines to copy for your client, with your paths filled in:
 
     ```bash
     docker/apps/tinyolly-mcp/install.sh
@@ -21,100 +21,89 @@ description: "Read-only MCP server so AI agents can query TinyOlly telemetry and
 | Client | What to do |
 |---|---|
 | **Claude Code** | Paste the `claude mcp add tinyolly -- ...` line the installer printed. |
-| **Claude Desktop** | Open `~/Library/Application Support/Claude/claude_desktop_config.json` (Settings, Developer, Edit Config opens it if your version has that menu). Paste the `"tinyolly": {...}` entry under `"mcpServers"`, then quit (Cmd+Q) and reopen Claude. |
+| **Claude Desktop** | Paste the `"tinyolly": {...}` entry under `"mcpServers"` in `~/Library/Application Support/Claude/claude_desktop_config.json` (Settings, Developer, Edit Config), then quit (Cmd+Q) and reopen Claude. |
 | **Zed** | Paste the `context_servers` entry into `~/.config/zed/settings.json`. |
 
-The client starts the server itself, so there is nothing else to run. Ask it "pretty print the service catalog" to check it works.
+The client starts the server itself. Check it with "pretty print the service catalog".
 
 !!! note "Why not just a URL?"
-    Claude Desktop's URL connectors are called from Anthropic's cloud, which cannot reach `localhost`. A local server is started by the client instead.
+    Claude Desktop's URL connectors are called from Anthropic's cloud, which cannot reach `localhost`, so the client starts a local server instead.
 
 ### Always-on server (Docker or Kubernetes)
 
-TinyOlly's Docker and Kubernetes deployments run the MCP server for you as a container on `http://localhost:8765/mcp`, shared by every client. Setup, client configuration, rebuilding and troubleshooting are on the [MCP Server deployment page](mcp-deploy.md).
+TinyOlly's Docker and Kubernetes deployments also run the server as a container on `http://localhost:8765/mcp`, shared by every client. See the [MCP Server deployment page](mcp-deploy.md).
 
 ## Tools
 
 | Tool | What it does |
 |---|---|
-| `list_services` | Service catalog with rate, error rate, p50/p95/p99, worst errors first (`format="table"` for a pretty table) |
-| `get_service_map` | Compact caller → callee edges with call counts, errors and p95. With Istio: node `role` (waypoint, gateway), edge `mtls`, `source_kind` and `denied_count`; `merge=False` for the layered view. Filters for big meshes: `service`, `only` (`denied`, `plaintext`, `errors`), `limit` |
-| `get_mesh_posture` | Istio posture: mTLS coverage %, plaintext edges and denied calls |
-| `find_denied`, `find_plaintext` | Just the denied or the non-mTLS edges |
-| `get_edge` | One caller → callee edge in detail, with the RED numbers of both services and the Envoy/ztunnel response flags it carries (UC, UT, DI, DENY...), each with a plain meaning and a next step |
-| `get_trace_mesh` | Mesh view of a trace: proxy time per hop (mesh time), retry attempts and decoded Envoy response flags |
-| `get_version_split` | Canary view: traffic share, error rate and average latency (`avg_ms`) per destination version, plus plain-language `findings` when a version is much slower or fails more than the best one |
-| `what_changed` | Change markers (deploys, applied policies or scenarios, recorded with `POST /api/events`) and, for each, how request failures, response flags and traffic changed per service in the minutes before and after it |
-| `suggest_authz` | Drafts a least-privilege ALLOW `AuthorizationPolicy` for a service from the callers actually seen (their SPIFFE identities), and lists plaintext callers it would block. A draft to review, not something to apply blindly |
-| `chart_map_diff` | The service map coloured by what changed around the latest change marker (red: more failures, teal: fewer, blue: new or busier, grey: quieter or stopped) |
-| `chart_trace_path` | One trace's journey over the service map: numbered hops with the time in each, and how much of it was spent in mesh proxies versus the apps |
-| `compare_windows` | What changed in the last N minutes vs the N before: new, gone, more errors, slower services |
-| `search_traces` | Recent traces filtered by service (any trace with a span from it, not only traces that start there), errors, min duration, root name (`format="table"`) |
-| `get_trace` | **Bounded summary** of a trace: duration, counts, per-service breakdown, error spans, slowest spans, depth. `format="waterfall"` draws a text waterfall |
+| `list_services` | Service catalog: rate, error rate, p50/p95/p99, worst errors first (`format="table"` for a table) |
+| `get_service_map` | Caller → callee edges with calls, errors, p95. With Istio: node `role`, edge `mtls`, `source_kind`, `denied_count`; `merge=False` for the layered view. Filters: `service`, `only` (`denied`, `plaintext`, `errors`), `limit` |
+| `get_mesh_posture` | Istio posture: mTLS coverage %, plaintext edges, denied calls |
+| `find_denied`, `find_plaintext` | Only the denied or non-mTLS edges |
+| `get_edge` | One edge in detail: RED numbers of both services and the Envoy/ztunnel response flags (UC, UT, DI, DENY...) with their meaning and a next step |
+| `get_trace_mesh` | Mesh view of a trace: proxy time per hop, retries, decoded response flags |
+| `get_version_split` | Canary view: traffic share, error rate and `avg_ms` per version, with `findings` when one version is slower or fails more |
+| `what_changed` | Change markers (deploys, policies, scenarios; `POST /api/events`) and how failures, response flags and traffic changed around each |
+| `suggest_authz` | Draft least-privilege ALLOW `AuthorizationPolicy` from the callers seen (SPIFFE identities), listing plaintext callers it would block. Review before applying |
+| `chart_map_diff` | The map coloured by what changed around the latest change marker (red: more failures, teal: fewer, blue: new or busier, grey: quieter) |
+| `chart_trace_path` | One trace over the map: numbered hops with time in each, and mesh-proxy time versus app time |
+| `compare_windows` | Last N minutes vs the N before: new, gone, more errors, slower |
+| `search_traces` | Recent traces by service (any span from it), errors, min duration, root name (`format="table"`) |
+| `get_trace` | **Bounded summary** of a trace: duration, counts, per-service breakdown, error and slowest spans. `format="waterfall"` draws a text waterfall |
 | `get_trace_spans` | Page through a trace's spans (offset/limit, service/error/duration filters) |
-| `get_span` | Full detail of one span (attributes, events, links, resource) |
-| `search_spans` | Recent spans across traces filtered by service, errors, duration, name (`format="table"`) |
+| `get_span` | One span in full (attributes, events, links, resource) |
+| `search_spans` | Recent spans by service, errors, duration, name (`format="table"`) |
 | `query_logs` | Logs by trace, service, severity, substring (`format="table"`) |
-| `list_metrics` | Metric names with a search filter |
-| `query_metric` | Time series for the last N minutes, downsampled with min/max/avg/last. `labels` filters on metric attributes; `group_by` sums series per attribute value (for example `destination_service_name`) |
-| `chart_metric` | **Image**: line chart of a metric (histograms: mean solid, p95 dashed), series labelled by what differs between them |
-| `chart_service_map` | **Image**: with no arguments, the whole service map (layers of callers to callees, unconnected services in a strip below); with `service`, one service's dependencies, callers left and callees right, colored by health, edges labelled with p95 and request rate (`depth=2` for two hops) |
-| `list_skills` | Investigation skills (playbooks): when to use each |
-| `get_skill` | The full steps of one skill |
-| `list_docs` | These documentation pages: name, title, description, section headings |
-| `search_docs` | Search the docs; returns matching sections with snippets |
-| `read_doc` | Read a page or just one section (paged if long) |
+| `list_metrics` | Metric names, with a search filter |
+| `query_metric` | Time series for the last N minutes, downsampled (min/max/avg/last). `labels` filters on attributes; `group_by` sums per attribute value |
+| `chart_metric` | **Image**: line chart of a metric (histograms: mean solid, p95 dashed) |
+| `chart_service_map` | **Image**: the whole map, or with `service` one service's callers (left) and callees (right), coloured by health, edges labelled with p95 and rate (`depth=2` for two hops) |
+| `list_skills`, `get_skill` | Investigation playbooks, and the full steps of one |
+| `list_docs`, `search_docs`, `read_doc` | These docs: list pages, search sections, read a page or one section |
 
-The same pages are also exposed as MCP resources: `tinyolly-docs://<name>` (for example `tinyolly-docs://quickstart`).
+The docs are also MCP resources: `tinyolly-docs://<name>` (for example `tinyolly-docs://quickstart`).
 
-## Pretty output and visuals
+## Pretty output and charts
 
-The JSON tools are compact for agents. When you want something to show a person, pass `format="table"` (catalog, traces, spans, logs: markdown tables with health and severity icons, readable durations and times) or `format="waterfall"` on `get_trace` (indented span tree with timing bars; big traces keep every error span plus the slowest spans, up to `max_rows`). `chart_metric` and `chart_service_map` return PNG images, so the client must display image results (Claude Desktop and Claude Code do). Charts are drawn with matplotlib, which `install.sh` installs into the server's venv.
+JSON output is compact for agents. To show a person, pass `format="table"` (catalog, traces, spans, logs) or `format="waterfall"` on `get_trace` (span tree with timing bars; big traces keep every error span and the slowest, up to `max_rows`). `chart_metric` and `chart_service_map` return PNG images (drawn with matplotlib, installed by `install.sh`), so the client must display images; Claude Desktop and Claude Code do. Desktop shows a small preview: click to enlarge, or ask for a file with `save_to` ("save the service map to ~/Desktop/map.png").
 
-Claude Desktop shows tool images as a small preview. Click it to enlarge, or ask for a full-size file: both chart tools take `save_to` (for example "show me the service map and save it to ~/Desktop/map.png").
+`chart_service_map` draws each service as a card with a role icon, `err · p95`, and a health stripe (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green mTLS, amber dashed plaintext, red denied or errors, grey unknown. Only the six busiest edges carry latency labels on the whole map.
 
-`chart_service_map` draws each service as a card: a small icon for its role (client, service, external, waypoint or ztunnel, gateway), the name and `err · p95` inside, and a stripe coloured by health (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green solid mTLS, amber dashed plaintext, red denied or errors. Every chart carries a legend. The whole map lays callers left of callees; pass a service name to draw just its neighbourhood (`depth=2` for two hops), which stays readable on large meshes. A grey edge means mTLS is unknown (the edge is known only from traces). On the whole-service map only the six busiest edges carry latency labels so the picture stays readable.
+[![Service map drawn by chart_service_map](images/mesh-otel-service-map.png)](images/full/mesh-otel-service-map.png)
 
-[![Service map drawn by chart_service_map](images/mesh-service-map.png)](images/full/mesh-service-map.png)
+During a fault the failing services turn red, and `chart_trace_path` draws one request's journey hop by hop. `chart_map_diff` needs a mesh: it reads Istio request metrics.
 
-`chart_map_diff` colours the same map by what changed around a change marker (red: failures rose), and `chart_trace_path` draws one request's journey over it with the time spent in mesh proxies:
+[![chart_service_map during a fault: failing services in red](images/mesh-otel-failure-map.png)](images/full/mesh-otel-failure-map.png)
 
-[![chart_map_diff after a fault was injected](images/mesh-map-diff.png)](images/full/mesh-map-diff.png)
+[![chart_trace_path for one failing order](images/mesh-otel-trace-path.png)](images/full/mesh-otel-trace-path.png)
 
-[![chart_trace_path for one request through the waypoint](images/mesh-trace-path.png)](images/full/mesh-trace-path.png)
-
-Try asking: "chart http.server.duration for tinyolly-ui", "show me the service map", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "pretty print the service catalog".
+Try: "show me the service map", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "chart http.server.duration for tinyolly-ui".
 
 ## Investigation skills
 
-Seven short skills teach an agent how to investigate with these tools. They live only inside the MCP server (`docker/apps/tinyolly-mcp/skills/`); nothing is installed into Claude Code or any other client.
+Seven short playbooks live inside the server (`docker/apps/tinyolly-mcp/skills/`); nothing is installed into the client.
 
 | Skill | Use it for |
 |---|---|
 | `tinyolly-triage` | "What is wrong right now?": rank services, find a failing trace, report where/what/evidence/next |
-| `tinyolly-trace-investigation` | One trace: summary, waterfall, paging huge traces, self-time vs first-error reasoning |
-| `tinyolly-service-deep-dive` | One service: vitals, dependency map, errors, slow traces, logs, metrics |
-| `tinyolly-metrics-explorer` | Finding, charting and interpreting metrics (counters, gauges, histograms, cardinality) |
-| `tinyolly-troubleshoot-stack` | TinyOlly itself is empty or unreachable (Colima contexts, ports, retention) and setup questions |
-| `tinyolly-mesh-investigation` | Istio mesh: mTLS posture, denied and plaintext edges, mesh time and retries in a trace, version split, what changed |
+| `tinyolly-trace-investigation` | One trace: summary, waterfall, paging huge traces, self-time vs first error |
+| `tinyolly-service-deep-dive` | One service: vitals, dependencies, errors, slow traces, logs, metrics |
+| `tinyolly-metrics-explorer` | Finding, charting and reading metrics (counters, gauges, histograms, cardinality) |
+| `tinyolly-troubleshoot-stack` | TinyOlly empty or unreachable (Colima contexts, ports, retention), setup questions |
+| `tinyolly-mesh-investigation` | Istio mesh: mTLS posture, denied and plaintext edges, mesh time and retries, version split, what changed |
 | `tinyolly-demo-failure-injection` | Break the OTel demo with a feature flag and watch TinyOlly catch it |
 
-The server offers them three ways, so any MCP client can use them:
-
-- **Tools:** `list_skills` and `get_skill(name)`. The server's instructions tell agents to call `list_skills` before an investigation.
-- **Prompts:** one prompt per skill with an optional `focus` argument (shows up as a slash command or prompt picker where the client supports it), e.g. `tinyolly-triage` with focus "checkout is slow".
-- **Resources:** `tinyolly-skills://<name>`.
-
-The tests check that every tool and parameter a skill mentions really exists, so a skill cannot silently drift from the tools. Add one by creating `skills/<name>.md` with `name` (same as the file name) and a `description` that starts with "Use when".
+They are offered as tools (`list_skills`, `get_skill(name)`; the server tells agents to call `list_skills` first), as prompts with an optional `focus` argument (for example `tinyolly-triage` with focus "checkout is slow"), and as resources (`tinyolly-skills://<name>`). Tests check that every tool and parameter a skill names exists. To add one, create `skills/<name>.md` with `name` (the file name) and a `description` starting with "Use when".
 
 ## Docs
 
-The server reads `docs/*.md` from the repo (override the location with `TINYOLLY_DOCS_DIR`). Pages are cleaned for agents: screenshots and HTML layout removed, mkdocs admonitions and tabs flattened to plain markdown, and each page is split by heading so `read_doc(name, section)` returns only what is needed. Every page starts with `title` and `description` front matter, which is what `list_docs` shows, so keep that when adding a page.
+The server reads `docs/*.md` (`TINYOLLY_DOCS_DIR` overrides it), strips screenshots and HTML, flattens admonitions and tabs, and splits pages by heading so `read_doc(name, section)` returns only what is needed. `list_docs` shows each page's `title` and `description` front matter, so new pages need it.
 
-Try asking: "how do I run the OpenTelemetry demo?", "which collector presets exist and what do they do?", "what ports does TinyOlly use?".
+Try: "how do I run the OpenTelemetry demo?", "which collector presets exist?", "what ports does TinyOlly use?".
 
 ## Large traces
 
-Nothing returns an unbounded payload. Drill down instead of dumping: `search_traces` → `get_trace` (summary, a few KB even for a 6,000-span trace) → `get_trace_spans` (pages of up to 200 compact rows) → `get_span` for one span. Attribute values and log bodies are truncated, series are downsampled, and every response is hard-capped at `TINYOLLY_MCP_MAX_CHARS` (default 20,000) with a `truncated` flag telling the agent to narrow the query.
+Nothing returns an unbounded payload. Drill down: `search_traces` → `get_trace` (a few KB even for 6,000 spans) → `get_trace_spans` (pages of up to 200 rows) → `get_span`. Values and log bodies are truncated, series downsampled, and every response is capped at `TINYOLLY_MCP_MAX_CHARS` (default 20,000) with a `truncated` flag that tells the agent to narrow the query.
 
-Try asking: "which services have the highest error rate?", "find the slowest checkout trace and tell me where the time went", "show error logs for the cart service".
+Try: "which services have the highest error rate?", "find the slowest checkout trace and tell me where the time went", "show error logs for the cart service".

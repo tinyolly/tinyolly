@@ -27,6 +27,9 @@ docker volume rm tinyolly-otel-supervisor-data 2>/dev/null || true
 echo "Clearing SQLite data volume..."
 docker volume rm tinyolly-db-data 2>/dev/null || true
 
+source ../scripts/lib/preflight.sh
+tinyolly_ports_free || exit 1
+
 # Use docker compose with TinyOlly Core config
 # --force-recreate ensures config file changes are picked up
 docker compose -f docker-compose-tinyolly-core.yml up -d --force-recreate --remove-orphans 2>&1

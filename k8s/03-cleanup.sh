@@ -8,6 +8,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts/lib" && pwd)/kubectx.sh"
 
 # TinyOlly Kubernetes Cleanup Script
 # Removes all TinyOlly resources from the Kubernetes cluster
+#   ./03-cleanup.sh          asks before deleting (and whether to remove the images from the kind node)
+#   ./03-cleanup.sh --yes    no questions; keeps the images on the kind node. Exits 1 if cancelled.
+YES=""; [ "${1:-}" = "--yes" ] || [ "${1:-}" = "-y" ] && YES=1
 
 # Colors for output
 RED='\033[0;31m'
@@ -76,11 +79,13 @@ kubectl get deployments,services,configmaps,pvc 2>/dev/null | grep -E "(tinyolly
 echo ""
 
 # Confirm deletion
-read -p "$(echo -e ${YELLOW}Do you want to proceed with cleanup? [y/N]:${NC} )" -n 1 -r
-echo ""
+if [ -n "$YES" ]; then REPLY=y; else
+    read -p "$(echo -e ${YELLOW}Do you want to proceed with cleanup? [y/N]:${NC} )" -n 1 -r
+    echo ""
+fi
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}Cleanup cancelled${NC}"
-    exit 0
+    exit 1
 fi
 
 echo ""
@@ -139,7 +144,7 @@ else
 fi
 
 # Offer to clean up Docker images if using kind
-if command -v kind &> /dev/null && [ "$CONTEXT" = "kind-${KIND_CLUSTER:-tinyolly}" ]; then
+if [ -z "$YES" ] && command -v kind &> /dev/null && [ "$CONTEXT" = "kind-${KIND_CLUSTER:-tinyolly}" ]; then
     echo ""
     read -p "$(echo -e ${YELLOW}Do you want to remove TinyOlly Docker images from kind node? [y/N]:${NC} )" -n 1 -r
     echo ""

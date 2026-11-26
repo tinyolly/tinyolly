@@ -11,52 +11,29 @@ description: "Architecture, storage and retention, OTLP compatibility, UI featur
   <a href="../images/architecture.png"><img src="../images/architecture.png" alt="TinyOlly Architecture" width="700"></a>
 </div>
 
----
+## Data and OTLP
 
-## Data Storage
+- **Ingestion:** OTLP/gRPC (primary) and OTLP/HTTP. The OpenTelemetry Collector's config is managed over OpAMP.
+- **Storage:** traces, logs and metrics in full OpenTelemetry format (resources, scopes, attributes) in embedded SQLite, compressed with ZSTD and msgpack, in WAL mode so reads continue during writes.
+- **Retention:** records expire after 30 minutes (`SQLITE_TTL_SECONDS`) and the database is capped at 256 MB (`MAX_DB_SIZE_MB`, oldest evicted first). Data survives restarts until it expires.
+- **Correlation:** traces, spans, logs and metrics linked by trace and span IDs; [cardinality protection](CARDINALITY-PROTECTION.md) stops metric explosions.
+- **REST API:** OpenTelemetry-formatted JSON ([REST API](api.md)).
 
-- **Format**: Full OpenTelemetry (OTEL) format for traces, logs, and metrics  
-- **SQLite**: All telemetry stored in an embedded SQLite database (compressed with ZSTD + msgpack)  
-- **WAL Mode**: Write-Ahead Logging for concurrent reads during writes  
-- **Retention**: Records expire after 30 minutes by default (`SQLITE_TTL_SECONDS`), and the database is also capped at 256 MB (`MAX_DB_SIZE_MB`); when full, the oldest records are evicted first  
-- **Correlation**: Native trace-metric-log correlation via trace/span IDs  
-- **Cardinality Protection**: Prevents metric explosion  
-- **Ephemeral by Design**: Designed for local development — data persists across restarts until it expires or storage fills up  
+## UI features
 
----
+- **Trace waterfall** with noisy ASGI sub-spans (http send/receive) filtered out, and a per-trace service graph above it; inferred external clients come from orphan parent span IDs.
+- **Deep links:** `?tab=traces&traceId=...`, `?tab=spans&spanId=...`, `?tab=logs&search=...`; "Copy Link" buttons generate them, and IDs copy with one click.
+- **Correlated logs** inline in a trace; trace and span IDs in logs jump to their trace or span.
+- **Service Catalog:** RED metrics; a service name opens a menu (map, traces, spans, logs, metrics) filtered to it.
+- **Service Map:** Cytoscape.js and dagre, left to right, always fitted to the window. Shape is the service type (server, client, external, database, messaging, isolated), colour the health (blue, amber some errors, red >5%); TinyOlly's own services can be hidden. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), with waypoint and gateway shapes ([Istio Ambient Mesh](istio.md)). A selected node shows P50/P95/P99 and rate.
+- **Auto-refresh** every 5 s, paused while a search filter is active; lists scroll with sticky headers.
 
-## OTLP Compatibility
+## MCP server
 
-TinyOlly is **fully OpenTelemetry-native**:  
-- **Ingestion**: Accepts OTLP/gRPC (primary) and OTLP/HTTP  
-- **Storage**: Stores traces, logs, and metrics in full OTEL format with resources, scopes, and attributes  
-- **Correlation**: Native support for trace/span ID correlation across all telemetry types  
-- **REST API**: Exposes OTEL-formatted JSON for programmatic access
-- **Control Plane**: OpenTelemetry Collector OpAmp for dynamic configuration  
+`docker/apps/tinyolly-mcp` is a read-only MCP server over the REST API: telemetry queries, these docs (`list_docs`, `search_docs`, `read_doc`), tables, waterfalls and PNG charts, Istio mesh tools, and investigation playbooks served as tools, prompts and resources. Responses are size-bounded; large traces are summarized and paged. It runs as a stdio process started by the client or as the `tinyolly-mcp` container (streamable HTTP on 8765). See the [MCP guide](mcp.md).
 
----
-
-## UI Features
-
-- **Trace Waterfall**: Distributed trace visualization with automatic filtering of noisy ASGI sub-spans (http send/receive)  
-- **Trace Map**: Per-trace service dependency graph rendered above the waterfall using Cytoscape.js. Detects inferred external clients from orphan parent span IDs (e.g., test clients that propagate trace context but don't export spans)  
-- **Deep Linking**: Shareable URLs that open directly to a specific trace detail view (`?tab=traces&traceId=...`), span search (`?tab=spans&spanId=...`), or filtered tab (`?tab=logs&search=...`). "Copy Link" buttons in trace and span detail views generate these URLs  
-- **Click-to-Copy IDs**: Trace and span IDs are copyable with a single click throughout the UI  
-- **Correlated Logs**: Trace detail view shows correlated logs inline — click any log row to navigate to the Logs tab filtered by trace ID  
-- **Cross-Tab Navigation**: Click trace/span IDs in logs to jump to the corresponding trace or span view  
-- **Service Catalog**: RED metrics; clicking a service name opens a menu (Service map, Traces, Spans, Logs, Metrics) filtered to that service  
-- **Service Map**: Cytoscape.js dependency graph laid out left-to-right (dagre), sized to always fit the window. Shape = service type (server, client, external, database, messaging, isolated), color = health (blue healthy, amber some errors, red >5% errors). Isolated services sit in a grid to the right; an option hides TinyOlly's own services. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), waypoint and gateway nodes get their own shapes, and a checkbox merges proxy and app nodes; see [Istio Ambient Mesh](istio.md). Selecting a node shows P50/P95/P99 latency and rate with a link back to the catalog  
-- **Smart Auto-Refresh**: 5-second polling pauses automatically when a search filter is active, preventing result disruption  
-- **Scrollable Lists**: Trace, span, and log lists support scrolling with sticky headers for large datasets
-
----
-
-## MCP Server
-
-`docker/apps/tinyolly-mcp` is a read-only MCP server over the REST API (traces, spans, logs, metrics, service catalog/map) that also serves these docs (`list_docs`, `search_docs`, `read_doc`) renders pretty tables, a trace waterfall and PNG charts (metrics, service map with mesh styling), Istio mesh tools (posture, denied and plaintext edges, per-trace mesh time and retries, version split, what changed), and ships investigation skills (`skills/`) that it serves as MCP tools, prompts and resources. Every response is size-bounded; large traces are summarized and paged. It runs either as a stdio process started by the client or as the `tinyolly-mcp` container (Docker Compose and Kubernetes, streamable HTTP on port 8765) that reads the UI's REST API. See the [MCP guide](mcp.md).
-
----
+The opt-in [TinyOlly AI SRE Agent](ai-sre.md) uses these tools to investigate incidents on its own.
 
 ## Testing
 
-Everything runs locally (no CI): `./scripts/test-all.sh` runs the unit suites (storage library, UI/API, OTLP receiver, MCP server, frontend JS, OpAMP Go server, collector configs, kubectl-context guard). `--stack` adds an end-to-end run against the live stack (88 checks including every collector preset) and `--kind` adds a Kubernetes smoke test on kind. See the [development notes](development.md).
+Everything runs locally (no CI): `./scripts/test-all.sh` runs the unit suites (storage library, UI/API, OTLP receiver, MCP server, frontend JS, OpAMP Go server, collector configs, kubectl guard); `--stack` adds the end-to-end run against the live stack (88 checks including every collector preset) and `--kind` a kind smoke test. See the [development notes](development.md).

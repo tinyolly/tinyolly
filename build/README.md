@@ -12,9 +12,11 @@ build/
 │   ├── 02-build-all.sh            # Step 2: Build all images
 │   ├── 02-build-core.sh           # Step 2: Build core images
 │   ├── 02-build-ui.sh             # Step 2: Build UI only (quick iteration)
+│   ├── 02-build-sre.sh            # Step 2: Build the TinyOlly AI SRE Agent image
 │   ├── 03-push-all.sh             # Step 3: Push all images
 │   ├── 03-push-core.sh            # Step 3: Push core images
-│   └── 03-push-ui.sh              # Step 3: Push UI only
+│   ├── 03-push-ui.sh              # Step 3: Push UI only
+│   └── 03-push-sre.sh             # Step 3: Push the TinyOlly AI SRE Agent image
 └── local/                         # Local builds (kind)
     └── build-core-kind.sh
 ```
@@ -65,6 +67,7 @@ cd build/local
 | `02-build-all.sh` | Build all images locally |
 | `02-build-core.sh` | Build core TinyOlly images |
 | `02-build-ui.sh` | Build UI image only (quick iteration) |
+| `02-build-sre.sh` | Build the TinyOlly AI SRE Agent image (`tinyolly/sre`) |
 
 ### Step 3: Push
 
@@ -73,6 +76,7 @@ cd build/local
 | `03-push-all.sh` | Push all images to Docker Hub |
 | `03-push-core.sh` | Push core images |
 | `03-push-ui.sh` | Push UI image only |
+| `03-push-sre.sh` | Push the TinyOlly AI SRE Agent image |
 
 ## Images Reference
 
@@ -85,6 +89,7 @@ cd build/local
 | `tinyolly/otlp-receiver` | OTLP receiver service |
 | `tinyolly/opamp-server` | OpAMP configuration server |
 | `tinyolly/otel-supervisor` | OTel Collector supervisor |
+| `tinyolly/sre` | TinyOlly AI SRE Agent (opt-in; `docker/05-start-sre.sh`, `k8s/06-rebuild+deploy-sre.sh`) |
 
 The old demo apps' images (demo, eBPF demo, AI agent demo) and their build scripts are in `archive/build/`.
 

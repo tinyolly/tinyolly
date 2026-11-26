@@ -46,7 +46,7 @@ TinyOlly is a **lightweight OpenTelemetry-native observability platform** built 
 
 *Demos*
 - Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags ([docs](otel-demo.md))
-- Istio ambient mesh demo: Online Boutique on a sidecar-less mesh, with scenarios for waypoints, canary, faults and authorization policy, and an AI assistant that investigates them through MCP ([demo repo](https://github.com/stevelerner/istio-ambient-demo), [mesh features](istio.md))
+- TinyOlly AI SRE Agent: an agent on shift over the shop that triages, investigates, proposes fixes and writes postmortems, scored against injected faults ([docs](ai-sre.md))
 
 *Built with* Python (FastAPI), SQLite and JavaScript.
 
@@ -93,18 +93,18 @@ Ready to try TinyOlly? Check out the [Quick Start Guide](quickstart.md) to get r
     </tr>
     <tr>
       <td align="center" width="50%">
-        <a href="images/full/ui-service-map.png"><img src="images/ui-service-map.png" width="460" alt="Service map: mTLS, plaintext and denied edges"></a><br>
-        <em>Service map: mTLS, plaintext and denied edges</em>
+        <a href="images/full/ui-service-map.png"><img src="images/ui-service-map.png" width="460" alt="Service map of the OpenTelemetry Demo"></a><br>
+        <em>Service map of the OpenTelemetry Demo</em>
       </td>
       <td align="center" width="50%">
-        <a href="images/full/mesh-service-map.png"><img src="images/mesh-service-map.png" width="460" alt="The same map drawn by the MCP server"></a><br>
+        <a href="images/full/mesh-otel-service-map.png"><img src="images/mesh-otel-service-map.png" width="460" alt="The same map drawn by the MCP server"></a><br>
         <em>The same map drawn by the MCP server</em>
       </td>
     </tr>
     <tr>
       <td align="center" width="50%">
-        <a href="images/full/mesh-map-diff.png"><img src="images/mesh-map-diff.png" width="460" alt="What changed after a fault: failing edge in red"></a><br>
-        <em>What changed after a fault: failing edge in red</em>
+        <a href="images/full/mesh-otel-failure-map.png"><img src="images/mesh-otel-failure-map.png" width="460" alt="After a fault: failing services in red"></a><br>
+        <em>After a fault: failing services in red</em>
       </td>
       <td align="center" width="50%">
         <a href="images/full/ui-collector.png"><img src="images/ui-collector.png" width="460" alt="OpenTelemetry Collector configuration (OpAMP)"></a><br>

@@ -196,8 +196,11 @@ def suite_data(mcp):
     stored = sum(1 for t in sample if trace_detail(t).get("spans"))
     check("demo log lines are correlated to stored traces (at least 80% of a sample)", sample and stored >= 0.8 * len(sample), f"{stored}/{len(sample)}")
 
-    metrics = get("/api/metrics") or []
-    names = {m["name"] for m in metrics}
+    # The demo's SDKs export metrics on a 60 s interval, so right after a start only span metrics may exist yet.
+    def metric_names():
+        names = {m["name"] for m in (get("/api/metrics") or [])}
+        return names if len(names) >= 10 else None
+    names = eventually(metric_names, timeout=90) or {m["name"] for m in (get("/api/metrics") or [])}
     check("metrics arrive (at least 10 names)", len(names) >= 10, len(names))
     check("span-derived metrics exist (spanmetrics connector)", any("span.metrics" in n or "traces.span" in n for n in names), sorted(names)[:15])
     check("runtime or HTTP metrics from the demo exist", any(n.startswith(("http.", "rpc.", "process.", "runtime.", "jvm.", "app.")) for n in names), sorted(names)[:15])

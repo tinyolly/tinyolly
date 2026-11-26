@@ -6,34 +6,38 @@ echo "  TinyOlly - Install MkDocs"
 echo "========================================================"
 echo ""
 
-# Check if Python is available
-if ! command -v python3 &> /dev/null; then
-    echo "✗ Python 3 is not installed or not in PATH"
-    echo "Please install Python 3 first"
+# Use $PYTHON if set, otherwise the first python3 (or python) on PATH
+PYTHON="${PYTHON:-$(command -v python3 || command -v python || true)}"
+if [ -z "$PYTHON" ] || ! "$PYTHON" -c 'import sys; sys.exit(sys.version_info < (3, 8))' &> /dev/null; then
+    echo "✗ Python 3.8+ not found (set PYTHON=/path/to/python3 to choose one)"
     exit 1
 fi
-
-# Check if pip is available
-if ! command -v pip3 &> /dev/null; then
-    echo "✗ pip3 is not installed or not in PATH"
-    echo "Please install pip3 first"
-    exit 1
-fi
+PY_VERSION="$("$PYTHON" -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+echo "Using $PYTHON (Python $PY_VERSION)"
 
 echo "Installing MkDocs and required plugins into a virtual environment..."
 echo ""
 
 VENV_DIR="$HOME/.venv/mkdocs"
 
-# Create venv if it doesn't exist
+# Recreate venv if its interpreter is gone or is a different Python version
+if [ -d "$VENV_DIR" ]; then
+    VENV_VERSION="$("$VENV_DIR/bin/python" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2> /dev/null || true)"
+    if [ "$VENV_VERSION" != "$PY_VERSION" ]; then
+        echo "Existing venv uses Python ${VENV_VERSION:-<missing>}; recreating with $PY_VERSION..."
+        rm -rf "$VENV_DIR"
+    fi
+fi
+
+# Create venv if it doesn't exist (venv bundles pip, so no system pip needed)
 if [ ! -d "$VENV_DIR" ]; then
     echo "Creating virtual environment at $VENV_DIR..."
-    python3 -m venv "$VENV_DIR"
+    "$PYTHON" -m venv "$VENV_DIR"
 fi
 
 # Install packages into the venv
-"$VENV_DIR/bin/pip" install --upgrade pip
-"$VENV_DIR/bin/pip" install mkdocs mkdocs-material pymdown-extensions
+"$VENV_DIR/bin/python" -m pip install --upgrade pip
+"$VENV_DIR/bin/python" -m pip install mkdocs mkdocs-material pymdown-extensions
 
 echo ""
 echo "========================================================"

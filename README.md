@@ -87,17 +87,19 @@ Within a couple of minutes `checkout` and `payment` turn red in the catalog and 
 <table>
 <tr>
 <td width="50%" align="center"><a href="docs/images/full/ui-otel-failure-catalog.png"><img src="docs/images/ui-otel-failure-catalog.png" width="440" alt="Service catalog with checkout and payment at 15% errors"></a><br><sub>OpenTelemetry Demo: <code>checkout</code> and <code>payment</code> failing</sub></td>
-<td width="50%" align="center"><a href="docs/images/full/ui-istio-denied.png"><img src="docs/images/ui-istio-denied.png" width="440" alt="Istio demo map with a denied edge in red"></a><br><sub>Istio ambient demo: strict mTLS refuses a plaintext caller (red edge)</sub></td>
+<td width="50%" align="center"><a href="docs/images/full/ui-otel-failure-service-map.png"><img src="docs/images/ui-otel-failure-service-map.png" width="440" alt="Service map with checkout and payment in red"></a><br><sub>The same failure on the service map</sub></td>
 </tr>
 </table>
 
 ## AI SRE agent (opt-in)
 
-A local model that watches TinyOlly (errors, latency, traffic drops, vanished services, error logs, mesh denials, store health), opens an incident, investigates it once through the MCP tools, writes a runbook and checks the recovery. It also reviews every change marker and runs routine reviews. Findings land back in TinyOlly as `ai-finding` change markers; the live console is on http://localhost:7173.
+An agent on shift over the shop. It watches TinyOlly (errors, latency, traffic drops, vanished services, error logs, store health), opens an incident, triages it (would it page?), investigates through the MCP tools, and shows its theories, evidence trail and timeline, proposes a fix (never applied), checks the recovery and drafts a postmortem. With `--demo` it also injects OpenTelemetry Demo faults on a timer and scores itself against them. Built with a local Ollama model (Qwen3.8 27B); OpenAI and Claude are optional. Console: http://localhost:7173.
 
 ```bash
-(cd docker && ./05-start-sre.sh)        # needs Ollama on the host (SRE_MODEL, default qwen3:8b); kind: k8s/06-rebuild+deploy-sre.sh
+(cd docker && SRE_LLM_URL=http://<ollama-host>:11434/v1 ./05-start-sre.sh --demo)    # kind: k8s/06-rebuild+deploy-sre.sh --demo
 ```
+
+Guide: [TinyOlly AI SRE Agent](docs/ai-sre.md).
 Self-contained in [`docker/apps/tinyolly-sre`](docker/apps/tinyolly-sre/README.md), so it can become a standalone project.
 
 ## Ask an AI about your telemetry (MCP)
@@ -113,20 +115,17 @@ Claude Desktop and Zed work too ([connect a client](docs/mcp-deploy.md)). Then a
 > *"Something is wrong with checkout. What is failing and why?"*
 > *"Show me a failing order as a waterfall."*
 > *"Draw the journey of that request over the map."*
-> *"Is anything being denied in the mesh? Draft a least-privilege policy for cartservice."*
-> *"Show me the traffic split for productcatalogservice. How much slower is v2?"*
+> *"Which flag changed before payment started failing?"*
+> *"Which service is the riskiest right now, and why?"*
 
 <table>
 <tr>
 <td width="50%" align="center"><a href="docs/images/full/mesh-otel-failure-map.png"><img src="docs/images/mesh-otel-failure-map.png" width="440" alt="Service map drawn by the MCP server with checkout and payment in red"></a><br><sub><code>chart_service_map</code>: the failing services in red</sub></td>
 <td width="50%" align="center"><a href="docs/images/full/mesh-otel-trace-path.png"><img src="docs/images/mesh-otel-trace-path.png" width="440" alt="One failing request's journey over the service map"></a><br><sub><code>chart_trace_path</code>: one failing order, hop by hop</sub></td>
 </tr>
-<tr>
-<td colspan="2" align="center"><a href="docs/images/full/mesh-istio-fault-diff.png"><img src="docs/images/mesh-istio-fault-diff.png" width="640" alt="Map coloured by what changed after a fault was injected"></a><br><sub><code>chart_map_diff</code>: what changed after a fault was injected (Istio demo)</sub></td>
-</tr>
 </table>
 
-What the tools cover: services, traces (large ones are summarized and paged), logs, metrics, charts, TinyOlly's own docs, and an Istio mesh toolkit (mTLS posture, denied calls, version split, change markers, authorization-policy drafts, decoded Envoy response flags). Guides: [run and connect the server](docs/mcp-deploy.md) · [every tool and playbook](docs/mcp.md) · [investigate the OpenTelemetry Demo with an AI](docs/otel-demo-ai.md).
+What the tools cover: services, traces (large ones are summarized and paged), logs, metrics, charts, TinyOlly's own docs, and a service-mesh toolkit for Istio (mTLS posture, denied calls, version split, authorization-policy drafts, Envoy response flags). Guides: [run and connect the server](docs/mcp-deploy.md) · [every tool and playbook](docs/mcp.md) · [investigate the OpenTelemetry Demo with an AI](docs/otel-demo-ai.md).
 
 ## The UI
 

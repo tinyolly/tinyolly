@@ -5,151 +5,106 @@ description: "Run TinyOlly on kind (Kubernetes on Colima): core, the OpenTelemet
 
 # Kubernetes Deployment
 
-Deploy TinyOlly on Kubernetes (kind on Colima) for local development!
+TinyOlly on kind (Kubernetes in Colima), for local development.
 
 <div align="center">
-  <a href="../images/servicemap.png"><img src="../images/servicemap.png" alt="TinyOlly on Kubernetes" width="600"></a>
-  <p><em>Service map showing microservices running on Kubernetes</em></p>
+  <a href="../images/full/ui-service-map.png"><img src="../images/ui-service-map.png" alt="TinyOlly on Kubernetes" width="600"></a>
+  <p><em>Service map of the OpenTelemetry Demo on kind</em></p>
 </div>
 
----
-
-All examples are launched from the repo - clone it first or download the current GitHub release archive:
+Run everything from the repo (clone it, or download the current GitHub release archive):
 ```bash
 git clone https://github.com/tinyolly/tinyolly
 ```
 
 ## Prerequisites
 
-- [Colima](https://github.com/abiosoft/colima), `docker`, [kind](https://kind.sigs.k8s.io/), [kubectl](https://kubernetes.io/docs/tasks/tools/)
+[Colima](https://github.com/abiosoft/colima), `docker`, [kind](https://kind.sigs.k8s.io/), [kubectl](https://kubernetes.io/docs/tasks/tools/), [Helm](https://helm.sh/docs/intro/install/):
 
 ```bash
 brew install colima docker docker-compose docker-buildx docker-credential-helper kubectl kind helm
 ```
 
-## 1. Deploy TinyOlly Core
+## 1. Deploy TinyOlly core
 
-1.  **Start Colima and the kind cluster:**
+```bash
+./scripts/colima-up.sh   # defaults: 4 CPU / 4 GB (COLIMA_MEMORY=8 for more)
+./scripts/kind-up.sh
+```
 
+Deploy (images come from Docker Hub):
+
+```bash
+./k8s/02-deploy-tinyolly.sh
+```
+
+or apply the manifests yourself (not `kubectl apply -f k8s/`: that skips the collector ConfigMaps in `k8s/otelcol-configs/` and also deploys the AI SRE Agent):
+
+```bash
+kubectl apply -R -f k8s/otelcol-configs/
+kubectl apply -f k8s/tinyolly-sqlite-pvc.yaml -f k8s/tinyolly-otlp-receiver.yaml -f k8s/tinyolly-opamp-server.yaml \
+  -f k8s/otel-collector.yaml -f k8s/tinyolly-ui.yaml -f k8s/tinyolly-mcp.yaml
+```
+
+!!! note "Local build"
+    To build the images from your checkout and load them into kind:
     ```bash
-    ./scripts/colima-up.sh   # defaults: 4 CPU / 4 GB (COLIMA_MEMORY=8 for more)
-    ./scripts/kind-up.sh
+    ./build/local/build-core-kind.sh
     ```
 
-2.  **Deploy TinyOlly:**
+`scripts/kind-config.yaml` maps the NodePorts to your host, so no port-forward is needed:
 
-    Images will be pulled from Docker Hub automatically:
+- UI: [http://localhost:5005](http://localhost:5005), including the **OpenTelemetry Collector + OpAMP Config** tab ([setup](#opamp-configuration-optional)).
+- [MCP server](mcp-deploy.md) for AI agents: `http://localhost:8765/mcp` (rebuild with `k8s/05-rebuild+deploy-mcp.sh`).
+- OTLP from host apps: `http://localhost:4317` (gRPC), `http://localhost:4318` (HTTP). From inside the cluster: `otel-collector:4317` / `otel-collector:4318`.
 
-    ```bash
-    ./k8s/02-deploy-tinyolly.sh
-    ```
+These host ports are shared with the Docker stack, so run one or the other.
 
-    Alternatively, you can manually apply all manifests:
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+```
 
-    ```bash
-    kubectl apply -f k8s/
-    ```
+Clean up TinyOlly, then the cluster and the VM:
 
-    !!! note "Local Development Build (Optional)"
-        To build images locally and load them into kind instead of pulling from Docker Hub:
-        ```bash
-        ./build/local/build-core-kind.sh
-        ```
+```bash
+./k8s/03-cleanup.sh
+```
 
-3.  **Access the UI:**
-
-    The UI is a NodePort service mapped to the host by `scripts/kind-config.yaml` (no tunnel needed). Access the TinyOlly UI at: [http://localhost:5005](http://localhost:5005)
-
-    The deploy also starts `tinyolly-mcp`, a read-only [MCP server](mcp-deploy.md) for AI agents, on NodePort 30876 mapped to `http://localhost:8765/mcp`. After changing it, rebuild with `k8s/05-rebuild+deploy-mcp.sh`.
-
-    **OpenTelemetry Collector + OpAMP Config Page:** Navigate to the "OpenTelemetry Collector + OpAMP Config" tab in the UI to view and manage collector configurations remotely. See the [OpAMP Configuration](#opamp-configuration-optional) section below for setup instructions.
-
-4.  **Send Telemetry from Host Apps:**
-
-    No port-forward is needed: `scripts/kind-config.yaml` maps the collector's NodePorts to your host. Point your application's OpenTelemetry exporter to:  
-    - **gRPC**: `http://localhost:4317`  
-    - **HTTP**: `http://localhost:4318`  
-
-    (These host ports are shared with the Docker stack, so run one or the other at a time.)
-
-    **Example environment variables:**
-    ```bash
-    export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
-    ```
-
-    **For apps running inside the Kubernetes cluster:**  
-    Use the Kubernetes service name:  
-    - **gRPC**: `http://otel-collector:4317`  
-    - **HTTP**: `http://otel-collector:4318`  
-
-5.  **Clean Up:**
-
-    Use the cleanup script to remove all TinyOlly resources:
-
-    ```bash
-    ./k8s/03-cleanup.sh
-    ```
-
-    Delete the kind cluster and stop Colima:
-    ```bash
-    kind delete cluster --name tinyolly
-    colima stop -p tinyolly
-    ```
-
----
+```bash
+kind delete cluster --name tinyolly
+colima stop -p tinyolly
+```
 
 ## 2. OpenTelemetry Demo (Astronomy Shop)
 
-To deploy the full [OpenTelemetry Demo](https://opentelemetry.io/docs/demo/) with ~20 microservices:
+The [OpenTelemetry Demo](https://opentelemetry.io/docs/demo/) via Helm, sending to TinyOlly's collector (its Jaeger, Grafana and Prometheus are disabled). Deploy TinyOlly first and give the VM enough memory (about 8 GB; 12 GB with the AI SRE Agent):
 
-**Prerequisites:**  
-- TinyOlly must be deployed first (see Setup above)  
-- [Helm](https://helm.sh/docs/intro/install/) installed  
-- Sufficient cluster resources (demo is resource-intensive)  
-
-**Deploy:**
 ```bash
-cd k8s-otel-demo
-./01-deploy-otel-demo-helm.sh
+./k8s-otel-demo/01-deploy-otel-demo-helm.sh
 ```
 
-The Helm deploy was run end to end on kind (6 CPU / 12 GiB Colima VM) together with the [TinyOlly AI SRE Agent](ai-sre.md):
-`k8s/06-rebuild+deploy-sre.sh --demo` adds the agent and its demo shift, which flips the shop's feature flags through flagd-ui.
+Tested end to end on kind with the [TinyOlly AI SRE Agent](ai-sre.md): `k8s/06-rebuild+deploy-sre.sh --demo` adds the agent and its demo shift, which flips the shop's feature flags through flagd-ui. Remove the demo (TinyOlly keeps running):
 
-This deploys all OpenTelemetry Demo services configured to send telemetry to TinyOlly's collector via HTTP on port 4318. Built-in observability tools (Jaeger, Grafana, Prometheus) are disabled.
-
-**Cleanup:**
 ```bash
-cd k8s-otel-demo
-./02-cleanup-otel-demo-helm.sh
+./k8s-otel-demo/02-cleanup-otel-demo-helm.sh
 ```
-
-This removes the OpenTelemetry Demo but leaves TinyOlly running.
 
 ## 3. TinyOlly **Core-Only** Deployment: Use Your Own Kubernetes OpenTelemetry Collector
 
-To deploy TinyOlly without the bundled OTel Collector (e.g., if you have an existing collector daemonset). Includes OpAMP server for optional remote collector configuration management:
+TinyOlly without its collector (for example next to an existing collector DaemonSet), with the OpAMP server for remote config. The UI is on `http://localhost:5005`.
 
-1.  **Deploy Core:**
-    ```bash
-    cd misc/k8s-core-only
-    ./01-deploy.sh
-    ```
+```bash
+cd misc/k8s-core-only
+./01-deploy.sh
+```
 
-2.  **Access UI:**
-    Access `http://localhost:5005` (kind port mapping).
+```bash
+./02-cleanup.sh
+```
 
-3.  **Cleanup:**
-    ```bash
-    ./02-cleanup.sh
-    ```
+### Use TinyOlly with any OpenTelemetry Collector
 
-### Use TinyOlly with Any OpenTelemetry Collector
-
-Swap out the included Otel Collector for any distro of Otel Collector.
-
-**Point your OpenTelemetry exporters to tinyolly-otlp-receiver:4343:**
-i.e.  
+Point any collector distribution's exporter at `tinyolly-otlp-receiver:4343`, for example:
 ```yaml
 exporters:
   debug:
@@ -179,11 +134,9 @@ service:
       exporters: [debug, otlp]
 ```
 
-The Otel Collector will forward everything to TinyOlly's OTLP receiver, which processes telemetry and stores it in SQLite in OTEL format for the backend and UI to access.
-
 ## OpAMP Configuration (Optional)
 
-The **OpenTelemetry Collector + OpAMP Config** page in the TinyOlly UI allows you to view and manage collector configurations remotely. To enable this feature, add the OpAMP extension to your collector config:
+To manage a collector from the UI's **OpenTelemetry Collector + OpAMP Config** page, add the OpAMP extension:
 
 ```yaml
 extensions:
@@ -196,19 +149,12 @@ service:
   extensions: [opamp]
 ```
 
-The default configuration template (included as a ConfigMap in `misc/k8s-core-only/tinyolly-opamp-server.yaml`) shows a complete example with OTLP receivers, OpAMP extension, exporter-side batching, and spanmetrics connector. Your collector will connect to the OpAMP server and receive configuration updates through the TinyOlly UI.
-
----
+A complete example (OTLP receivers, OpAMP, exporter-side batching, spanmetrics) is the default template in the ConfigMap in `misc/k8s-core-only/tinyolly-opamp-server.yaml`.
 
 ## Testing this setup
 
-`./scripts/test-kind.sh` creates a throwaway kind cluster, deploys core-only and the full core, checks the UI, OpAMP and OTLP ingestion, and deletes the cluster. It briefly stops the Docker stack because both use ports 5005/4317/4318.
-
----
+`./scripts/test-kind.sh` creates a throwaway kind cluster, deploys core-only and the full core, checks the UI, OpAMP and OTLP ingestion, and deletes the cluster. It briefly stops the Docker stack (both use ports 5005/4317/4318).
 
 ## Building Images
 
-By default, deployment scripts pull pre-built images from Docker Hub. For building images locally (kind) or publishing to Docker Hub, see [build/README.md](https://github.com/tinyolly/tinyolly/blob/main/build/README.md).
-
----
-
+Deploy scripts pull images from Docker Hub. To build locally or publish, see [Development and testing](development.md#building-and-publishing-images) and [build/README.md](https://github.com/tinyolly/tinyolly/blob/main/build/README.md).

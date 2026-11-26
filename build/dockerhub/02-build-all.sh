@@ -9,7 +9,7 @@ set -e
 # Usage: ./02-build-all.sh [version]
 # Example: ./02-build-all.sh v2.1.0
 #
-# This builds: core images (the old demo images are in archive/build)
+# This builds: core images and the TinyOlly AI SRE Agent image (the old demo images are in archive/build)
 # To push after building, run: ./03-push-all.sh [version]
 
 VERSION=${1:-"latest"}
@@ -27,8 +27,11 @@ echo ">>> Building Core Images..."
 echo ""
 "$SCRIPT_DIR/02-build-core.sh" "$VERSION"
 
-
-
+# Build the TinyOlly AI SRE Agent image
+echo ""
+echo ">>> Building AI SRE Agent Image..."
+echo ""
+"$SCRIPT_DIR/02-build-sre.sh" "$VERSION"
 
 echo ""
 echo "=========================================="
@@ -42,6 +45,7 @@ echo "  - tinyolly/ui:$VERSION"
 echo "  - tinyolly/mcp:$VERSION"
 echo "  - tinyolly/opamp-server:$VERSION"
 echo "  - tinyolly/otel-supervisor:$VERSION"
+echo "  - tinyolly/sre:$VERSION   (TinyOlly AI SRE Agent)"
 echo ""
 echo "Next step - push to Docker Hub:"
 echo "  ./03-push-all.sh $VERSION"

@@ -6,7 +6,7 @@ description: "The bundled collector, its config files, applying changes in Docke
 # OpenTelemetry Collector
 
 <div align="center">
-  <a href="../images/collector.png"><img src="../images/collector.png" alt="OpenTelemetry Collector Configuration" width="700"></a>
+  <a href="../images/full/ui-collector.png"><img src="../images/ui-collector.png" alt="OpenTelemetry Collector Configuration" width="700"></a>
   <p><em>OpenTelemetry Collector configuration management via OpAMP</em></p>
 </div>
 

@@ -6,10 +6,20 @@
 #                                            --realistic: the demo's own fault strengths and load, 30 s polls, ~10 min per scenario. (needs the OTel demo cloned: ../docker-otel-demo/01-start-otel-demo.sh).
 #                               DEMO=0 mounts the flags but waits for POST /demo/start; DEMO_SCRIPT=payment-degraded,quiet,... for a rehearsed run.
 set -euo pipefail
+unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
+export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 cd "$(dirname "${BASH_SOURCE[0]}")"
-FILES=(-f docker-compose-tinyolly-core-local.yml)
+# Use the compose file the running core was started with, so the core containers are not re-created:
+# 01-start-core.sh (Docker Hub images) or 01-start-core-local.sh (built from this checkout).
+CORE=docker-compose-tinyolly-core.yml
+case "$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project.config_files"}}' tinyolly-ui 2>/dev/null)" in
+  *core-local.yml*) CORE=docker-compose-tinyolly-core-local.yml;;
+esac
+FILES=(-f "$CORE")
 DEMO=""; QUICK=1
-for a in "$@"; do case "$a" in --demo) DEMO=1;; --realistic) QUICK="";; --quick|--fast) QUICK=1;; *) echo "unknown option $a" >&2; exit 2;; esac; done
+for a in "$@"; do case "$a" in --demo) DEMO=1;; --realistic) QUICK="";; --quick|--fast) QUICK=1;;
+  -h|--help) sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+  *) echo "unknown option $a (see --help)" >&2; exit 2;; esac; done
 if [ -n "$DEMO" ]; then
   [ -f ../docker-otel-demo/.demo/src/flagd/demo.flagd.json ] || { echo "OTel demo not cloned; run ../docker-otel-demo/01-start-otel-demo.sh first." >&2; exit 1; }
   FILES+=(-f docker-compose-sre-demo.yml)

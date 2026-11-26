@@ -4,7 +4,7 @@ unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
 export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 # Start the OpenTelemetry Demo ("Astronomy Shop") sending all telemetry to the running TinyOlly core stack.
 #
-# Prerequisite: TinyOlly core is up (docker/01-start-core-local.sh, UI on :5005, OTLP on :4317).
+# Prerequisite: TinyOlly core is up (docker/01-start-core.sh or 01-start-core-local.sh, UI on :5005, OTLP on :4317).
 # The demo's own collector, Jaeger/Grafana/Prometheus/OpenSearch, Kafka services, flagd-ui and telemetry-docs are NOT started.
 # Services send OTLP to host.docker.internal:4317 (TinyOlly's collector).
 #
