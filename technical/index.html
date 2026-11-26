@@ -928,6 +928,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#agents-llms-and-mcp-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents, LLMs and MCP servers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#mcp-server" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1225,6 +1236,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#agents-llms-and-mcp-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents, LLMs and MCP servers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#mcp-server" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1286,9 +1308,23 @@
 <li><strong>Deep links:</strong> <code>?tab=traces&amp;traceId=...</code>, <code>?tab=spans&amp;spanId=...</code>, <code>?tab=logs&amp;search=...</code>; "Copy Link" buttons generate them, and IDs copy with one click.</li>
 <li><strong>Correlated logs</strong> inline in a trace; trace and span IDs in logs jump to their trace or span.</li>
 <li><strong>Service Catalog:</strong> RED metrics; a service name opens a menu (map, traces, spans, logs, metrics) filtered to it.</li>
-<li><strong>Service Map:</strong> Cytoscape.js and dagre, left to right, always fitted to the window. Shape is the service type (server, client, external, database, messaging, isolated), colour the health (blue, amber some errors, red &gt;5%); TinyOlly's own services can be hidden. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), with waypoint and gateway shapes (<a href="../istio/">Istio Ambient Mesh</a>). A selected node shows P50/P95/P99 and rate.</li>
+<li><strong>Service Map:</strong> Cytoscape.js and dagre, left to right, always fitted to the window. Shape is the service type (server, client, external, database, messaging, isolated, and <a href="#agents-llms-and-mcp-servers">agent, LLM, MCP server</a>), colour the health (blue, amber some errors, red &gt;5%); TinyOlly's own services can be hidden. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), with waypoint and gateway shapes (<a href="../istio/">Istio Ambient Mesh</a>). A selected node shows P50/P95/P99 and rate.</li>
 <li><strong>Auto-refresh</strong> every 5 s, paused while a search filter is active; lists scroll with sticky headers.</li>
 </ul>
+<h2 id="agents-llms-and-mcp-servers">Agents, LLMs and MCP servers</h2>
+<p>An LLM such as Ollama and most MCP servers emit no spans, so the call into them is a CLIENT span that nothing answers and the hop would vanish from the map. TinyOlly infers the callee, as it does for databases (<code>tinyolly_common/graph_infer.py</code>):</p>
+<p><a href="../images/ai-map-inference.svg"><img alt="How TinyOlly draws agent, LLM and MCP hops" src="../images/ai-map-inference.svg" /></a></p>
+<ul>
+<li><strong>LLM</strong> (star): an unanswered call marked <code>agentgateway.outbound.subtype=Llm</code>, or carrying <code>gen_ai.request.model</code> on it or its parent. Named after the gateway route's backend (<code>default/ollama</code> → <code>ollama</code>), else <code>gen_ai.provider.name</code>, else the host. The edge carries input and output tokens, models and endpoints; the label shows tokens per minute.</li>
+<li><strong>MCP server</strong> (chevron): <code>subtype=Mcp</code> or <code>mcp.target</code>. The edge counts calls per method and per tool (<code>gen_ai.tool.name</code>); the label shows the busiest tool.</li>
+<li><strong>Agent</strong> (triangle): a service that makes GenAI calls (a CLIENT span with <code>gen_ai.operation.name</code>, or <code>gen_ai.agent.name</code>). Gateways carry <code>gen_ai.*</code> on their SERVER spans, so they stay gateways.</li>
+<li><strong>Blocked at the gateway</strong> (red edge): a refused call (prompt guard, tool authorization) is an errored SERVER span with <code>protocol</code> llm/mcp, a <code>reason</code> such as <code>Guardrail</code> or <code>Authorization</code>, and no outgoing call. It is drawn to the node it was meant for and counted in <code>blocked</code>; the node's colour includes it.</li>
+<li><strong>Any other uninstrumented upstream:</strong> named by <code>peer.service</code>, the gRPC <code>rpc.service</code>, or the host (a Kubernetes Service name for <code>*.svc.*</code> hosts), unless that is a known service. A call made to an IP is named by reverse DNS, which in Kubernetes gives the Service (<code>10.96.135.219</code> → <code>cartservice</code>; cached 10 minutes, <code>SERVICE_MAP_RESOLVE_IPS=0</code> turns it off); IPs without a name and telemetry exports are skipped. <code>SERVICE_MAP_INFER_EXTERNAL=0</code> turns this rule off.</li>
+</ul>
+<p>Inferred nodes have a dashed outline in the UI and in the MCP charts.</p>
+<p>Trace detail (<code>/api/traces/{id}</code>) marks those spans with <code>inferredPeer</code>, so <code>chart_trace_path</code> shows the hop too. Built and checked on an agentgateway demo (a shopping agent calling Qwen on Ollama and an MCP fetch tool through agentgateway):</p>
+<p><a href="../images/full/ui-agent-map.png"><img alt="Service map of the agentgateway demo: agent, gateway, LLM and MCP server, with prompt-guard blocks in red" src="../images/ui-agent-map.png" /></a></p>
+<p><a href="../images/full/mesh-agent-trace-path.png"><img alt="chart_trace_path of one agent run through the gateway to the MCP server and the LLM" src="../images/mesh-agent-trace-path.png" /></a></p>
 <h2 id="mcp-server">MCP server</h2>
 <p><code>docker/apps/tinyolly-mcp</code> is a read-only MCP server over the REST API: telemetry queries, these docs (<code>list_docs</code>, <code>search_docs</code>, <code>read_doc</code>), tables, waterfalls and PNG charts, Istio mesh tools, and investigation playbooks served as tools, prompts and resources. Responses are size-bounded; large traces are summarized and paged. It runs as a stdio process started by the client or as the <code>tinyolly-mcp</code> container (streamable HTTP on 8765). See the <a href="../mcp/">MCP guide</a>.</p>
 <p>The opt-in <a href="../ai-sre/">TinyOlly AI SRE Agent</a> uses these tools to investigate incidents on its own.</p>
