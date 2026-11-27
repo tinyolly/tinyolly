@@ -239,5 +239,25 @@ def test_verdict_theories_trail_timeline_and_postmortem(monkeypatch):
     assert kinds[0] == "change" and {"detected", "investigation", "concluded", "fix"} <= set(kinds)     # the change sorts first: cause before symptom
     assert [e["text"] for e in r["timeline"] if e["kind"] == "change"] == ["Change: flag paymentFailure: off -> 50%"]
     md = a.postmortem(1)
-    assert "# Postmortem: payment failing" in md and "1. flag on" in md and "| Time | Event |" in md and "query_logs(service=payment)" in md
+    assert "# Postmortem: svc: paymentFailure=50%" in md and "payment failing" in r["symptoms"] and "1. flag on" in md and "| Time | Event |" in md and "query_logs(service=payment)" in md
     assert "- [ ] alert on flag flips" in md and a.postmortem(1) == md                         # cached: no second model call
+
+
+def test_concluded_record_is_titled_by_cause_and_reaches_questions(monkeypatch):
+    a = agent()
+    done = {"service": "payment", "summary": "s", "status": "ok", "title": "", "root_cause": "Charge rejects the token. More."}
+    monkeypatch.setattr(a, "run", lambda *x, **k: done)
+    a.tick([Signal("errors", "frontend", "frontend failing")]); time.sleep(0.2)
+    r = a.records()[0]
+    assert r["title"] == "payment: Charge rejects the token." and r["symptoms"] == ["frontend failing"]
+    assert "concluded" in a.incident_lines() and r["title"] in a.incident_lines()
+
+
+def test_late_traffic_drop_joins_the_callers_error_incident(monkeypatch):
+    a = agent(); a.b.topology = lambda: {("checkout", "email")}
+    a.add_signal(Signal("errors", "checkout", "checkout failing"), now=1000)
+    a.add_signal(Signal("latency", "email", "email slow"), now=2000)              # other kinds keep the age limit
+    assert len(a.incidents) == 2
+    a.incidents.pop()
+    a.add_signal(Signal("traffic", "email", "email quiet"), now=2000)
+    assert len(a.incidents) == 1 and "email" in a.incidents[0]["entities"]

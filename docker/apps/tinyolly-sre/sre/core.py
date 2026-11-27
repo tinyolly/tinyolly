@@ -142,6 +142,7 @@ def _clip(v, n):
 
 VERDICTS = ("act_now", "watch", "noise")
 ERROR_KINDS = {"errors", "error-rate", "op-errors", "logs"}         # triage: act_now = would page a human (shadow mode: nothing is paged)
+DOWNSTREAM_KINDS = {"traffic", "vanished"}
 
 
 def structured(final):
@@ -154,7 +155,7 @@ def structured(final):
     hyp = d.get("hypotheses") if isinstance(d.get("hypotheses"), list) else []
     theories = [{"claim": _clip(h.get("claim"), 200), "status": (str(h.get("status") or "open").lower().replace(" ", "_") if str(h.get("status") or "").lower().replace(" ", "_") in ("confirmed", "ruled_out", "open") else "open"),
                  "evidence": _clip(h.get("evidence"), 300)} for h in hyp if isinstance(h, dict) and h.get("claim")][:4]
-    return {"root_cause": _clip(d.get("root_cause"), 600), "confidence": conf if conf in ("high", "medium", "low") else "low",
+    return {"title": _clip(d.get("title"), 90), "root_cause": _clip(d.get("root_cause"), 600), "confidence": conf if conf in ("high", "medium", "low") else "low",
             "suggested_fixes": [{**{k: _clip(f.get(k), 400) for k in ("action", "target", "command", "risk")}, "status": "proposed"}
                                 for f in fixes if isinstance(f, dict) and f.get("action")][:3],
             "verdict": verdict, "would_page": verdict == "act_now", "theories": theories}
@@ -185,6 +186,7 @@ class Agent:
             if duty == "digest": evidence, top_svc, top_tid = self.digest_evidence(), "", ""
             elif duty: evidence, top_svc, top_tid = self.b.review_evidence(duty, ctx), "", ""
             else: evidence, top_svc, top_tid = self.b.evidence(trigger, entity, recovery)
+            if question: evidence += "\n" + self.incident_lines()
             log.info("evidence (%d chars) for %r", len(evidence), trigger[:80], extra=ev("thinking", inv, evidence))
             tools, allow, mcp = [], set(), None
             if self.b.mcp_url and not recovery and (not duty or duty in TOOL_DUTIES):
@@ -196,7 +198,7 @@ class Agent:
             elif getattr(self.b, "local_tools", None) and not recovery and (not duty or duty in TOOL_DUTIES):
                 mcp = self.b.local_tools; listed = mcp.tools(); allow = {t["name"] for t in listed}; tools = to_openai(listed)   # replay: tools over recorded data
             sys_ = self.playbook + (f"\n\nOnly these tools exist: {', '.join(sorted(allow))}. At most {MAX_CALLS} tool calls in total; answer as soon as the evidence supports a cause." if allow else "\n\nNo tools exist; use only the evidence.")
-            user = (f"Question: {question}\nAnswer in plain text, at most 120 words." if question else
+            user = (f"Question: {question}\nAnswer in plain text, at most 120 words. Do not call something healthy if an unresolved incident below involves it." if question else
                     f"Duty: {duty}. {ASKS[duty]}\n{('CHANGE: ' + ctx) if ctx else ''}\nStart with `VERDICT: ok|watch|act`, then at most {NOTE_CHARS.get(duty, 400) // 6} words of plain text, no JSON." if duty else f"Trigger: {trigger}") + \
                    f"\nEnvironment: {ENV_NAME}. Now: {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}.\n\nEVIDENCE (already fetched):\n{evidence}"
             msgs = [{"role": "system", "content": sys_}, {"role": "user", "content": user}]
@@ -262,17 +264,28 @@ class Agent:
         finally: self.busy.release()
 
     # ---- incidents ----
+    def incident_lines(self, n=5):
+        """This agent's own records for a free-form question: every unresolved one, plus those resolved in the last hour."""
+        rows = [r for r in self.records() if r["state"] != "resolved" or time.time() - (r["resolved_at"] or r["opened_at"]) < 3600]
+        rows.sort(key=lambda r: r["state"] == "resolved")
+        return "\n".join(["INCIDENTS (your own records; state `resolved` is over, any other state is unresolved):" + ("" if rows else " none")] + [
+            f"  #{r['id']} | {r['state']} | {time.strftime('%H:%M', time.gmtime(r['opened_at']))}Z | {r['title']} | services: {', '.join(r['blast_radius'])} | {_clip(r['root_cause'] or r['summary'] or 'not concluded yet', 240)}"
+            for r in rows[:n]])
+
     def _edges(self):
         try: return self.b.topology()
         except Exception: return set()
 
-    def _find_incident(self, entity, now):
-        """The open incident on this entity, else a young one holding a direct caller or callee of it."""
+    def _find_incident(self, entity, now, kind=""):
+        """The open incident on this entity, else a young one holding a direct caller or callee of it (any age for DOWNSTREAM_KINDS)."""
         live = [i for i in self.incidents if i["open"]]
         hit = next((i for i in live if entity in i["entities"]), None)
         if hit: return hit
         edges = self._edges()
-        return next((i for i in live if now - i["t0"] <= GROUP_S and any((entity, o) in edges or (o, entity) in edges for o in i["entities"])), None)
+        young = next((i for i in live if now - i["t0"] <= GROUP_S and any((entity, o) in edges or (o, entity) in edges for o in i["entities"])), None)
+        if young or kind not in DOWNSTREAM_KINDS: return young
+        # a callee going quiet is noticed late: it joins an error incident that holds its caller, however old
+        return next((i for i in live if {k for _, k in i["kinds"]} & ERROR_KINDS and any((o, entity) in edges for o in i["entities"])), None)
 
     def _deepest(self, inc):
         """The entity that calls no other entity of the incident: where to start looking."""
@@ -281,7 +294,7 @@ class Agent:
 
     def add_signal(self, s: Signal, now=None):
         now = now or time.time()
-        inc = self._find_incident(s.entity, now)
+        inc = self._find_incident(s.entity, now, s.kind)
         if inc:
             inc["last"], inc["quiet"] = now, 0
             new_entity = s.entity not in inc["entities"]
@@ -382,6 +395,10 @@ class Agent:
                 if f"Change: {e.get('title')}" not in have: self._tl(n, "change", f"Change: {e.get('title')}", float(e["timestamp"]))
         except Exception as ex: log.warning("timeline changes: %s", ex)
         self._tl(n, "concluded", f"Concluded ({f.get('confidence', '?')} confidence, {f.get('verdict', '?').replace('_', ' ')}): {_clip(f.get('root_cause') or f['summary'], 160)}")
+        if f.get("status") == "ok":                                 # name the card after the cause; the trigger stays in `symptoms`
+            cause = re.split(r"(?<=[.;])\s", f.get("root_cause") or f.get("summary") or "")[0]
+            title = f.get("title") or (_clip(f"{f['service'] or self._deepest(inc)}: {cause}", 90) if cause else "")
+            if title: self._update(n, title=title)
         if f.get("suggested_fixes"): self._tl(n, "fix", f"Fix proposed: {f['suggested_fixes'][0]['action']}")
         self._update(n, state=done, concluded_at=time.time(), service=f["service"] or self._deepest(inc), evidence=proof,
                      **{k: f[k] for k in ("summary", "root_cause", "confidence", "suggested_fixes", "status", "tool_calls", "tokens_in", "tokens_out", "ms",

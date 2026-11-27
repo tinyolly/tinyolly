@@ -167,7 +167,8 @@ function card(r) {
   const g = reveal && grades[r.id];
   if (g) top.append(el('span', `pill grade ${g.result}`, g.result === 'false-positive' ? 'false positive' : `${g.result} · ${g.scenario_title}`));
   c.append(top, el('h3', '', r.title));
-  if (r.symptoms.length > 1) c.append(el('div', 'sub', r.symptoms.slice(1).join(' · ')));
+  const seen = r.symptoms.filter(s => s !== r.title);   // once retitled by cause, the trigger is listed here too
+  if (seen.length) c.append(el('div', 'sub', seen.join(' · ')));
 
   const cause = r.root_cause || r.summary;
   if (cause) c.append(el('div', 'label', r.confidence ? `Conclusion · ${r.confidence} confidence` : 'Conclusion'), el('p', '', plain(cause)));
