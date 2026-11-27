@@ -1366,7 +1366,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./build/local/build-core-kind.sh<span class="w">                                     </span><span class="c1"># core images</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deploy/tinyolly-ui<span class="w"> </span>deploy/tinyolly-otlp-receiver
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>./k8s/05-rebuild+deploy-mcp.sh<span class="w">                                       </span><span class="c1"># MCP server (also after editing docs/)</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>./k8s/06-rebuild+deploy-sre.sh<span class="w">                                       </span><span class="c1"># AI SRE Agent</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>./k8s/06-rebuild+deploy-sre.sh<span class="w"> </span>--build<span class="w">                               </span><span class="c1"># AI SRE Agent</span>
 </code></pre></div>
 <h2 id="remove">Remove</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./k8s-otel-demo/02-cleanup-otel-demo-helm.sh<span class="w">   </span><span class="c1"># the demo only</span>
