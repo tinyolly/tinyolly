@@ -1,0 +1,80 @@
+# Container restarts and readiness as metrics (OTLP -> otel-collector), for the AI SRE Agent's `restarts` detector.
+# Kubernetes only, so it is a collector of its own rather than part of docker/otelcol-configs. Keep one replica.
+# Applied by k8s/06-rebuild+deploy-sre.sh; remove with: kubectl delete -f k8s/tinyolly-k8s-state.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: tinyolly-k8s-state}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: tinyolly-k8s-state}
+rules:                                   # read-only; the list the k8s_cluster receiver watches
+- apiGroups: [""]
+  resources: [events, namespaces, namespaces/status, nodes, nodes/spec, pods, pods/status, replicationcontrollers, replicationcontrollers/status, resourcequotas, services]
+  verbs: [get, list, watch]
+- apiGroups: [apps]
+  resources: [daemonsets, deployments, replicasets, statefulsets]
+  verbs: [get, list, watch]
+- apiGroups: [batch]
+  resources: [jobs, cronjobs]
+  verbs: [get, list, watch]
+- apiGroups: [autoscaling]
+  resources: [horizontalpodautoscalers]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: {name: tinyolly-k8s-state}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: tinyolly-k8s-state}
+subjects: [{kind: ServiceAccount, name: tinyolly-k8s-state, namespace: default}]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: tinyolly-k8s-state}
+data:
+  config.yaml: |
+    receivers:
+      k8s_cluster:
+        collection_interval: 15s
+        resource_attributes:
+          k8s.container.status.last_terminated_reason: {enabled: true}
+    processors:
+      memory_limiter: {check_interval: 1s, limit_percentage: 80}
+      filter/restarts_only:
+        error_mode: ignore
+        metrics:
+          metric:
+            - 'name != "k8s.container.restarts" and name != "k8s.container.ready"'
+      transform/service:                 # the demo names each container after its service
+        metric_statements:
+          - set(resource.attributes["service.name"], resource.attributes["k8s.container.name"]) where resource.attributes["k8s.container.name"] != nil
+    exporters:
+      otlp:
+        endpoint: otel-collector:4317
+        tls: {insecure: true}
+    service:
+      pipelines:
+        metrics:
+          receivers: [k8s_cluster]
+          processors: [memory_limiter, filter/restarts_only, transform/service]
+          exporters: [otlp]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: tinyolly-k8s-state, labels: {app: tinyolly-k8s-state}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: tinyolly-k8s-state}}
+  template:
+    metadata: {labels: {app: tinyolly-k8s-state}}
+    spec:
+      serviceAccountName: tinyolly-k8s-state
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:0.165.0   # keep in step with OTELCOL_VERSION in versions.env
+        args: [--config=/etc/otelcol/config.yaml]
+        resources:
+          requests: {memory: "64Mi", cpu: "20m"}
+          limits: {memory: "192Mi", cpu: "200m"}
+        volumeMounts: [{name: config, mountPath: /etc/otelcol}]
+      volumes: [{name: config, configMap: {name: tinyolly-k8s-state}}]

@@ -261,3 +261,35 @@ def test_late_traffic_drop_joins_the_callers_error_incident(monkeypatch):
     a.incidents.pop()
     a.add_signal(Signal("traffic", "email", "email quiet"), now=2000)
     assert len(a.incidents) == 1 and "email" in a.incidents[0]["entities"]
+
+
+def _sp(i, parent, svc, bad=True):
+    return {"spanId": i, "parentSpanId": parent, "serviceName": svc, "name": i, "status": {"code": 2} if bad else {}}
+
+
+def test_errors_are_attributed_to_where_they_start():
+    from sre.backends.tinyolly import failure_origins
+    got = failure_origins([_sp("a", None, "frontend"), _sp("b", "a", "checkout"), _sp("c", "b", "payment"), _sp("d", "b", "cart", False)])
+    assert sorted((s, o) for s, _, o in got) == [("checkout", "payment"), ("frontend", "payment"), ("payment", "payment")]
+
+
+def test_separate_faults_behind_one_caller_stay_separate(monkeypatch):
+    a = agent(); a.b.topology = lambda: {("frontend", "ad"), ("frontend", "checkout"), ("checkout", "payment")}
+    a.add_signal(Signal("errors", "payment", "frontend failing", via="frontend"))
+    a.add_signal(Signal("errors", "ad", "ad failing"))
+    a.add_signal(Signal("errors", "payment", "payment failing"))
+    assert [sorted(i["entities"]) for i in a.incidents] == [["payment"], ["ad"]]
+
+
+def test_restart_is_detected_across_split_series_and_gets_its_own_incident(monkeypatch):
+    from sre.backends.tinyolly import TinyOllyBackend
+    b = TinyOllyBackend(); now = time.time()
+    res = {"service.name": "email", "k8s.pod.uid": "p"}
+    def series(t, v, reason=""): return {"resource": {**res, "k8s.container.status.last_terminated_reason": reason}, "datapoints": [{"timestamp": t, "value": v}]}
+    b._safe = lambda path, default, **k: {"series": [series(now - 60, 0), series(now - 5, 2, "OOMKilled")]} if path.endswith("restarts") else default
+    sig = b._restart_signals()
+    assert [s.text for s in sig] == ["email: container restarted 2 time(s) in the last 10 min (last exit: OOMKilled)"]
+    a = agent(); a.add_signal(Signal("errors", "payment", "payment failing"))
+    a.incidents[0]["entities"].add("email")
+    a.add_signal(sig[0])
+    assert len(a.incidents) == 2

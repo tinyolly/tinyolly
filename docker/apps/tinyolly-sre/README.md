@@ -3,7 +3,7 @@
 Generic AI SRE agent. Watches telemetry, groups failures into incidents, investigates each **once** with a model plus read-only MCP tools, then checks recovery when the signals clear.
 
 ## How it works
-**Detectors** (no model call, every `DETECT_SECONDS`=30; pick with `DETECTORS`). Each signal names a service. Signals on one service, or on a direct caller or callee within `INCIDENT_GROUP_SECONDS` (180), join one incident, investigated from the deepest service.
+**Detectors** (no model call, every `DETECT_SECONDS`=30; pick with `DETECTORS`). Each signal names a service. Signals on one service, or on a direct caller or callee within `INCIDENT_GROUP_SECONDS` (180), join one incident, investigated from the deepest service. Error signals are first moved to the service where the failures start (the deepest failing span of sampled traces), so separate faults behind one caller stay separate incidents. A `traffic` or `vanished` signal joins its caller's error incident however old that is. The agent keeps the spans each poll returns for `SPAN_KEEP_SECONDS` (600), since the API returns only the newest 5000.
 
 | Detector | Fires when |
 |---|---|
@@ -14,6 +14,9 @@ Generic AI SRE agent. Watches telemetry, groups failures into incidents, investi
 | `traffic` | request rate < 20% of normal |
 | `vanished` | a service that was reporting stops |
 | `logs` | >= 10 error/fatal logs of one service in 2 min |
+| `cpu` | a process averaging >= `DETECT_CPU_PCT` (40)% CPU over its last 3 runtime-metric samples |
+| `health` | >= `DETECT_HEALTH_MIN` (3) failing health-check logs of one service in 6 min |
+| `restarts` | a container restarted in the last 10 min, or is not ready (Kubernetes only: needs `k8s/tinyolly-k8s-state.yaml`) |
 | `mesh` | new denied (403) or plaintext (non-mTLS) edge (Istio) |
 | `platform` | TinyOlly's store >= 90% of its cap, or metric series dropped |
 

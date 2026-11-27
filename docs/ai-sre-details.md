@@ -85,7 +85,7 @@ To tune without waiting, record a shift once (`SRE_RECORD=/tmp/shift.jsonl`) and
 
 ## How it decides
 
-Detectors run without a model: error spans, error rate (per service and per operation), p95 latency, traffic drop, a service that stops reporting, error logs, mesh denials, and TinyOlly's storage pressure. Each service learns its normal; a change must hold for two polls. Signals on a service and its direct callers or callees join one incident, investigated from the deepest service. Settings are in the [agent's README](https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre).
+Detectors run without a model: error spans, error rate (per service and per operation), p95 latency, traffic drop, a service that stops reporting, error logs, high CPU, failing health checks, container restarts (Kubernetes), mesh denials, and TinyOlly's storage pressure. Errors are attributed to the service where they start, so separate faults stay separate incidents. Each service learns its normal; a change must hold for two polls. Signals on a service and its direct callers or callees join one incident, investigated from the deepest service. Settings are in the [agent's README](https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre).
 
 **Guardrails:** at most 8 tool calls and 120 s per investigation, 12 investigations an hour, read-only tools (not TinyOlly's docs or playbooks, which describe the demo's faults), and cited traces and services are kept only if they appeared in the evidence.
 

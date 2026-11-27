@@ -1,7 +1,7 @@
 """TinyOlly backend: reads TinyOlly's REST API, tools come from TinyOlly's MCP server,
 findings are written back as change-marker events (kind=ai-finding / ai-review) via POST /api/events."""
 from __future__ import annotations
-import os, time, collections, fnmatch, json
+import os, time, collections, fnmatch, json, threading
 import httpx
 from ..backend import Backend, Signal
 
@@ -24,7 +24,12 @@ VANISHED_POLLS = int(E("DETECT_VANISHED_POLLS", "3"))
 HOLD_MAX_POLLS = int(E("DETECT_HOLD_MAX_POLLS", "20"))
 RECENT_STATS = E("DETECT_RECENT_STATS", "0") == "1"           # rate and p95 from recent spans too (not the catalog's long average): faster detect and clear      # a traffic/latency shift held this long becomes the new normal (errors never do)
 DB_PCT = float(E("DETECT_DB_PCT", "90"))
-DETECTORS = set(E("DETECTORS", "errors,error-rate,op-errors,latency,traffic,vanished,logs,mesh,platform").split(","))
+DETECTORS = set(E("DETECTORS", "errors,error-rate,op-errors,latency,traffic,vanished,logs,cpu,health,restarts,mesh,platform").split(","))
+CPU_PCT = float(E("DETECT_CPU_PCT", "40"))                # a process using this much of its CPU, over its last 3 samples
+HEALTH_MIN = int(E("DETECT_HEALTH_MIN", "3"))             # failing health-check logs of one service in 6 min
+CPU_METRICS = ("jvm.cpu.recent_utilization", "process.cpu.utilization", "process.runtime.cpython.cpu.utilization")
+SPAN_KEEP_S = int(E("SPAN_KEEP_SECONDS", "600"))          # the span API returns only the newest 5000: keep what each poll saw
+ORIGIN_TRACES = int(E("DETECT_ORIGIN_TRACES", "40"))      # failing traces read per poll to find where failures start
 OP_MIN_SPANS = int(E("DETECT_OP_MIN_SPANS", "8"))         # op-errors: one operation (service + span name) failing often while the service as a whole looks fine
 
 
@@ -53,6 +58,30 @@ def _secs(ts) -> float:
     for div in (1e9, 1e6, 1e3):
         if ts > div * 1e8: return ts / div
     return ts
+
+
+def failure_origins(spans: list[dict]) -> list[tuple[str, str, str]]:
+    """For one trace: (service, operation, origin) per failing span. The origin is the service of the deepest failing
+    span under it, so a caller that only passes an error on is attributed to the service the error starts in."""
+    def failed(s): return (s.get("status") or {}).get("code") in (2, "STATUS_CODE_ERROR", "ERROR") or any(
+        a.get("key") in ("http.status_code", "http.response.status_code") and str((a.get("value") or {}).get("intValue") or (a.get("value") or {}).get("stringValue") or "").startswith("5")
+        for a in s.get("attributes") or [])
+    by_id = {s.get("spanId"): s for s in spans}
+    bad = {i for i, s in by_id.items() if failed(s)}
+    under, has_bad_child = collections.defaultdict(list), set()
+    for i in bad:
+        p, seen = by_id[i].get("parentSpanId"), {i}
+        while p in by_id and p not in seen:
+            seen.add(p)
+            if p in bad: has_bad_child.add(p)
+            p = by_id[p].get("parentSpanId")
+    for i in bad - has_bad_child:
+        origin, p, seen = by_id[i].get("serviceName") or "unknown", i, set()
+        while p in by_id and p not in seen:
+            seen.add(p)
+            if p in bad: under[p].append(origin)
+            p = by_id[p].get("parentSpanId")
+    return [(by_id[i].get("serviceName") or "unknown", by_id[i].get("name") or "?", o) for i, os_ in under.items() for o in set(os_)]
 
 
 def _ignored(name: str) -> bool:
@@ -115,6 +144,8 @@ class TinyOllyBackend(Backend):
         self._topo: tuple[float, set] = (0.0, set())
         self.rec = Recorder(E("SRE_RECORD")) if E("SRE_RECORD") else None
         self.fence_t = 0.0                                     # telemetry before this time is ignored (set when an injected fault ends)
+        self._kept: dict[tuple, dict] = {}; self._klock = threading.Lock()
+        self._origins: dict[str, list] = {}                    # trace id -> failure_origins()
         self.op_err: dict[tuple, float] = {}; self.op_hits: collections.Counter = collections.Counter(); self.op_n: collections.Counter = collections.Counter()
 
     def fence(self, t: float | None = None):
@@ -152,7 +183,90 @@ class TinyOllyBackend(Backend):
     def _spans(self, seconds: float) -> list[dict]:
         """Spans from the last `seconds` (the API's fields: service_name, trace_id, start_time, name, status)."""
         cut = max(time.time() - seconds, self.fence_t)
-        return [s for s in self._safe("/api/spans", [], limit=5000) if _secs(s.get("start_time")) >= cut]
+        rows, loose = self._safe("/api/spans", [], limit=5000), []
+        with self._klock:
+            for s in rows:
+                if s.get("span_id"): self._kept[(s.get("trace_id"), s["span_id"])] = s
+                else: loose.append(s)
+            old = time.time() - SPAN_KEEP_S
+            for k in [k for k, s in self._kept.items() if _secs(s.get("start_time")) < old]: del self._kept[k]
+            kept = list(self._kept.values())
+        return sorted((s for s in kept + loose if _secs(s.get("start_time")) >= cut), key=lambda s: -_secs(s.get("start_time")))
+
+    def _attribute(self, signals: list[Signal]) -> list[Signal]:
+        """Move each error signal to the service its failures start in, so separate faults that surface through the same
+        caller stay separate incidents, and a caller's errors join the incident of their cause."""
+        errs = [s for s in signals if s.kind in ("errors", "error-rate", "op-errors", "logs")]
+        if not errs: return signals
+        per_svc = collections.defaultdict(list)
+        for s in self._recent_errors(WINDOW_S * 3):
+            t = s.get("trace_id")
+            if t and t not in per_svc[_svc(s)]: per_svc[_svc(s)].append(t)
+        wanted = list(dict.fromkeys(t for s in errs for t in per_svc[s.entity][:10]))[:ORIGIN_TRACES]
+        for t in wanted:
+            if t not in self._origins:
+                found = failure_origins((self._safe("/api/traces/" + t, {}) or {}).get("spans") or [])
+                if found: self._origins[t] = found
+        while len(self._origins) > 500: self._origins.pop(next(iter(self._origins)))
+        out = []
+        for s in signals:
+            if s in errs:
+                c = collections.Counter(o for t in per_svc[s.entity] for svc, op, o in self._origins.get(t, [])
+                                        if svc == s.entity and (not s.op or op == s.op))
+                top = c.most_common(1)[0][0] if c else s.entity
+                if top != s.entity and not _ignored(top): s = Signal(s.kind, top, s.text, via=s.entity, op=s.op)
+            out.append(s)
+        return out
+
+    def _cpu_signals(self) -> list[Signal]:
+        use: dict[str, float] = {}
+        for name in CPU_METRICS:
+            for series in (self._safe("/api/metrics/" + name, {}) or {}).get("series") or []:
+                svc = (series.get("resource") or {}).get("service.name")
+                pts = [float(p["value"]) for p in series.get("datapoints") or [] if p.get("value") is not None and _secs(p.get("timestamp")) >= max(self.fence_t, time.time() - 180)][-3:]
+                if svc and len(pts) == 3 and not _ignored(svc): use[svc] = max(use.get(svc, 0.0), sum(pts) * 100 / 3)
+        self.cpu = use
+        return [Signal("cpu", svc, f"{svc}: high CPU, {v:.0f}% (alerts above {CPU_PCT:.0f}%)") for svc, v in use.items() if v >= CPU_PCT]
+
+    def _container_state(self) -> dict[str, dict]:
+        """Per service from k8s_cluster metrics (k8s/tinyolly-k8s-state.yaml; empty without it): restarts in the last
+        10 min, whether the last 3 samples were all not ready, and why the container last stopped."""
+        cut = max(self.fence_t, time.time() - 600)
+        points: dict[tuple, list] = collections.defaultdict(list)          # (metric, service, pod) -> [(t, value, reason)]
+        for name in ("k8s.container.restarts", "k8s.container.ready"):
+            for series in (self._safe("/api/metrics/" + name, {}) or {}).get("series") or []:
+                r = series.get("resource") or {}
+                if not r.get("service.name") or _ignored(r["service.name"]): continue
+                # one container's series splits when its last exit reason first appears: join them by pod
+                points[(name, r["service.name"], r.get("k8s.pod.uid") or r.get("k8s.pod.name"))] += [
+                    (_secs(p.get("timestamp")), float(p["value"]), r.get("k8s.container.status.last_terminated_reason") or "")
+                    for p in series.get("datapoints") or [] if p.get("value") is not None and _secs(p.get("timestamp")) >= cut]
+        out: dict[str, dict] = {}
+        for (name, svc, _pod), pts in points.items():
+            if not pts: continue
+            pts.sort()
+            st = out.setdefault(svc, {"restarts": 0, "unready": False, "reason": ""})
+            if name.endswith("restarts"):
+                st["restarts"] += int(pts[-1][1] - pts[0][1]); st["reason"] = pts[-1][2] or st["reason"]
+            elif len(pts) >= 3 and not any(v for _, v, _r in pts[-3:]): st["unready"] = True
+        return out
+
+    def _restart_signals(self) -> list[Signal]:
+        self.containers = self._container_state()
+        out = []
+        for svc, st in self.containers.items():
+            if st["restarts"] > 0:
+                out.append(Signal("restarts", svc, f"{svc}: container restarted {st['restarts']} time(s) in the last 10 min" +
+                                  (f" (last exit: {st['reason']})" if st["reason"] else "")))
+            elif st["unready"]: out.append(Signal("restarts", svc, f"{svc}: container is not ready"))
+        return out
+
+    def _health_signals(self) -> list[Signal]:
+        cut = max(time.time() - 360, self.fence_t)
+        by = collections.Counter(l.get("service_name") or "unknown" for l in self._safe("/api/logs", [], limit=5000)
+                                 if "health" in (l.get("message") or "").lower() and (l.get("severity") or "").lower() in ("error", "fatal", "critical")
+                                 and _secs(l.get("timestamp")) >= cut)
+        return [Signal("health", svc, f"{svc}: health check failing ({n} times in the last 6 min)") for svc, n in by.items() if n >= HEALTH_MIN and not _ignored(svc)]
 
     def _recent_errors(self, seconds: float) -> list[dict]:
         return [s for s in self._spans(seconds) if _is_error(s)]
@@ -186,7 +300,7 @@ class TinyOllyBackend(Backend):
         D = DETECTORS
         if "errors" in D:
             by = collections.Counter(_svc(s) for s in self._recent_errors(WINDOW_S))
-            out += [Signal("errors", svc, f"{svc}: {n} failing spans in the last {max(WINDOW_S // 60, 1)} min") for svc, n in by.most_common() if n >= ERRORS_MIN and not _ignored(svc)]
+            out += [Signal("errors", svc, f"{svc}: {n} failed operations in the last {max(WINDOW_S // 60, 1)} min") for svc, n in by.most_common() if n >= ERRORS_MIN and not _ignored(svc)]
         cat = {c["name"]: c for c in self._safe("/api/service-catalog", [])}
         if cat: out += self._catalog_signals(cat, D, self._recent_stats())
         if "op-errors" in D: out += self._op_signals()
@@ -195,6 +309,10 @@ class TinyOllyBackend(Backend):
             by = collections.Counter(l.get("service_name") or "unknown" for l in self._safe("/api/logs", [], limit=1000)
                                      if (l.get("severity") or "").lower() in ("error", "fatal", "critical") and _secs(l.get("timestamp")) >= cut)
             out += [Signal("logs", svc, f"{svc}: {n} error logs in the last {max(WINDOW_S // 60, 1)} min") for svc, n in by.most_common() if n >= LOG_ERRORS_MIN and not _ignored(svc)]
+        if "cpu" in D: out += self._cpu_signals()
+        if "health" in D: out += self._health_signals()
+        out = self._attribute(out)
+        if "restarts" in D: out += self._restart_signals()
         if "mesh" in D: out += self._mesh_signals()
         if "platform" in D: out += self._platform_signals()
         return out
@@ -215,7 +333,7 @@ class TinyOllyBackend(Backend):
             if not hit: self.op_err[k] = pct if norm is None else norm * 0.9 + pct * 0.1; self.op_n[k] += 1   # never learn a failure as normal
             if self.op_hits[k] >= CONFIRM_POLLS and (k[0] not in by_svc or pct > by_svc[k[0]][0]): by_svc[k[0]] = (pct, k[1], bad[k], n)
         for svc, (pct, op, b, n) in by_svc.items():
-            out.append(Signal("op-errors", svc, f"{svc}: {op} failing {pct:.0f}% ({b} of {n} calls, normal {self.op_err.get((svc, op), 0):.1f}%)"))
+            out.append(Signal("op-errors", svc, f"{svc}: {op} failing {pct:.0f}% of the time ({b} of {n} calls)", op=op))
         return out
 
     def _catalog_signals(self, cat, D, recent=None):
@@ -237,9 +355,9 @@ class TinyOllyBackend(Backend):
                 "latency": ready and float(c.get("duration_p95") or 0) > LATENCY_FACTOR * max(L.p95, 1) and float(c.get("duration_p95") or 0) - L.p95 > 100,
                 "traffic": ready and L.rate >= 0.5 and float(c.get("rate") or 0) < TRAFFIC_DROP * L.rate,
             }
-            texts = {"error-rate": f"{name}: error rate {c.get('error_rate')}% (normal {L.err:.1f}%)",
-                     "latency": f"{name}: p95 {c.get('duration_p95')} ms (normal {L.p95:.0f} ms)",
-                     "traffic": f"{name}: traffic {c.get('rate')}/s (normal {L.rate:.1f}/s)"}
+            texts = {"error-rate": f"{name}: {float(c.get('error_rate') or 0):.0f}% of requests failing " + ("(already failing when first watched)" if L.err >= ERR_PCT_MIN else f"(usually {L.err:.1f}%)"),
+                     "latency": f"{name}: slow, p95 {float(c.get('duration_p95') or 0):.0f} ms (usually {L.p95:.0f} ms)",
+                     "traffic": f"{name}: traffic dropped to {float(c.get('rate') or 0):.2f}/s (usually {L.rate:.1f}/s)"}
             for k, hit in checks.items():
                 L.hits[k] = L.hits[k] + 1 if hit and k in D else 0
                 if L.hits[k] >= CONFIRM_POLLS: out.append(Signal(k, name, texts[k]))
@@ -248,7 +366,7 @@ class TinyOllyBackend(Backend):
             if name in cat or _ignored(name) or L.n < BASELINE_POLLS: continue
             L.missing += 1
             if "vanished" in D and L.missing >= VANISHED_POLLS and L.rate >= 0.1:
-                out.append(Signal("vanished", name, f"{name}: no longer reporting (normal {L.rate:.1f} req/s)"))
+                out.append(Signal("vanished", name, f"{name}: no requests arriving (usually {L.rate:.1f}/s)"))
         return out
 
     def _mesh_signals(self):
@@ -283,6 +401,10 @@ class TinyOllyBackend(Backend):
     def evidence(self, trigger, entity="", recovery=False):
         win = 60 if recovery else 600
         parts, top_svc, top_tid = [], entity, ""
+        if entity: parts.append(f"THIS INCIDENT IS ABOUT: {entity}. Failures that start in other services are separate incidents.")
+        st = getattr(self, "containers", {}).get(entity)
+        if st: parts.append(f"CONTAINER {entity}: {st['restarts']} restarts in 10 min, {'not ready' if st['unready'] else 'ready'}, last exit reason: {st['reason'] or 'none'}")
+        if getattr(self, "cpu", {}).get(entity) is not None: parts.append(f"CPU {entity}: {self.cpu[entity]:.0f}% (alerts above {CPU_PCT:.0f}%)")
         groups = collections.defaultdict(lambda: [0, ""])
         for s in self._recent_errors(win):
             key = (_svc(s), (s.get("name") or "?")[:80], ((s.get("status") or {}).get("message") or "")[:100])

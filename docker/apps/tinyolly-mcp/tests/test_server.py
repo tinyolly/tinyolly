@@ -553,3 +553,16 @@ def test_get_version_split_has_no_findings_when_versions_look_alike(api):
         return {"name": "istio_requests_total", "series": [_vs("v1", "200", 0, 90), _vs("v2", "200", 0, 10)]}
     api["/api/metrics/query"] = fake
     assert call(server.get_version_split, "cart")["findings"] == []
+
+
+def test_find_failures_groups_by_deepest_failing_span(api):
+    api["/api/traces"] = [{"trace_id": T, "has_error": True, "start_time": 1}]
+    api[f"/api/traces/{T}"] = {"spans": [span(1, service="web", error=True), span(2, 1, "pay", error=True), span(3, 1, "ad")]}
+    d = call(server.find_failures)
+    assert [(r["origin"], r["affected"], r["traces"]) for r in d["origins"]] == [("pay", ["web"], 1)]
+
+
+def test_resource_health_reports_cpu_percent(api):
+    api["/api/metrics/query"] = lambda name, **k: {"series": [
+        {"resource": {"service.name": "ad"}, "datapoints": [{"value": 0.4}, {"value": 0.6}]}]} if name == "jvm.cpu.recent_utilization" else {"series": []}
+    assert call(server.resource_health)["services"] == [{"service": "ad", "cpu_avg_pct": 50.0, "cpu_max_pct": 60.0, "cpu_last_pct": 60.0}]

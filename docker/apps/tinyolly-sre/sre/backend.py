@@ -8,6 +8,8 @@ class Signal:
     kind: str      # "errors", "alert", ...
     entity: str    # what it is about (a service); signals on the same entity join one incident
     text: str
+    via: str = ""  # the service that showed the symptom, when `entity` is the deeper service the failure starts in
+    op: str = ""   # the operation, for a signal about one operation
 
 
 class Backend:

@@ -337,6 +337,97 @@ def _fetch_trace(trace_id: str) -> list[dict] | None:
 
 
 @mcp.tool()
+def find_failures(limit: int = 30) -> str:
+    """Where current failures start. Reads the newest failing traces (up to `limit`, max 50) and groups them by the
+    deepest failing span, so separate faults stay separate and callers that only pass an error on are listed as
+    `affected`. One row per origin service and operation: failing traces, status message, affected services and an
+    example trace id. Start here when something is failing."""
+    rows = [t for t in _api("/api/traces", limit=2000) or [] if t.get("has_error") or t.get("error_count")]
+    rows.sort(key=lambda t: -int(t.get("start_time") or 0))
+    found: dict[tuple, dict] = {}
+    read = 0
+    for t in rows[: max(1, min(limit, 50))]:
+        spans = _fetch_trace(t["trace_id"]) or []
+        by_id = {s.get("spanId"): s for s in spans}
+        bad = {i for i, s in by_id.items() if _is_error(s)}
+        chains = {}
+        for i in bad:
+            chain, p, seen = [], by_id[i].get("parentSpanId"), {i}
+            while p in by_id and p not in seen:
+                seen.add(p)
+                chain.append(p)
+                p = by_id[p].get("parentSpanId")
+            chains[i] = chain
+        passed_on = {p for c in chains.values() for p in c if p in bad}
+        read += 1
+        for i in bad - passed_on:
+            s = by_id[i]
+            key = (s.get("serviceName"), s.get("name"))
+            row = found.setdefault(key, {"origin": key[0], "operation": _t(key[1], 100), "traces": set(),
+                                         "message": _t((s.get("status") or {}).get("message") or "", 200),
+                                         "affected": set(), "example_trace": t["trace_id"]})
+            row["traces"].add(t["trace_id"])
+            row["affected"] |= {by_id[p].get("serviceName") for p in chains[i] if p in bad} - {key[0]}
+    out = [{**r, "traces": len(r["traces"]), "affected": sorted(x for x in r["affected"] if x)} for r in found.values()]
+    out.sort(key=lambda r: -r["traces"])
+    return _out({"failing_traces_read": read, "failing_traces_seen": len(rows), "origins": _fit(out)})
+
+
+_CPU_METRICS = ("jvm.cpu.recent_utilization", "process.cpu.utilization", "process.runtime.cpython.cpu.utilization")
+_MEM_METRICS = ("process.memory.usage", "dotnet.process.memory.working_set", "jvm.memory.used", "go.memory.used", "v8js.memory.heap.used")
+
+
+@mcp.tool()
+def resource_health(minutes: float = 10, service: str | None = None) -> str:
+    """CPU and memory per service from runtime metrics: CPU as percent (avg, max, latest) and memory in MB (first,
+    latest, so growth shows), plus on Kubernetes the container restart total, readiness and last exit reason (such as
+    OOMKilled). Highest CPU first. Use it for slowness, restarts or anything traces do not explain."""
+    end = time.time()
+    rows: dict[str, dict] = {}
+    used_mem: set[str] = set()
+    for name in _CPU_METRICS + _MEM_METRICS:
+        params = {"name": name, "start": end - minutes * 60, "end": end}
+        if service:
+            params["resource.service.name"] = service
+        sums: dict[str, list[float]] = {}
+        for s in (_api("/api/metrics/query", **params) or {}).get("series") or []:
+            svc = (s.get("resource") or {}).get("service.name")
+            pts = [p["value"] for p in s.get("datapoints", []) if p.get("value") is not None]
+            if not svc or not pts:
+                continue
+            if name in _CPU_METRICS:
+                rows.setdefault(svc, {"service": svc}).update(
+                    cpu_avg_pct=round(100 * sum(pts) / len(pts), 1), cpu_max_pct=round(100 * max(pts), 1),
+                    cpu_last_pct=round(100 * pts[-1], 1))
+            else:   # memory pools add up
+                first_last = sums.setdefault(svc, [0.0, 0.0])
+                first_last[0] += pts[0]
+                first_last[1] += pts[-1]
+        for svc, (first, last) in sums.items():
+            if svc not in used_mem:     # the first metric that covers a service wins
+                used_mem.add(svc)
+                rows.setdefault(svc, {"service": svc}).update(
+                    memory_metric=name, memory_first_mb=round(first / 1e6, 1), memory_last_mb=round(last / 1e6, 1))
+    for name, field in (("k8s.container.restarts", "restarts_total"), ("k8s.container.ready", "ready")):
+        params = {"name": name, "start": end - minutes * 60, "end": end}
+        if service:
+            params["resource.service.name"] = service
+        newest: dict[str, float] = {}
+        for s in (_api("/api/metrics/query", **params) or {}).get("series") or []:
+            res = s.get("resource") or {}
+            svc = res.get("service.name")
+            pts = [p for p in s.get("datapoints", []) if p.get("value") is not None]
+            if not svc or not pts or pts[-1].get("timestamp", 0) < newest.get(svc, 0):
+                continue
+            newest[svc] = pts[-1].get("timestamp", 0)
+            row = rows.setdefault(svc, {"service": svc})
+            row[field] = int(pts[-1]["value"]) if field == "restarts_total" else bool(pts[-1]["value"])
+            if res.get("k8s.container.status.last_terminated_reason"):
+                row["last_exit_reason"] = res["k8s.container.status.last_terminated_reason"]
+    return _out({"window_minutes": minutes, "services": sorted(rows.values(), key=lambda r: -(r.get("cpu_last_pct") or 0))})
+
+
+@mcp.tool()
 def get_trace(trace_id: str, slowest: int = 10, format: str = "json", max_rows: int = 60) -> str:
     """Summary of a trace that stays small however large the trace is: duration, span/error
     counts, time and span count per service, the error spans, the slowest spans, and the

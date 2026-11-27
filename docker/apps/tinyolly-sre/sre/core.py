@@ -9,7 +9,7 @@ from .backends import BACKENDS
 from . import demo, grade, llm
 
 STATIC = os.path.join(os.path.dirname(__file__), "static")
-PAGES = {"/": ("index.html", "text/html"), "/console.css": ("console.css", "text/css"), "/console.js": ("console.js", "text/javascript")}
+PAGES = {"/": ("index.html", "text/html"), "/console.css": ("console.css", "text/css"), "/console.js": ("console.js", "text/javascript"), "/favicon.svg": ("favicon.svg", "image/svg+xml")}
 
 E = os.getenv
 MODELS = llm.Models()                                            # presets: local Ollama (default), OpenAI, Claude; switchable at runtime
@@ -279,13 +279,14 @@ class Agent:
     def _find_incident(self, entity, now, kind=""):
         """The open incident on this entity, else a young one holding a direct caller or callee of it (any age for DOWNSTREAM_KINDS)."""
         live = [i for i in self.incidents if i["open"]]
+        if kind == "restarts": return next((i for i in live if i["order"][0] == entity), None)
         hit = next((i for i in live if entity in i["entities"]), None)
         if hit: return hit
         edges = self._edges()
         young = next((i for i in live if now - i["t0"] <= GROUP_S and any((entity, o) in edges or (o, entity) in edges for o in i["entities"])), None)
         if young or kind not in DOWNSTREAM_KINDS: return young
         # a callee going quiet is noticed late: it joins an error incident that holds its caller, however old
-        return next((i for i in live if {k for _, k in i["kinds"]} & ERROR_KINDS and any((o, entity) in edges for o in i["entities"])), None)
+        return next((i for i in live if {k for _, k in i["kinds"]} & ERROR_KINDS and any((o, entity) in edges for o in i["entities"] | i.get("via", set()))), None)
 
     def _deepest(self, inc):
         """The entity that calls no other entity of the incident: where to start looking."""
@@ -299,10 +300,11 @@ class Agent:
             inc["last"], inc["quiet"] = now, 0
             new_entity = s.entity not in inc["entities"]
             if new_entity: inc["entities"].add(s.entity); inc["order"].append(s.entity)
-            if new_entity or (s.entity, s.kind) not in inc["kinds"]:     # a new symptom
+            if s.via: inc.setdefault("via", set()).add(s.via)
+            if new_entity or (s.via or s.entity, s.kind) not in inc["kinds"]:     # a new symptom
                 had = {k for _, k in inc["kinds"]}                          # errors joining an incident that had none: maybe a new cause
                 escalated = s.kind in ERROR_KINDS and not (had & ERROR_KINDS)   # (a traffic drop joining an error incident is a consequence)
-                inc["kinds"].add((s.entity, s.kind)); inc["texts"].append(s.text)
+                inc["kinds"].add((s.via or s.entity, s.kind)); inc["texts"].append(s.text)
                 self._update(inc["n"], symptoms=list(inc["texts"]), blast_radius=self._blast(inc))
                 log.info("incident %d also: %s", inc["n"], s.text, extra=ev("incident", inc["n"])); self._tl(inc["n"], "signal", s.text, now)
                 if escalated and inc["investigated"] and inc.get("re", 0) < REINVESTIGATE and not inc.get("running"):
@@ -314,7 +316,7 @@ class Agent:
         self.stats["signals"] += 1
         if now - self.started < WARMUP_S: log.info("warming up, signal ignored: %s", s.text, extra=ev("detector")); return
         self.inc_n += 1
-        inc = {"n": self.inc_n, "open": True, "entities": {s.entity}, "order": [s.entity], "kinds": {(s.entity, s.kind)}, "texts": [s.text], "t0": now, "last": now, "quiet": 0, "investigated": False, "svc": ""}
+        inc = {"n": self.inc_n, "open": True, "entities": {s.entity}, "order": [s.entity], "kinds": {(s.via or s.entity, s.kind)}, "via": {s.via} - {""}, "texts": [s.text], "t0": now, "last": now, "quiet": 0, "investigated": False, "svc": ""}
         self.incidents.append(inc)
         with self.ilock:
             self.investigations[inc["n"]] = {"id": inc["n"], "incident": inc["n"], "state": "open", "opened_at": now, "concluded_at": None, "resolved_at": None,
@@ -322,6 +324,7 @@ class Agent:
                 "suggested_fixes": [], "recovered": None, "recovery_note": "", "ttd_s": None, "ttr_s": None, "reinvestigated_at": None,
                 "verdict": "", "would_page": None, "theories": [], "trail": [], "postmortem": "",
                 "timeline": [{"t": now, "kind": "detected", "text": f"Detected: {s.text}"}], "model": MODELS.model, "status": "", "tool_calls": 0, "tokens_in": 0, "tokens_out": 0, "ms": 0}
+            self.investigations[inc["n"]]["blast_radius"] = list(dict.fromkeys([s.entity] + ([s.via] if s.via else [])))
             while len(self.investigations) > 100: self.investigations.pop(next(iter(self.investigations)))
         log.info("incident %d opened: %s", inc["n"], s.text, extra=ev("incident", inc["n"]))
         self._update(inc["n"])
@@ -329,7 +332,7 @@ class Agent:
     def _blast(self, inc):
         """Entities with signals, plus their direct callers."""
         edges = self._edges()
-        return list(dict.fromkeys(inc["order"] + sorted(str(a) for a, b in edges if b in inc["entities"])))
+        return list(dict.fromkeys(inc["order"] + sorted(inc.get("via", set())) + sorted(str(a) for a, b in edges if b in inc["entities"])))
 
     def _update(self, n, **changes):
         """Change one investigation record and push its new snapshot to the stream."""

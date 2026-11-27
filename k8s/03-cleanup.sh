@@ -94,6 +94,7 @@ echo ""
 
 # Method 1: Delete using kubectl delete -f on YAML files only
 echo -e "${YELLOW}→ Deleting all resources from k8s manifests...${NC}"
+kubectl delete -f "$SCRIPT_DIR/tinyolly-k8s-state.yaml" --ignore-not-found=true 2>/dev/null || true
 kubectl delete -f "$SCRIPT_DIR/tinyolly-mcp.yaml" --ignore-not-found=true 2>/dev/null || true
 kubectl delete -f "$SCRIPT_DIR/tinyolly-ui.yaml" --ignore-not-found=true 2>/dev/null || true
 kubectl delete -f "$SCRIPT_DIR/otel-collector.yaml" --ignore-not-found=true 2>/dev/null || true

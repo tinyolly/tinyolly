@@ -18,6 +18,7 @@ if [ -n "$BUILD" ] || ! docker manifest inspect tinyolly/sre:latest >/dev/null 2
   docker build -t tinyolly/sre:latest docker/apps/tinyolly-sre
   kind load docker-image tinyolly/sre:latest --name "${KIND_CLUSTER:-tinyolly}"
 fi
+kubectl apply -f k8s/tinyolly-k8s-state.yaml               # container restarts and readiness, for the restarts detector
 kubectl apply -f k8s/tinyolly-sre.yaml                        # resets the model settings to the manifest's defaults
 MODEL_ENV=(${SRE_LLM_URL:+"LLM_URL=$SRE_LLM_URL"} ${SRE_MODEL:+"MODEL=$SRE_MODEL"} ${SRE_PRESET:+"LLM_PRESET=$SRE_PRESET"})
 [ "${#MODEL_ENV[@]}" -eq 0 ] || kubectl set env deploy/tinyolly-sre "${MODEL_ENV[@]}"

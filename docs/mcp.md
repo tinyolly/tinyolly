@@ -44,6 +44,8 @@ TinyOlly's Docker and Kubernetes deployments also run the server as a container 
 | `get_edge` | One edge in detail: RED numbers of both services and the Envoy/ztunnel response flags (UC, UT, DI, DENY...) with their meaning and a next step |
 | `get_trace_mesh` | Mesh view of a trace: proxy time per hop, retries, decoded response flags |
 | `get_version_split` | Canary view: traffic share, error rate and `avg_ms` per version, with `findings` when one version is slower or fails more |
+| `find_failures` | Where current failures start: newest failing traces grouped by the deepest failing span, with the affected callers |
+| `resource_health` | CPU and memory per service from runtime metrics, plus container restarts and last exit reason on Kubernetes |
 | `what_changed` | Change markers (deploys, policies, scenarios; `POST /api/events`) and how failures, response flags and traffic changed around each |
 | `suggest_authz` | Draft least-privilege ALLOW `AuthorizationPolicy` from the callers seen (SPIFFE identities), listing plaintext callers it would block. Review before applying |
 | `chart_map_diff` | The map coloured by what changed around the latest change marker (red: more failures, teal: fewer, blue: new or busier, grey: quieter) |
