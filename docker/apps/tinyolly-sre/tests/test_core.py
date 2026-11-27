@@ -293,3 +293,28 @@ def test_restart_is_detected_across_split_series_and_gets_its_own_incident(monke
     a.incidents[0]["entities"].add("email")
     a.add_signal(sig[0])
     assert len(a.incidents) == 2
+
+
+def test_cpu_spike_and_brief_health_failures_are_not_signals():
+    from sre.backends.tinyolly import TinyOllyBackend
+    b = TinyOllyBackend(); now = time.time()
+    def cpu(*v): return {"series": [{"resource": {"service.name": "ad"}, "datapoints": [{"timestamp": now - 60 * (len(v) - i), "value": x} for i, x in enumerate(v)]}]}
+    b._safe = lambda path, default, **k: cpu(0.01, 0.9, 0.9) if "jvm" in path else default
+    assert not b._cpu_signals()
+    b._safe = lambda path, default, **k: cpu(0.5, 0.5, 0.5) if "jvm" in path else default
+    assert [s.entity for s in b._cpu_signals()] == ["ad"]
+    def logs(step): return [{"service_name": "cart", "severity": "Error", "message": "Health check failed", "timestamp": now - i * step} for i in range(7)]
+    b._safe = lambda *a, **k: logs(5)
+    assert not b._health_signals()
+    b._safe = lambda *a, **k: logs(30)
+    assert [s.entity for s in b._health_signals()] == ["cart"]
+
+
+def test_evidence_never_borrows_another_services_trace_or_logs():
+    from sre.backends.tinyolly import TinyOllyBackend
+    b = TinyOllyBackend()
+    span = {"service_name": "payment", "trace_id": "a" * 32, "start_time": time.time(), "name": "charge", "status": {"code": 2}}
+    log_ = {"service_name": "cart", "severity": "Error", "message": "Health check failed", "timestamp": time.time()}
+    b._safe = lambda path, default, **k: [span] if path == "/api/spans" else [log_] if path == "/api/logs" else default
+    text, svc, tid = b.evidence("cart: health check failing", "cart")
+    assert svc == "cart" and not tid and "cart: Health check failed" in text

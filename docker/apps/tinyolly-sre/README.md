@@ -14,8 +14,8 @@ Generic AI SRE agent. Watches telemetry, groups failures into incidents, investi
 | `traffic` | request rate < 20% of normal |
 | `vanished` | a service that was reporting stops |
 | `logs` | >= 10 error/fatal logs of one service in 2 min |
-| `cpu` | a process averaging >= `DETECT_CPU_PCT` (40)% CPU over its last 3 runtime-metric samples |
-| `health` | >= `DETECT_HEALTH_MIN` (3) failing health-check logs of one service in 6 min |
+| `cpu` | a process at >= `DETECT_CPU_PCT` (40)% CPU in each of its last 3 runtime-metric samples |
+| `health` | >= `DETECT_HEALTH_MIN` (6) failing health-check logs of one service in 6 min, spread over 2 min or more |
 | `restarts` | a container restarted in the last 10 min, or is not ready (Kubernetes only: needs `k8s/tinyolly-k8s-state.yaml`) |
 | `mesh` | new denied (403) or plaintext (non-mTLS) edge (Istio) |
 | `platform` | TinyOlly's store >= 90% of its cap, or metric series dropped |

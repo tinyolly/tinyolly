@@ -25,9 +25,9 @@ HOLD_MAX_POLLS = int(E("DETECT_HOLD_MAX_POLLS", "20"))
 RECENT_STATS = E("DETECT_RECENT_STATS", "0") == "1"           # rate and p95 from recent spans too (not the catalog's long average): faster detect and clear      # a traffic/latency shift held this long becomes the new normal (errors never do)
 DB_PCT = float(E("DETECT_DB_PCT", "90"))
 DETECTORS = set(E("DETECTORS", "errors,error-rate,op-errors,latency,traffic,vanished,logs,cpu,health,restarts,mesh,platform").split(","))
-CPU_PCT = float(E("DETECT_CPU_PCT", "40"))                # a process using this much of its CPU, over its last 3 samples
-HEALTH_MIN = int(E("DETECT_HEALTH_MIN", "3"))             # failing health-check logs of one service in 6 min
-CPU_METRICS = ("jvm.cpu.recent_utilization", "process.cpu.utilization", "process.runtime.cpython.cpu.utilization")
+CPU_PCT = float(E("DETECT_CPU_PCT", "40"))                # a process using at least this much of its CPU in each of its last 3 samples
+HEALTH_MIN = int(E("DETECT_HEALTH_MIN", "6"))             # failing health-check logs of one service in 6 min, spread over 2+ min
+CPU_METRICS = ("jvm.cpu.recent_utilization", "process.cpu.utilization")   # both 0-1; the older cpython metric is not
 SPAN_KEEP_S = int(E("SPAN_KEEP_SECONDS", "600"))          # the span API returns only the newest 5000: keep what each poll saw
 ORIGIN_TRACES = int(E("DETECT_ORIGIN_TRACES", "40"))      # failing traces read per poll to find where failures start
 OP_MIN_SPANS = int(E("DETECT_OP_MIN_SPANS", "8"))         # op-errors: one operation (service + span name) failing often while the service as a whole looks fine
@@ -223,8 +223,8 @@ class TinyOllyBackend(Backend):
         for name in CPU_METRICS:
             for series in (self._safe("/api/metrics/" + name, {}) or {}).get("series") or []:
                 svc = (series.get("resource") or {}).get("service.name")
-                pts = [float(p["value"]) for p in series.get("datapoints") or [] if p.get("value") is not None and _secs(p.get("timestamp")) >= max(self.fence_t, time.time() - 180)][-3:]
-                if svc and len(pts) == 3 and not _ignored(svc): use[svc] = max(use.get(svc, 0.0), sum(pts) * 100 / 3)
+                pts = [float(p["value"]) for p in series.get("datapoints") or [] if p.get("value") is not None and _secs(p.get("timestamp")) >= max(self.fence_t, time.time() - 240)][-3:]
+                if svc and len(pts) == 3 and not _ignored(svc): use[svc] = max(use.get(svc, 0.0), min(pts) * 100)       # the lowest of the three: a spike is not a signal
         self.cpu = use
         return [Signal("cpu", svc, f"{svc}: high CPU, {v:.0f}% (alerts above {CPU_PCT:.0f}%)") for svc, v in use.items() if v >= CPU_PCT]
 
@@ -263,10 +263,13 @@ class TinyOllyBackend(Backend):
 
     def _health_signals(self) -> list[Signal]:
         cut = max(time.time() - 360, self.fence_t)
-        by = collections.Counter(l.get("service_name") or "unknown" for l in self._safe("/api/logs", [], limit=5000)
-                                 if "health" in (l.get("message") or "").lower() and (l.get("severity") or "").lower() in ("error", "fatal", "critical")
-                                 and _secs(l.get("timestamp")) >= cut)
-        return [Signal("health", svc, f"{svc}: health check failing ({n} times in the last 6 min)") for svc, n in by.items() if n >= HEALTH_MIN and not _ignored(svc)]
+        at = collections.defaultdict(list)
+        for l in self._safe("/api/logs", [], limit=5000):
+            if "health" in (l.get("message") or "").lower() and (l.get("severity") or "").lower() in ("error", "fatal", "critical") and _secs(l.get("timestamp")) >= cut:
+                at[l.get("service_name") or "unknown"].append(_secs(l.get("timestamp")))
+        self.health = {svc: len(t) for svc, t in at.items()}
+        return [Signal("health", svc, f"{svc}: health check failing ({len(t)} times in the last 6 min)") for svc, t in at.items()
+                if len(t) >= HEALTH_MIN and max(t) - min(t) >= 120 and not _ignored(svc)]
 
     def _recent_errors(self, seconds: float) -> list[dict]:
         return [s for s in self._spans(seconds) if _is_error(s)]
@@ -402,6 +405,7 @@ class TinyOllyBackend(Backend):
         win = 60 if recovery else 600
         parts, top_svc, top_tid = [], entity, ""
         if entity: parts.append(f"THIS INCIDENT IS ABOUT: {entity}. Failures that start in other services are separate incidents.")
+        if getattr(self, "health", {}).get(entity): parts.append(f"HEALTH CHECK {entity}: {self.health[entity]} failures logged in the last 6 min")
         st = getattr(self, "containers", {}).get(entity)
         if st: parts.append(f"CONTAINER {entity}: {st['restarts']} restarts in 10 min, {'not ready' if st['unready'] else 'ready'}, last exit reason: {st['reason'] or 'none'}")
         if getattr(self, "cpu", {}).get(entity) is not None: parts.append(f"CPU {entity}: {self.cpu[entity]:.0f}% (alerts above {CPU_PCT:.0f}%)")
@@ -412,7 +416,7 @@ class TinyOllyBackend(Backend):
         ranked = sorted(groups.items(), key=lambda kv: (kv[0][0] != entity, -kv[1][0]))[:5]
         parts.append(f"ERROR SPANS (last {win // 60} min; service | span | status message | count | example trace_id):")
         parts += [f"  {k[0]} | {k[1]} | {k[2] or '-'} | {n} | {tid}" for k, (n, tid) in ranked] or ["  none"]
-        if ranked: top_svc, top_tid = ranked[0][0][0], ranked[0][1][1]
+        if ranked and (not entity or ranked[0][0][0] == entity): top_svc, top_tid = ranked[0][0][0], ranked[0][1][1]   # never another service's
         cat = {c["name"]: c for c in self._safe("/api/service-catalog", [])}
         recent = self._recent_error_pct()
         for svc in dict.fromkeys([top_svc, entity]):

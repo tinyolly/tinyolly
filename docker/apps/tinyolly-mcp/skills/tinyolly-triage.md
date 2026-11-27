@@ -11,6 +11,7 @@ Goal: go from "something is off" to a named service, a concrete failing trace an
 
 1. **Rank services.** `list_services(format="json")`. Sort mentally by `error_rate` (a percentage) then `p95`. Ignore `tinyolly-*` services (TinyOlly's own) unless the user asks about TinyOlly itself. If the list is empty, stop and use the `tinyolly-troubleshoot-stack` skill.
 2. **Show the user the overview** with `list_services(format="table")` (health icons: 🔴 >5% errors, 🟡 some errors).
+If anything is failing, `find_failures` shows where each failure starts; for restarts, high CPU or a service that went quiet, check `resource_health`.
 3. **Pick the worst suspect(s):** highest error rate, or a p95 far above its peers. Check `get_service_map` or `chart_service_map(service)` to see whether it is the root cause or only a victim: if its callees also fail, descend to them; if only its callers fail, it is likely the source.
 4. **Find a failing example.** `search_traces(service=..., errors_only=true, limit=5)`; for slowness use `min_duration_ms` instead. Use the returned **full 32-char trace_id**.
 5. **Read it.** `get_trace(trace_id, format="waterfall")` and show it. Identify the first error span or the span that owns the time.

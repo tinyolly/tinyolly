@@ -373,7 +373,7 @@ def find_failures(limit: int = 30) -> str:
     return _out({"failing_traces_read": read, "failing_traces_seen": len(rows), "origins": _fit(out)})
 
 
-_CPU_METRICS = ("jvm.cpu.recent_utilization", "process.cpu.utilization", "process.runtime.cpython.cpu.utilization")
+_CPU_METRICS = ("jvm.cpu.recent_utilization", "process.cpu.utilization")
 _MEM_METRICS = ("process.memory.usage", "dotnet.process.memory.working_set", "jvm.memory.used", "go.memory.used", "v8js.memory.heap.used")
 
 

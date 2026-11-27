@@ -15,6 +15,8 @@ SRE_LLM_URL=http://<your-ollama-host>:11434/v1 ./k8s/06-rebuild+deploy-sre.sh
 kubectl port-forward deploy/tinyolly-sre 7173:8080
 ```
 
+The script also deploys `tinyolly-k8s-state`, a small collector that reports container restarts and readiness. It has read-only, cluster-wide access to workload objects and events.
+
 Keep the port-forward running.
 
 ## What you should see

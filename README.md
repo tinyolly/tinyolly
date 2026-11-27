@@ -66,7 +66,7 @@ To send your own telemetry instead, point OTLP at `localhost:4317` (gRPC) or `lo
 
 ## Ask an AI about your telemetry (MCP)
 
-A read-only [MCP](https://modelcontextprotocol.io) server with **28 tools** and investigation playbooks runs next to the UI. Connect an assistant:
+A read-only [MCP](https://modelcontextprotocol.io) server with **30 tools** and investigation playbooks runs next to the UI. Connect an assistant:
 
 ```bash
 claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp     # Claude Code

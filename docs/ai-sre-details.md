@@ -34,16 +34,15 @@ Configured presets appear in the console's model picker; switching applies to th
 [![Console, light theme: live investigation stream on the left, investigations on the right](images/ai-sre-console-light.png)](images/ai-sre-console-light.png)
 
 - **Live stream** (left): every step as it happens: signals, evidence, prompt, tool calls and results, finding. Click a line for the full text.
-- **Investigations** (right): a list with each incident's name, status and cause. Click one for the full investigation:
+- **Investigations** (right): a list with each incident's name, status and cause. An incident is named after the signal that opened it, then renamed after its cause once concluded. Click one for the full investigation:
     - **Triage:** `act now`, `watch` or `noise`, and whether it **would page** (shadow mode: nothing is paged; the shift report scores it).
     - **Conclusion** with confidence, and the **theories** considered: confirmed ✓, ruled out ✗ with the deciding fact, or open.
     - **Evidence trail:** the cited trace and every query the agent ran; each chip opens that view in TinyOlly, and hovering shows the result.
     - **Timeline:** related change marker, detection, new symptoms, investigation, conclusion, fix, recovery.
     - Blast radius, proposed fixes, recovery result and time to resolve.
     - **Write postmortem:** a blameless draft (summary, impact, timeline, root cause, theories, 5 whys, evidence, action items) to copy or download as markdown.
-- **Ask** (bottom): free-form questions about your telemetry.
+- **Ask** (bottom): free-form questions about your telemetry. Answers take the agent's unresolved and recent incidents into account. Asking never opens an investigation; only a detector does.
 
-[![Console, dark theme](images/ai-sre-console-dark.png)](images/ai-sre-console-dark.png)
 
 ## Demo shift
 
