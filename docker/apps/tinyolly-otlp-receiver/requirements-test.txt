@@ -1,5 +1,5 @@
 # Test dependencies for TinyOlly OTLP Receiver
-pytest>=8.0.0
+pytest>=9.2.0
 pytest-asyncio>=0.23.0
 pytest-cov>=4.1.0
 grpcio-testing>=1.60.0
