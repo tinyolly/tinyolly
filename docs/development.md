@@ -59,13 +59,13 @@ The deploy script pulls images from Docker Hub (`tinyolly/*`). To run your own c
 
 | Goal | Command |
 |---|---|
-| Load core images into kind | `build/local/build-core-kind.sh` |
-| Build and deploy the agent on kind | `k8s/06-rebuild+deploy-sre.sh --build [--demo]` |
-| Log in to Docker Hub | `build/dockerhub/01-login.sh` |
-| Build / push core (python-base, otlp-receiver, ui, mcp, opamp-server, otel-supervisor) | `build/dockerhub/02-build-core.sh <version>` then `03-push-core.sh <version>` |
-| Build / push only the UI (quick iteration) | `02-build-ui.sh <version>` then `03-push-ui.sh <version>` |
-| Build / push the agent (`tinyolly/sre`) | `02-build-sre.sh <version>` then `03-push-sre.sh <version>` |
-| Build / push everything | `02-build-all.sh <version>` then `03-push-all.sh <version>` |
+| Load core images into kind | `build/local/build-core-kind.sh` |\
+| Build and deploy the agent on kind | `k8s/06-rebuild+deploy-sre.sh --build [--demo]` |\
+| Log in to Docker Hub | `build/dockerhub/01-login.sh` |\
+| Build / push core (python-base, otlp-receiver, ui, mcp, opamp-server, otel-supervisor) | `build/dockerhub/02-build-core.sh <version>` then `03-push-core.sh <version>` |\
+| Build / push only the UI (quick iteration) | `02-build-ui.sh <version>` then `03-push-ui.sh <version>` |\
+| Build / push the agent (`tinyolly/sre`) | `02-build-sre.sh <version>` then `03-push-sre.sh <version>` |\
+| Build / push everything | `02-build-all.sh <version>` then `03-push-all.sh <version>` |\
 
 Builds are native-architecture and uncached and tag `latest` plus the version; `DOCKER_HUB_ORG` overrides the organization. Publishing a GitHub release runs `.github/workflows/release.yml`, which runs `02-build-all.sh` and `03-push-all.sh` with the release tag. Details: [build/README.md](https://github.com/tinyolly/tinyolly/blob/main/build/README.md).
 
@@ -102,7 +102,7 @@ scripts/make-doc-images.py --seed --otlp http://localhost:4318   # post a fault 
 scripts/make-doc-images.py --check               # no stack needed; also runs in test-all.sh
 ```
 
-To add one, add a line to `SHOTS`, run the script, and embed it as `[![alt](images/<name>.png)](images/full/<name>.png)`, or with a width, `<a href="../images/full/<name>.png"><img src="../images/<name>.png" width="400"></a>`. Path prefixes: markdown under `docs/` uses `images/` (MkDocs rewrites it); raw HTML uses `../images/` because pages are served at `/<page>/` (except `docs/index.md`: `images/`); the README uses `docs/images/`. `--check` fails on a missing shot, a preview over 300 KB, or an embed without the click-to-expand link. Settings: `TINYOLLY_UI`, `TINYOLLY_MCP`, `CHROME`; needs Pillow or macOS `sips`.
+To add one, add a line to `SHOTS`, run the script, and embed it as `[![alt](images/<name>.png)](images/full/<name>.png)`, or with a width, `<a href="../images/full/<name>.png"><img src="../images/<name>.png" width="400"></a>`. Path prefixes: markdown under `docs/` uses `images/` (Zensical/MkDocs rewrites it); raw HTML uses `../images/` because pages are served at `/<page>/` (except `docs/index.md`: `images/`); the README uses `docs/images/`. `--check` fails on a missing shot, a preview over 300 KB, or an embed without the click-to-expand link. Settings: `TINYOLLY_UI`, `TINYOLLY_MCP`, `CHROME`; needs Pillow or macOS `sips`.
 
 **Before publishing the docs site** (`./mkdocs-deploy.sh` pushes to `gh-pages`):
 
@@ -111,10 +111,10 @@ To add one, add a line to `SHOTS`, run the script, and embed it as `[![alt](imag
 
     ```bash
     source ~/.venv/mkdocs/bin/activate
-    python3 -m mkdocs build --strict -d /tmp/site
+    python3 -m zensical build --clean --strict
     ```
 
-3. Open the built page and click an image: `python3 -m http.server -d /tmp/site 8000`, then `http://localhost:8000/<page>/`.
+3. Open the built page and click an image: `python3 -m http.server -d site 8000`, then `http://localhost:8000/<page>/` (or run `zensical serve`).
 
 Common mistakes: a wrong path prefix (see above), not committing `docs/images/full/<name>.png` (the click opens a 404), editing a generated preview by hand.
 

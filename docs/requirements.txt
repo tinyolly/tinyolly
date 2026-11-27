@@ -1,3 +1,2 @@
-mkdocs>=1.5.0
-mkdocs-material>=9.0.0
-pymdown-extensions>=10.0.0
+zensical>=0.1.4
+ghp-import>=2.1.0

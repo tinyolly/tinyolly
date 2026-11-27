@@ -48,8 +48,9 @@ docker/certs/
 .claude
 .claude/
 
-### MkDocs ###
+### Docs (Zensical) ###
 site/
+.cache/
 
 ### Docker ###
 *.pid

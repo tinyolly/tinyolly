@@ -1,0 +1,96 @@
+[project]
+site_name = "TinyOlly Documentation"
+site_url = "https://tinyolly.github.io/tinyolly/"
+site_description = "BYOL (Bring Your Own Laptop) Observability Platform for OpenTelemetry"
+site_author = "TinyOlly"
+repo_url = "https://github.com/tinyolly/tinyolly"
+repo_name = "tinyolly/tinyolly"
+
+nav = [
+  { "Home" = "index.md" },
+  { "1. Quick Start" = "quickstart.md" },
+  { "2. Add the Demo" = "otel-demo.md" },
+  { "3. Add AI SRE" = "ai-sre.md" },
+  { "4. Create Scenarios" = "scenarios.md" },
+  { "Use Your Own" = [
+    { "Send Your Own Telemetry" = "send-telemetry.md" },
+    { "Your Own Collector Config" = "otel-collector.md" },
+    { "Collector Presets" = "collector-presets.md" },
+  ]},
+  { "Reference" = [
+    { "Kubernetes" = "kubernetes.md" },
+    { "UI Tour" = "ui-tour.md" },
+    { "AI SRE Details" = "ai-sre-details.md" },
+    { "Ask an AI about the Demo" = "otel-demo-ai.md" },
+    { "MCP Tools and Playbooks" = "mcp.md" },
+    { "MCP Server" = "mcp-deploy.md" },
+    { "REST API & Examples" = "api.md" },
+  ]},
+  { "Advanced" = [
+    { "Architecture" = "technical.md" },
+    { "Metrics Explorer" = "metrics.md" },
+    { "Cardinality Protection" = "CARDINALITY-PROTECTION.md" },
+    { "Development & Testing" = "development.md" },
+  ]},
+  { "Misc" = [
+    { "Istio Ambient Mesh" = "istio.md" },
+  ]},
+  { "Licensing" = "licensing.md" },
+]
+
+extra_css = [
+  "assets/css/custom.css",
+]
+
+[project.theme]
+variant = "classic"
+logo = "images/logo.png"
+favicon = "images/logo.png"
+features = [
+  "navigation.indexes",
+  "navigation.sections",
+  "navigation.expand",
+  "navigation.instant",
+  "navigation.tracking",
+  "search.suggest",
+  "search.highlight",
+  "content.tabs.link",
+  "content.code.annotate",
+]
+
+[[project.theme.palette]]
+scheme = "default"
+primary = "indigo"
+accent = "indigo"
+toggle.icon = "material/brightness-7"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+scheme = "slate"
+primary = "indigo"
+accent = "indigo"
+toggle.icon = "material/brightness-4"
+toggle.name = "Switch to light mode"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/tinyolly/tinyolly"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/tinyolly/tinyolly/issues"
+name = "Issues"
+
+[project.markdown_extensions]
+admonition = {}
+attr_list = {}
+md_in_html = {}
+tables = {}
+pymdownx.details = {}
+pymdownx.inlinehilite = {}
+pymdownx.snippets = {}
+pymdownx.highlight.anchor_linenums = true
+pymdownx.superfences.custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+pymdownx.tabbed.alternate_style = true

@@ -10,7 +10,7 @@ Every shot is written twice: docs/images/<name>.png (preview, PREVIEW_W wide: ab
 sharp on Retina screens rather than a small image stretched) and docs/images/full/<name>.png (full size, what a click opens). Docs embed a shot as
   [![alt](images/<name>.png)](images/full/<name>.png)
 or, where a width is needed, <a href="../images/full/<name>.png"><img src="../images/<name>.png" width="400"></a>
-Prefixes: MkDocs rewrites markdown links itself, so markdown in docs/*.md uses `images/`; raw HTML is not
+Prefixes: Zensical/MkDocs rewrites markdown links itself, so markdown in docs/*.md uses `images/`; raw HTML is not
 rewritten and pages are served at /<page>/, so HTML there uses `../images/` (docs/index.md: `images/`). README.md
 uses `docs/images/` for both.
 Sources: "ui" shots are headless Chrome screenshots of a TinyOlly tab; "mcp" shots are the PNGs the
@@ -134,7 +134,7 @@ def check():
         for m in re.finditer(r"\]\(((?:\.\./|docs/)?images/(?:full/)?(?:ui|mesh)-[\w-]+\.png)\)", text):
             want = "docs/images/" if doc.name == "README.md" else "images/"
             if not m.group(1).startswith(want):
-                problems.append(f"{doc.relative_to(ROOT)}: markdown path {m.group(1)} must start with {want} (MkDocs rewrites it)")
+                problems.append(f"{doc.relative_to(ROOT)}: markdown path {m.group(1)} must start with {want} (Zensical rewrites it)")
         for m in BARE.finditer(text):
             problems.append(f"{doc.relative_to(ROOT)}: {m.group('n')} is not click-to-expand; use [![alt](images/{m.group('n')}.png)](images/full/{m.group('n')}.png)")
         for m in HTML.finditer(text):
