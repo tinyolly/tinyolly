@@ -35,6 +35,6 @@ export OTEL_SERVICE_NAME=my-app
 
 ## What you should see
 
-Open http://localhost:5005, send some requests, and look for `my-app` in Traces and Service Catalog.
+Open [http://localhost:5005](http://localhost:5005), send some requests, and look for `my-app` in Traces and Service Catalog.
 
 Next: [Your Own Collector Config](otel-collector.md)

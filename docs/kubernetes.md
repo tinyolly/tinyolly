@@ -43,7 +43,7 @@ colima stop -p tinyolly                        # the VM
 
 | What | Address |
 |---|---|
-| UI ([tour](ui-tour.md)) | `http://localhost:5005` |
+| UI ([tour](ui-tour.md)) | [http://localhost:5005](http://localhost:5005) |
 | OTLP from your Mac | `localhost:4317` (gRPC), `localhost:4318` (HTTP) |
 | OTLP from inside the cluster | `otel-collector:4317`, `otel-collector:4318` |
 | MCP server ([connect](mcp-deploy.md)) | `http://localhost:8765/mcp` |

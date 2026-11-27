@@ -17,9 +17,9 @@ TinyOlly provides a comprehensive REST API for programmatic access to all teleme
 ## Interactive API Documentation
 
 Access the auto-generated OpenAPI documentation:
-- **Swagger UI**: `http://localhost:5005/docs` - Interactive API explorer
-- **ReDoc**: `http://localhost:5005/redoc` - Alternative documentation
-- **OpenAPI Spec**: `http://localhost:5005/openapi.json` - Machine-readable schema
+- **Swagger UI**: [http://localhost:5005/docs](http://localhost:5005/docs) - Interactive API explorer
+- **ReDoc**: [http://localhost:5005/redoc](http://localhost:5005/redoc) - Alternative documentation
+- **OpenAPI Spec**: [http://localhost:5005/openapi.json](http://localhost:5005/openapi.json) - Machine-readable schema
 
 All APIs return **OpenTelemetry-native JSON** with:
 - **Resources**: `service.name`, `host.name`, etc.

@@ -5,7 +5,7 @@ description: "What each TinyOlly view shows: traces, logs, metrics, service cata
 
 # UI Tour
 
-Open `http://localhost:5005`.
+Open [http://localhost:5005](http://localhost:5005).
 
 **Traces:** each trace's span waterfall with its correlated logs; click a span for its full JSON.
 

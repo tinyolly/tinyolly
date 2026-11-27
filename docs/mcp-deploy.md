@@ -76,7 +76,7 @@ Without containers, the client starts the server over stdio. The installer creat
 docker/apps/tinyolly-mcp/install.sh
 ```
 
-Or run the HTTP server yourself (`TINYOLLY_URL` points it at TinyOlly, default `http://localhost:5005`):
+Or run the HTTP server yourself (`TINYOLLY_URL` points it at TinyOlly, default [http://localhost:5005](http://localhost:5005)):
 
 ```bash
 python server.py --http --port 8765

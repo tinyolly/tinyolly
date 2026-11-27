@@ -9,7 +9,7 @@ description: "Read-only MCP server so AI agents can query TinyOlly telemetry and
 
 ## Install
 
-1. Start TinyOlly (UI on `http://localhost:5005`).
+1. Start TinyOlly (UI on [http://localhost:5005](http://localhost:5005)).
 2. Run the installer. It creates a venv and prints the lines to copy for your client, with your paths filled in:
 
     ```bash

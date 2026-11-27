@@ -18,7 +18,7 @@ kubectl get pods
 
 ## What you should see
 
-All pods are Running. The UI is at http://localhost:5005. It is empty until something sends telemetry, apart from TinyOlly itself.
+All pods are Running. The UI is at [http://localhost:5005](http://localhost:5005). It is empty until something sends telemetry, apart from TinyOlly itself.
 
 For sizes, ports, cleanup and troubleshooting, see [Kubernetes](kubernetes.md).
 

@@ -13,11 +13,11 @@ kubectl get pods
 kubectl port-forward svc/frontend-proxy 8080:8080
 ```
 
-The first run pulls images for a few minutes. Keep the port-forward running. The shop is at http://localhost:8080.
+The first run pulls images for a few minutes. Keep the port-forward running. The shop is at [http://localhost:8080](http://localhost:8080).
 
 ## What you should see
 
-Within a couple of minutes, services, traces and the service map fill in at http://localhost:5005.
+Within a couple of minutes, services, traces and the service map fill in at [http://localhost:5005](http://localhost:5005).
 
 [![TinyOlly service map of the OpenTelemetry Demo](images/ui-otel-service-map.png)](images/full/ui-otel-service-map.png)
 

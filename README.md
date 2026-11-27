@@ -37,6 +37,8 @@ More screens in the [UI tour](docs/ui-tour.md).
 
 ## Quick start
 
+> **Read the [docs](https://tinyolly.github.io/tinyolly/) first.** Go through them before you install: they walk through setup, the demo, AI SRE and scenarios step by step. The commands below are only the short version.
+
 Apple Silicon Mac with 24 GB or more; TinyOlly runs on [kind](https://kind.sigs.k8s.io/) inside [Colima](https://github.com/abiosoft/colima), no Docker Desktop.
 
 ```bash

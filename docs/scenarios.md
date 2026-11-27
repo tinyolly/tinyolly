@@ -13,18 +13,18 @@ You need the shop port-forward from step 2:
 kubectl port-forward svc/frontend-proxy 8080:8080
 ```
 
-You also need the agent console at http://localhost:7173.
+You also need the agent console at [http://localhost:7173](http://localhost:7173).
 
 ## Do this
 
-1. Open http://localhost:8080/feature
+1. Open [http://localhost:8080/feature](http://localhost:8080/feature)
 2. Set `paymentFailure` to `50%` in its dropdown. It applies at once; there is no save button.
 
 The agent is not told what you changed.
 
 ## What you should see
 
-- Within a few minutes, checkout and payment turn red at http://localhost:5005.
+- Within a few minutes, checkout and payment turn red at [http://localhost:5005](http://localhost:5005).
 - The agent adds an investigation to the console list with a name and status.
 - Click it for the cause (payment) and proposed fixes. Fixes are never applied.
 
