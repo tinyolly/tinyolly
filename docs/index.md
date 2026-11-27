@@ -28,7 +28,7 @@ TinyOlly is a **lightweight OpenTelemetry-native observability platform** built 
 
 *Ingest & compatibility*
 - Native OTLP over gRPC and HTTP; works with any OTel Collector distro
-- Runs on Colima (Docker and kind) on Apple Silicon, no Docker Desktop; pre-built images on Docker Hub
+- Runs on Kubernetes (kind) in Colima on Apple Silicon, no Docker Desktop; pre-built images on Docker Hub
 - Bounded retention: 30-minute TTL and 256 MB database cap, both configurable
 
 *Explore your telemetry*
@@ -45,7 +45,7 @@ TinyOlly is a **lightweight OpenTelemetry-native observability platform** built 
 - REST API with OpenAPI documentation
 
 *Demos*
-- Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags ([docs](otel-demo.md))
+- Realistic demo: the upstream OpenTelemetry Demo (Astronomy Shop) with failure-injection flags ([docs](otel-demo.md), [scenarios](scenarios.md))
 - TinyOlly AI SRE Agent: an agent on shift over the shop that triages, investigates, proposes fixes and writes postmortems, scored against injected faults ([docs](ai-sre.md))
 
 *Built with* Python (FastAPI), SQLite and JavaScript.
@@ -57,13 +57,17 @@ TinyOlly is a **lightweight OpenTelemetry-native observability platform** built 
 
 Tested on:
 
-- Docker via Colima (macOS Apple Silicon)
-- kind on Colima (macOS Apple Silicon)
+- kind on Colima (macOS Apple Silicon, 24 GB or more)
 - May work on other platforms
 
 ### Quick Start
 
-Ready to try TinyOlly? Check out the [Quick Start Guide](quickstart.md) to get running in under 5 minutes!
+Four short steps, each adding to the last:
+
+1. [Quick Start](quickstart.md): TinyOlly running
+2. [Add the Demo](otel-demo.md): a real shop sending telemetry
+3. [Add AI SRE](ai-sre.md): an agent watching it
+4. [Create Scenarios](scenarios.md): break things and let the agent find them
 
 ---
 

@@ -99,6 +99,6 @@ def test_resource_and_missing_docs_dir(docs, monkeypatch):
 
 def test_real_repo_docs_are_served():
     real = docsindex.load(docsindex.default_docs_dir())
-    assert {"quickstart", "docker", "kubernetes", "api", "mcp"} <= set(real)
+    assert {"quickstart", "scenarios", "kubernetes", "api", "mcp"} <= set(real)
     assert all(d.title and d.description for d in real.values())          # front matter on every page
     assert all("<img" not in d.text for d in real.values())

@@ -1,6 +1,6 @@
 ---
 title: "OpenTelemetry Collector"
-description: "The bundled collector, its config files, applying changes in Docker and Kubernetes, bringing your own collector, OpAMP setup"
+description: "The bundled collector, its config files, applying changes, bringing your own collector, OpAMP setup"
 ---
 
 # OpenTelemetry Collector
@@ -33,8 +33,8 @@ TinyOlly includes a web interface for managing OpenTelemetry Collector configura
 
 TinyOlly includes a sample collector configuration that you can customize for your needs. The configuration files are located at:
 
-- **Docker**: `docker/otelcol-configs/config.yaml` (the single source of truth)
-- **Kubernetes**: `k8s/otelcol-configs/config.yaml`, a ConfigMap generated from the Docker config by `scripts/sync-k8s-configs.sh`
+- Source of truth: `docker/otelcol-configs/config.yaml`
+- `k8s/otelcol-configs/config.yaml` is a ConfigMap generated from it by `scripts/sync-k8s-configs.sh`
 
 ## Default Configuration
 
@@ -58,17 +58,8 @@ For a complete list of available components, see the [OpenTelemetry Collector Co
 
 ## Applying Changes
 
-### Docker
+Either apply a config from the UI tab above (over OpAMP), or edit `docker/otelcol-configs/config.yaml`, regenerate the ConfigMaps and restart the collector:
 
-After modifying `docker/otelcol-configs/config.yaml` rebuild/restart using:  
-```bash
-cd docker
-./01-start-core.sh
-```
-
-### Kubernetes
-
-Edit `docker/otelcol-configs/config.yaml`, regenerate the ConfigMaps, and restart the collector:  
 ```bash
 ./scripts/sync-k8s-configs.sh
 kubectl apply -f k8s/otelcol-configs/
@@ -79,11 +70,16 @@ kubectl rollout restart deployment/otel-collector
 
 You can use your own OpenTelemetry Collector instance instead of the one bundled with TinyOlly. This is useful if you have an existing collector setup or want to test specific collector configurations.
 
-To do this, deploy the **Core-Only** version of TinyOlly (see [Docker Deployment](docker.md#4-tinyolly-core-only-deployment-use-your-own-docker-opentelemetry-collector) or [Kubernetes Deployment](kubernetes.md#3-tinyolly-core-only-deployment-use-your-own-kubernetes-opentelemetry-collector)).
+Deploy the **core-only** version of TinyOlly (no bundled collector, with the OpAMP server for remote config):
+
+```bash
+cd misc/k8s-core-only
+./01-deploy.sh        # ./02-cleanup.sh removes it
+```
 
 Then, configure your collector's OTLP exporter to send data to the TinyOlly Receiver:
 
-- **Endpoint**: `tinyolly-otlp-receiver:4343` (or `localhost:4343` from host)
+- **Endpoint**: `tinyolly-otlp-receiver:4343` inside the cluster
 - **Protocol**: gRPC
 - **TLS**: Insecure (or configured as needed)
 
@@ -105,7 +101,7 @@ extensions:
   opamp:
     server:
       ws:
-        endpoint: ws://localhost:4320/v1/opamp
+        endpoint: ws://tinyolly-opamp-server:4320/v1/opamp
 
 service:
   extensions: [opamp]

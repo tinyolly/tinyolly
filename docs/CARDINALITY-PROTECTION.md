@@ -35,16 +35,6 @@ env:
     value: "3600"  # 1 hour retention
 ```
 
-### Docker Deployment
-
-Update `docker-compose-tinyolly-core.yml` in the `docker/` directory:
-
-```yaml
-environment:
-  MAX_METRIC_CARDINALITY: 2000
-  SQLITE_TTL_SECONDS: 3600
-```
-
 ## Monitoring
 
 The UI displays cardinality warnings when approaching the limit:

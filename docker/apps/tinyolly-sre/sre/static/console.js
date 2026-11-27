@@ -157,10 +157,8 @@ function fixBlock(fix) {
   return box;
 }
 function card(r) {
-  const c = el('article', 'card' + (selected === r.id ? ' selected' : ''));
-  c.tabIndex = 0; c.dataset.id = r.id;
-  c.onclick = () => { if (!String(getSelection())) select(r.id); };
-  c.onkeydown = ev => { if (ev.key === 'Enter' && ev.target === c) select(r.id); };
+  const c = el('article', 'card');
+  c.dataset.id = r.id;
   const top = el('div', 'card-top');
   top.append(el('span', `pill ${r.state}`, r.state), el('span', 'sub', `#${r.incident} · ${clock(r.opened_at)} UTC`));
   if (r.verdict) top.append(el('span', `pill verdict ${r.verdict}`, VERDICT[r.verdict] || r.verdict));
@@ -213,21 +211,41 @@ function card(r) {
   }
   return c;
 }
-let rendered = '';
+// one line per investigation; the full card opens on click
+function item(r) {
+  const b = el('button', 'item');
+  b.type = 'button'; b.dataset.id = r.id; b.onclick = () => select(r.id);
+  const meta = [`#${r.incident}`, `${clock(r.opened_at)} UTC`];
+  if (r.service && r.state !== 'open' && r.state !== 'investigating') meta.push(`cause: ${r.service}`);
+  const g = reveal && grades[r.id];
+  if (g) meta.push(g.result);
+  b.append(el('span', 'item-name', r.title), el('span', `pill ${r.state}`, r.state), el('span', 'sub', meta.join(' · ')));
+  return b;
+}
+let rendered = '', listAt = 0;
 function renderCards() {
   const list = [...records.values()].sort((a, b) => b.id - a.id)
     .filter(r => filter === 'all' || (filter === 'done') === (r.state === 'resolved'));
   const key = JSON.stringify([filter, selected, list, reveal && grades]);
   if (key === rendered) return;                       // unchanged: keep the reader's selection and focus
   rendered = key;
-  const box = $('cards'), at = box.scrollTop;
-  box.replaceChildren(...(list.length ? list.map(card) : [el('p', 'empty', records.size ? 'None in this filter.' : 'No incidents yet. The agent opens one when a detector fires.')]));
-  box.scrollTop = at;
+  const box = $('cards'), open = selected === null ? null : records.get(selected);
+  const was = box.dataset.view || 'list', view = open ? String(open.id) : 'list';
+  const at = box.scrollTop;
+  if (was === 'list') listAt = at;
+  box.dataset.view = view;
+  if (open) {
+    const back = el('button', 'back', '← All investigations');
+    back.type = 'button'; back.onclick = () => select(selected);
+    box.replaceChildren(back, card(open));
+  } else box.replaceChildren(...(list.length ? list.map(item) : [el('p', 'empty', records.size ? 'None in this filter.' : 'No incidents yet. The agent opens one when a detector fires.')]));
+  box.scrollTop = view === was ? at : (open ? 0 : listAt);     // keep the reader's place; a newly opened one starts at the top
 }
 $('filters').onclick = ev => {
   const f = ev.target.dataset.f;
   if (!f) return;
   filter = f;
+  if (selected !== null) select(selected);             // a filter always shows the list
   for (const b of $('filters').children) b.classList.toggle('on', b === ev.target);
   renderCards();
 };

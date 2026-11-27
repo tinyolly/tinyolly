@@ -7,7 +7,7 @@ description: "Investigate the OpenTelemetry Demo (Astronomy Shop) in TinyOlly wi
 
 Try TinyOlly's [MCP server](mcp.md) on the [OpenTelemetry Demo](otel-demo.md): real services, traces and logs, and failures you switch on with a flag. Ask an assistant (Claude Code, Claude Desktop, Zed) in plain English; it answers from TinyOlly's data.
 
-Before you start: TinyOlly and the demo run on Docker or kind ([run the demo](otel-demo.md)), and the assistant is connected to `http://localhost:8765/mcp` ([set up and connect it](mcp-deploy.md)). "List the TinyOlly playbooks you have" should show `tinyolly-demo-failure-injection`.
+Before you start: TinyOlly and the demo are running ([add the demo](otel-demo.md)), and the assistant is connected to `http://localhost:8765/mcp` ([set up and connect it](mcp-deploy.md)). "List the TinyOlly playbooks you have" should show `tinyolly-demo-failure-injection`.
 
 [![The OpenTelemetry Demo as drawn by the MCP chart_service_map tool](images/mesh-otel-service-map.png)](images/full/mesh-otel-service-map.png)
 
@@ -55,14 +55,7 @@ A real run on kind with `paymentFailure` at 50%.
 
 ### 1. Break it
 
-On Docker:
-
-```bash
-cd docker-otel-demo
-./03-set-flag.sh paymentFailure 50%
-```
-
-On kind, edit `flagd-config` and restart flagd (see [Kubernetes](otel-demo.md#kubernetes-kind)). Errors show within a minute or two.
+With the shop port-forward running (`kubectl port-forward svc/frontend-proxy 8080:8080`), open [http://localhost:8080/feature](http://localhost:8080/feature) and set `paymentFailure` to `50%`. Errors show within a minute or two.
 
 ### 2. Ask what is wrong
 
@@ -115,9 +108,7 @@ The failure starts in `payment: charge` and bubbles up to the proxy.
 
 ### 6. Turn it off and check
 
-```bash
-./03-set-flag.sh --reset
-```
+Set `paymentFailure` back to `off` at [http://localhost:8080/feature](http://localhost:8080/feature).
 
 A minute or two later new orders stop failing, and the catalog's error rate decays as the window moves on.
 
@@ -127,6 +118,6 @@ A minute or two later new orders stop failing, and the catalog's error rate deca
 
 ## See also
 
-- [Run the OpenTelemetry Demo](otel-demo.md): Docker and kind setup, failure flags
+- [Add the Demo](otel-demo.md) and [Create Scenarios](scenarios.md): setup and failure flags
 - [MCP tools and playbooks](mcp.md): every tool and playbook
 - [Istio ambient demo](istio.md): the same ideas for a service mesh

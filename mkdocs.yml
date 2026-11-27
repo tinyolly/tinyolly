@@ -56,19 +56,20 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Quick Start: quickstart.md
-  - Deployment:
-      - Docker: docker.md
-      - Kubernetes: kubernetes.md
-      - OpenTelemetry Collector: otel-collector.md
+  - 1. Quick Start: quickstart.md
+  - 2. Add the Demo: otel-demo.md
+  - 3. Add AI SRE: ai-sre.md
+  - 4. Create Scenarios: scenarios.md
+  - Use Your Own:
+      - Send Your Own Telemetry: send-telemetry.md
+      - Your Own Collector Config: otel-collector.md
       - Collector Presets: collector-presets.md
-      - MCP Server: mcp-deploy.md
-  - Demos:
-      - OpenTelemetry Demo (Astronomy Shop): otel-demo.md
-      - Ask an AI about the OTel Demo: otel-demo-ai.md
-      - TinyOlly AI SRE Agent: ai-sre.md
-  - MCP & API:
+  - Reference:
+      - Kubernetes: kubernetes.md
+      - AI SRE Details: ai-sre-details.md
+      - Ask an AI about the Demo: otel-demo-ai.md
       - MCP Tools and Playbooks: mcp.md
+      - MCP Server: mcp-deploy.md
       - REST API & Examples: api.md
   - Advanced:
       - Architecture: technical.md

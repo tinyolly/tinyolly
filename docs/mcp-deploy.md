@@ -51,17 +51,7 @@ claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp
 
 ## Rebuild after changes
 
-Docker (the service starts with the stack; rebuild only it after changing `docker/apps/tinyolly-mcp` or `docs/`, then restart your client so it reloads the tool list):
-
-```bash
-docker compose -f docker/docker-compose-tinyolly-core-local.yml up -d
-```
-
-```bash
-docker compose -f docker/docker-compose-tinyolly-core-local.yml up -d --build tinyolly-mcp
-```
-
-Kubernetes (deployed by `k8s/02-deploy-tinyolly.sh`):
+The server is deployed by `k8s/02-deploy-tinyolly.sh`. After changing `docker/apps/tinyolly-mcp` or `docs/`, rebuild it and restart your client:
 
 ```bash
 k8s/05-rebuild+deploy-mcp.sh

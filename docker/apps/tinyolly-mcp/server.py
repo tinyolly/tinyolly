@@ -902,7 +902,7 @@ def search_docs(query: str, limit: int = 8) -> str:
 
 @mcp.tool()
 def read_doc(name: str, section: str | None = None, offset: int = 0) -> str:
-    """Read a docs page (name from list_docs, e.g. "docker", "otel-demo"), optionally only one section
+    """Read a docs page (name from list_docs, e.g. "kubernetes", "otel-demo"), optionally only one section
     (heading text or slug). Long pages are paged: pass the returned next_offset as offset."""
     if not DOCS:
         return _no_docs()

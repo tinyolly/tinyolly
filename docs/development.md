@@ -44,10 +44,10 @@ description: "Developer notes: pinned versions, lint, local test suites, Docker 
     python3 scripts/e2e.py
     ```
 
-- OpenTelemetry Demo (demo running on Docker or kind, ~12 min; see [the demo page](otel-demo.md)): checks the data, the MCP tools, failure flags and the PII preset:
+- OpenTelemetry Demo (demo running on kind, ~12 min; see [Add the Demo](otel-demo.md)): checks the data, the MCP tools, failure flags and the PII preset:
 
     ```bash
-    scripts/test-otel-demo.py --mode docker      # or --mode k8s
+    scripts/test-otel-demo.py --mode k8s
     ```
 
 - Collector configs: `./scripts/test-collector-configs.sh` (validate and start every preset); after editing them run `./scripts/sync-k8s-configs.sh`.
@@ -55,12 +55,10 @@ description: "Developer notes: pinned versions, lint, local test suites, Docker 
 
 ## Building and publishing images
 
-The start scripts pull images from Docker Hub (`tinyolly/*`). To run your own changes, build locally; to publish, use `build/dockerhub/`.
+The deploy script pulls images from Docker Hub (`tinyolly/*`). To run your own changes, build locally; to publish, use `build/dockerhub/`.
 
 | Goal | Command |
 |---|---|
-| Run core from this checkout (Docker) | `docker/01-start-core-local.sh` |
-| Run the TinyOlly AI SRE Agent from this checkout (Docker) | `docker/05-start-sre.sh [--demo]` (always builds the agent) |
 | Load core images into kind | `build/local/build-core-kind.sh` |
 | Build and deploy the agent on kind | `k8s/06-rebuild+deploy-sre.sh [--demo]` |
 | Log in to Docker Hub | `build/dockerhub/01-login.sh` |
@@ -154,8 +152,7 @@ Two Colima VMs can coexist: `colima` (default) and `colima-tinyolly` (this proje
 Per-service actions in the APM Service Catalog are a popover menu on the service name. To get back the old row of buttons, set `ACTIONS_STYLE = 'buttons'` at the top of `docker/apps/tinyolly-ui/static/serviceCatalog.js` and rebuild the UI:
 
 ```bash
-cd docker
-DOCKER_CONTEXT=colima-tinyolly docker compose -f docker-compose-tinyolly-core-local.yml up -d --build --no-deps tinyolly-ui
+build/local/build-core-kind.sh && kubectl rollout restart deploy/tinyolly-ui
 ```
 
 To remove the menu code, delete `SERVICE_ACTIONS`, `openServiceMenu`, `closeServiceMenu`, the `data-service-menu` click handler and the two `document.addEventListener` lines. The map and catalog cross-links are independent of this setting.

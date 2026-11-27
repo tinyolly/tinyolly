@@ -32,57 +32,23 @@ Why send telemetry to a cloud platform while you are coding? TinyOlly runs on yo
 
 ## Quick start
 
-About five minutes on a Mac.
+TinyOlly runs on Kubernetes (kind) inside a Colima VM, on an Apple Silicon Mac with 24 GB or more.
 
 ```bash
+brew install colima docker kubectl kind helm
 git clone https://github.com/tinyolly/tinyolly && cd tinyolly
-brew install colima docker docker-compose docker-buildx docker-credential-helper kubectl kind helm
-mkdir -p ~/.docker && echo '{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json   # merge into an existing file if you have one
-
-./scripts/colima-up.sh                  # the 'tinyolly' VM, 4 CPU / 4 GB (COLIMA_MEMORY=8 for the demos; sizing applies only when the VM is created, stop it first to resize)
-                                        # VM disk lives in ${COLIMA_HOME:-~/.colima}: keep that on APFS, not HFS+ (no sparse files, creation hangs)
-(cd docker && ./01-start-core.sh)       # TinyOlly, about 30 seconds
-open http://localhost:5005
-```
-
-Point your own apps at it with any OpenTelemetry exporter: `http://localhost:4317` (gRPC) or `http://localhost:4318` (HTTP). Containers on the same Docker network use `otel-collector`.
-
-| What | Where |
-|---|---|
-| UI | `http://localhost:5005` |
-| OTLP | `localhost:4317` (gRPC), `localhost:4318` (HTTP) |
-| MCP server | `http://localhost:8765/mcp` |
-
-**Prefer Kubernetes?** The same stack on a kind cluster:
-
-```bash
 ./scripts/colima-up.sh && ./scripts/kind-up.sh
-./k8s/02-deploy-tinyolly.sh             # UI on http://localhost:5005, no tunnel needed
+./k8s/02-deploy-tinyolly.sh             # UI on http://localhost:5005
 ```
 
-Run the Docker stack or the kind cluster, not both: they use the same host ports. Details: [Docker](https://tinyolly.github.io/tinyolly/docker/), [Kubernetes](https://tinyolly.github.io/tinyolly/kubernetes/), [Quick start guide](https://tinyolly.github.io/tinyolly/quickstart/).
+Four short steps, each adding to the last:
 
-## Demos
+1. [Quick Start](docs/quickstart.md): TinyOlly running
+2. [Add the Demo](docs/otel-demo.md): the OpenTelemetry Demo (Astronomy Shop)
+3. [Add AI SRE](docs/ai-sre.md): an agent that investigates incidents (designed for a model on your LAN; Claude or OpenAI also work)
+4. [Create Scenarios](docs/scenarios.md): flip a feature flag and watch the agent find the problem
 
-The fastest way to see TinyOlly work: the OpenTelemetry Demo, and an AI SRE agent that watches it.
-
-| Demo | What you see | Run it |
-|---|---|---|
-| **[OpenTelemetry Demo](docs/otel-demo.md)** (Astronomy Shop) | 16 real services with traces, logs and metrics, and feature flags that break things on purpose. Docker and kind. | `cd docker-otel-demo && ./01-start-otel-demo.sh` |
-| **[TinyOlly AI SRE Agent](docs/ai-sre.md)** | An agent on shift over the shop: faults injected on a timer, incidents opened, investigated with TinyOlly's MCP tools, scored against what was injected. Local Ollama model by default. | `cd docker && ./05-start-sre.sh --demo` |
-
-Also available, kept outside the main path: an [Istio ambient mesh demo](https://github.com/stevelerner/istio-ambient-demo) (its own repo) and a core-only stack for your own collector (`misc/`).
-
-### Break the shop and watch it
-
-Run the OpenTelemetry Demo (`./01-start-otel-demo.sh`), then turn on a failure:
-
-```bash
-cd docker-otel-demo
-./03-set-flag.sh paymentFailure 50%     # ./03-set-flag.sh --reset turns every flag off
-```
-
-Within a couple of minutes `checkout` and `payment` turn red in the catalog and on the map. On kind, see [Kubernetes](docs/otel-demo.md#kubernetes-kind). `scripts/test-otel-demo.py` checks the whole thing automatically on both platforms.
+[Send your own telemetry](docs/send-telemetry.md) to `localhost:4317` (gRPC) or `localhost:4318` (HTTP).
 
 <table>
 <tr>
@@ -91,20 +57,9 @@ Within a couple of minutes `checkout` and `payment` turn red in the catalog and 
 </tr>
 </table>
 
-## AI SRE agent (opt-in)
-
-An agent on shift over the shop. It watches TinyOlly (errors, latency, traffic drops, vanished services, error logs, store health), opens an incident, triages it (would it page?), investigates through the MCP tools, and shows its theories, evidence trail and timeline, proposes a fix (never applied), checks the recovery and drafts a postmortem. With `--demo` it also injects OpenTelemetry Demo faults on a timer and scores itself against them. Built with a local Ollama model (Qwen3.8 27B); OpenAI and Claude are optional. Console: http://localhost:7173.
-
-```bash
-(cd docker && SRE_LLM_URL=http://<ollama-host>:11434/v1 ./05-start-sre.sh --demo)    # kind: k8s/06-rebuild+deploy-sre.sh --demo
-```
-
-Guide: [TinyOlly AI SRE Agent](docs/ai-sre.md).
-Self-contained in [`docker/apps/tinyolly-sre`](docker/apps/tinyolly-sre/README.md), so it can become a standalone project.
-
 ## Ask an AI about your telemetry (MCP)
 
-TinyOlly ships a read-only [MCP](https://modelcontextprotocol.io) server with **28 tools** and investigation playbooks. It runs as a container next to the UI, so there is nothing to start by hand. Connect an assistant once:
+TinyOlly ships a read-only [MCP](https://modelcontextprotocol.io) server with **28 tools** and investigation playbooks. It runs next to the UI, so there is nothing to start by hand. Connect an assistant once:
 
 ```bash
 claude mcp add --transport http tinyolly http://127.0.0.1:8765/mcp     # Claude Code
@@ -152,18 +107,16 @@ Also in the box: a [REST API with OpenAPI docs](docs/api.md) (`http://localhost:
 ```bash
 scripts/status.sh                          # what is running, what is deployed, how to remove each
 scripts/teardown.sh --level demos          # remove the demos
-scripts/teardown.sh --level stacks         # + TinyOlly itself (data included)
-scripts/teardown.sh --level vms --prune    # + the kind cluster, stop the VMs, clear build cache
+scripts/teardown.sh --level vms --prune    # + TinyOlly and the kind cluster, stop the VMs, clear build cache
 ```
 
-`teardown.sh` is a dry run until you confirm, and only touches what this project creates. To stop just one thing: `docker/02-stop-core.sh` (TinyOlly on Docker), `k8s/03-cleanup.sh` (on kind), `docker-otel-demo/02-stop-otel-demo.sh` (the OpenTelemetry Demo). More in [Development and testing](docs/development.md#tear-everything-down).
+`teardown.sh` is a dry run until you confirm, and only touches what this project creates. More in [Development and testing](docs/development.md#tear-everything-down).
 
 ## Learn more
 
 | | |
 |---|---|
-| [Quick start guide](docs/quickstart.md) | A guided tour of the UI |
-| [Docker](docs/docker.md) · [Kubernetes](docs/kubernetes.md) | Deployment, core-only mode with your own collector, ports |
+| [Kubernetes](docs/kubernetes.md) | Size profiles, ports, local builds, troubleshooting, UI tour |
 | [OpenTelemetry Collector and OpAMP](docs/otel-collector.md) | Collector config, presets |
 | [Architecture and internals](docs/technical.md) · [Development and testing](docs/development.md) | How it works, tests, building images |
 | [Release notes](release-notes/) | What is new in each version |
