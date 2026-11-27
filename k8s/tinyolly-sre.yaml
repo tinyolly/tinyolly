@@ -1,4 +1,4 @@
-# TinyOlly AI SRE Agent (opt-in): kubectl apply -f k8s/tinyolly-sre.yaml   (build/load first: k8s/06-rebuild+deploy-sre.sh)
+# TinyOlly AI SRE Agent (opt-in): kubectl apply -f k8s/tinyolly-sre.yaml   (or: k8s/06-rebuild+deploy-sre.sh; --build for a local image)
 # Model: local Ollama by default (built and tested with qwen3.8 27B on a GPU box on the LAN; change LLM_URL/MODEL to yours).
 # Cloud presets (console model picker): kubectl create secret generic tinyolly-sre-llm --from-literal=ANTHROPIC_API_KEY=... [--from-literal=OPENAI_API_KEY=...]
 # Demo shift driver: k8s/06-rebuild+deploy-sre.sh --demo (flips OTel demo flags through flagd-ui at flagd:4000).

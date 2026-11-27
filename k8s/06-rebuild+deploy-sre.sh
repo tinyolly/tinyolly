@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build the TinyOlly AI SRE Agent image, load it into kind, deploy it, and print how to open the console.
+# Deploy the TinyOlly AI SRE Agent (image from Docker Hub) and print how to open the console.
+#   --build builds the image from this checkout instead (also done when Docker Hub has none).
 #   ./06-rebuild+deploy-sre.sh           agent only
 #   ./06-rebuild+deploy-sre.sh --demo [--realistic]   agent + demo shift (flags via the flagd-ui API; needs k8s-otel-demo).
 #                                        Default timing quick (~2 min per scenario); --realistic: the demo's own fault strengths and timing
@@ -7,13 +8,16 @@
 #                                        DEMO=0 waits for POST /demo/start; DEMO_SCRIPT=payment-degraded,quiet,... for a rehearsed run
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts/lib" && pwd)/kubectx.sh" && require_kind_context || { return 1 2>/dev/null || exit 1; }
 set -euo pipefail
-DEMO_ON=""; QUICK=1
-for a in "$@"; do case "$a" in --demo) DEMO_ON=1;; --realistic) QUICK="";; --quick) QUICK=1;;
-  -h|--help) sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+DEMO_ON=""; QUICK=1; BUILD=""
+for a in "$@"; do case "$a" in --demo) DEMO_ON=1;; --build) BUILD=1;; --realistic) QUICK="";; --quick) QUICK=1;;
+  -h|--help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
   *) echo "unknown option $a (see --help)" >&2; exit 2;; esac; done
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-docker build -t tinyolly/sre:latest docker/apps/tinyolly-sre
-kind load docker-image tinyolly/sre:latest --name "${KIND_CLUSTER:-tinyolly}"
+# The cluster pulls the image itself (imagePullPolicy IfNotPresent, like the core services).
+if [ -n "$BUILD" ] || ! docker manifest inspect tinyolly/sre:latest >/dev/null 2>&1; then
+  docker build -t tinyolly/sre:latest docker/apps/tinyolly-sre
+  kind load docker-image tinyolly/sre:latest --name "${KIND_CLUSTER:-tinyolly}"
+fi
 kubectl apply -f k8s/tinyolly-sre.yaml                        # resets the model settings to the manifest's defaults
 MODEL_ENV=(${SRE_LLM_URL:+"LLM_URL=$SRE_LLM_URL"} ${SRE_MODEL:+"MODEL=$SRE_MODEL"} ${SRE_PRESET:+"LLM_PRESET=$SRE_PRESET"})
 [ "${#MODEL_ENV[@]}" -eq 0 ] || kubectl set env deploy/tinyolly-sre "${MODEL_ENV[@]}"
@@ -38,5 +42,5 @@ if [ -n "$DEMO_ON" ]; then
   kubectl set env deploy/load-generator LOCUST_USERS="${LOCUST_USERS:-$LOAD_USERS}" LOCUST_BROWSER_TRAFFIC_ENABLED="$BROWSER_TRAFFIC"
 fi
 kubectl rollout restart deploy/tinyolly-sre
-kubectl rollout status deploy/tinyolly-sre --timeout=90s
+kubectl rollout status deploy/tinyolly-sre --timeout=300s   # a first pull takes a while
 echo "Console: kubectl port-forward deploy/tinyolly-sre 7173:8080  ->  http://localhost:7173"

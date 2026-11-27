@@ -60,7 +60,7 @@ The deploy script pulls images from Docker Hub (`tinyolly/*`). To run your own c
 | Goal | Command |
 |---|---|
 | Load core images into kind | `build/local/build-core-kind.sh` |
-| Build and deploy the agent on kind | `k8s/06-rebuild+deploy-sre.sh [--demo]` |
+| Build and deploy the agent on kind | `k8s/06-rebuild+deploy-sre.sh --build [--demo]` |
 | Log in to Docker Hub | `build/dockerhub/01-login.sh` |
 | Build / push core (python-base, otlp-receiver, ui, mcp, opamp-server, otel-supervisor) | `build/dockerhub/02-build-core.sh <version>` then `03-push-core.sh <version>` |
 | Build / push only the UI (quick iteration) | `02-build-ui.sh <version>` then `03-push-ui.sh <version>` |

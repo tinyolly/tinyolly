@@ -27,7 +27,7 @@ kubectl get pods
 ./build/local/build-core-kind.sh                                     # core images
 kubectl rollout restart deploy/tinyolly-ui deploy/tinyolly-otlp-receiver
 ./k8s/05-rebuild+deploy-mcp.sh                                       # MCP server (also after editing docs/)
-./k8s/06-rebuild+deploy-sre.sh                                       # AI SRE Agent
+./k8s/06-rebuild+deploy-sre.sh --build                               # AI SRE Agent
 ```
 
 ## Remove
