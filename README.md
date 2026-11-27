@@ -42,6 +42,9 @@ Apple Silicon Mac with 24 GB or more; TinyOlly runs on [kind](https://kind.sigs.
 ```bash
 brew install colima docker kubectl kind helm
 git clone https://github.com/tinyolly/tinyolly && cd tinyolly
+```
+
+```bash
 ./scripts/colima-up.sh && ./scripts/kind-up.sh
 ./k8s/02-deploy-tinyolly.sh             # UI on http://localhost:5005
 ```
