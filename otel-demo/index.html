@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Run the upstream OpenTelemetry Demo against TinyOlly, copyable setup block, feature flags for failure injection">
+        <meta name="description" content="Add the OpenTelemetry Demo (Astronomy Shop), a web shop of many services with a load generator, sending to TinyOlly.">
       
       
         <meta name="author" content="TinyOlly">
@@ -15,10 +15,10 @@
         <link rel="canonical" href="https://tinyolly.github.io/tinyolly/otel-demo/">
       
       
-        <link rel="prev" href="../mcp-deploy/">
+        <link rel="prev" href="../quickstart/">
       
       
-        <link rel="next" href="../otel-demo-ai/">
+        <link rel="next" href="../ai-sre/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>OpenTelemetry Demo (Astronomy Shop) - TinyOlly Documentation</title>
+        <title>2. Add the Demo - TinyOlly Documentation</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#opentelemetry-demo-astronomy-shop-with-tinyolly" class="md-skip">
+        <a href="#2-add-the-demo" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              OpenTelemetry Demo (Astronomy Shop)
+              2. Add the Demo
             
           </span>
         </div>
@@ -298,7 +298,146 @@
   <span class="md-ellipsis">
     
   
-    Quick Start
+    1. Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Add the Demo
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Add the Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-you-should-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you should see
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai-sre/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Add AI SRE
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Create Scenarios
   
 
     
@@ -333,17 +472,17 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Deployment
+    Use Your Own
   
 
     
@@ -354,12 +493,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Deployment
+    Use Your Own
   
 
           </label>
@@ -372,42 +511,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../docker/" class="md-nav__link">
+      <a href="../send-telemetry/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Docker
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../kubernetes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Kubernetes
+    Send Your Own Telemetry
   
 
     
@@ -435,7 +546,7 @@
   <span class="md-ellipsis">
     
   
-    OpenTelemetry Collector
+    Your Own Collector Config
   
 
     
@@ -477,292 +588,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../mcp-deploy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
-    
-    
-      
-        
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Demos
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Demos
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OpenTelemetry Demo (Astronomy Shop)
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OpenTelemetry Demo (Astronomy Shop)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#what-you-will-see" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What you will see
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#failure-injection-with-feature-flags" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Failure injection with feature flags
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#let-an-ai-sre-agent-watch-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Let an AI SRE agent watch it
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#kubernetes-kind" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kubernetes (kind)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#test-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Test it
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../otel-demo-ai/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Ask an AI about the OTel Demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ai-sre/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    TinyOlly AI SRE Agent
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -792,17 +617,17 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    MCP & API
+    Reference
   
 
     
@@ -813,16 +638,100 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
-    MCP & API
+    Reference
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kubernetes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai-sre-details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI SRE Details
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo-ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ask an AI about the Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -839,6 +748,34 @@
     
   
     MCP Tools and Playbooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-deploy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
   
 
     
@@ -909,10 +846,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -930,8 +867,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1082,10 +1019,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
             
   
   
@@ -1103,8 +1040,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1203,65 +1140,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-you-will-see" class="md-nav__link">
+  <a href="#what-you-should-see" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What you will see
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#failure-injection-with-feature-flags" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Failure injection with feature flags
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#let-an-ai-sre-agent-watch-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Let an AI SRE agent watch it
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#kubernetes-kind" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kubernetes (kind)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#test-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Test it
+        What you should see
       
     </span>
   </a>
@@ -1288,124 +1170,18 @@
   
 
 
-<h1 id="opentelemetry-demo-astronomy-shop-with-tinyolly">OpenTelemetry Demo (Astronomy Shop) with TinyOlly</h1>
-<p>TinyOlly's demo is the upstream <a href="https://github.com/open-telemetry/opentelemetry-demo">OpenTelemetry Demo</a> ("Astronomy Shop", pinned to <code>OTEL_DEMO_VERSION</code> in <code>versions.env</code>): a <strong>16-service subset</strong> (frontend, proxy, cart + Valkey, checkout, payment, shipping, currency, quote, email, ad, recommendation, product catalog + Postgres, image provider, flagd) and a light Locust load generator, all sending OTLP to <strong>TinyOlly's collector</strong>. The demo's own collector, Jaeger, Grafana, Prometheus, OpenSearch and Kafka are not started. It uses about 1.6 GB in the Colima VM, so it runs on an 8 GB Mac.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 1. One-time prerequisites (macOS)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>brew<span class="w"> </span>install<span class="w"> </span>colima<span class="w"> </span>docker<span class="w"> </span>docker-compose<span class="w"> </span>docker-buildx<span class="w"> </span>docker-credential-helper<span class="w"> </span>git
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>~/.docker<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s1">'{"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]}'</span><span class="w"> </span>&gt;<span class="w"> </span>~/.docker/config.json<span class="w">   </span><span class="c1"># merge into an existing file if you have one</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># 2. Get TinyOlly and start its Colima VM</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tinyolly/tinyolly.git<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tinyolly
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>./scripts/colima-up.sh<span class="w">                  </span><span class="c1"># VM 'tinyolly' (Docker context: colima-tinyolly); COLIMA_MEMORY=6 ./scripts/colima-up.sh for more headroom</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># 3. Start TinyOlly core (UI :5005, OTLP :4317/:4318)</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="o">(</span><span class="nb">cd</span><span class="w"> </span>docker<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./01-start-core.sh<span class="o">)</span><span class="w">       </span><span class="c1"># use ./01-start-core-local.sh to build from this checkout instead</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># 4. Start the OpenTelemetry Demo (first run pulls ~16 images)</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nb">cd</span><span class="w"> </span>docker-otel-demo
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>./01-start-otel-demo.sh<span class="w">                 </span><span class="c1"># clones opentelemetry-demo into .demo/ and starts a 16-service subset</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># 5. Use it</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>open<span class="w"> </span>http://localhost:8080<span class="w">              </span><span class="c1"># the shop</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>open<span class="w"> </span>http://localhost:5005<span class="w">              </span><span class="c1"># TinyOlly</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>./03-set-flag.sh<span class="w">                        </span><span class="c1"># list failure-injection flags</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>./03-set-flag.sh<span class="w"> </span>paymentFailure<span class="w"> </span><span class="m">50</span>%<span class="w">     </span><span class="c1"># inject failures</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>./03-set-flag.sh<span class="w"> </span>--reset<span class="w">                </span><span class="c1"># turn all flags off</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="c1"># 6. Stop</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>./02-stop-otel-demo.sh<span class="w">                  </span><span class="c1"># demo only; add --purge to delete the .demo/ clone</span>
+<h1 id="2-add-the-demo">2. Add the Demo</h1>
+<p>This page adds the OpenTelemetry Demo (Astronomy Shop). It is a web shop of many services with a load generator, sending to TinyOlly.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./k8s-otel-demo/01-deploy-otel-demo-helm.sh
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/frontend-proxy<span class="w"> </span><span class="m">8080</span>:8080
 </code></pre></div>
-<h2 id="what-you-will-see">What you will see</h2>
-<p>The services appear on the map within a minute or two:</p>
-<p><a href="../images/full/ui-otel-service-map.png"><img alt="TinyOlly APM Service Map for the OpenTelemetry Demo" src="../images/ui-otel-service-map.png" /></a></p>
-<p>The catalog shows rate, errors and latency per service:</p>
-<p><a href="../images/full/ui-otel-catalog.png"><img alt="TinyOlly service catalog for the OpenTelemetry Demo" src="../images/ui-otel-catalog.png" /></a></p>
-<p>No config edits are needed: the script clones the pinned version and points every service at TinyOlly's collector (<code>host.docker.internal:4317</code>). Options: <code>LOADGEN=0</code> (no load generator), <code>LOCUST_USERS=3</code>, <code>SERVICES="..."</code> (custom service list).</p>
-<p>With the <a href="../mcp-deploy/">MCP server</a> connected, an assistant can draw the map, find failing orders and explain them: see <a href="../otel-demo-ai/">Ask an AI about the OpenTelemetry Demo</a>.</p>
-<h2 id="failure-injection-with-feature-flags">Failure injection with feature flags</h2>
-<p><code>./03-set-flag.sh &lt;flag&gt; &lt;variant&gt;</code> edits flagd's flag file (flagd hot-reloads it); <code>./03-set-flag.sh --reset</code> turns everything off. The <em>Preset</em> column names a <a href="../collector-presets/">collector preset</a> that pairs with the flag. With <code>paymentFailure</code> at 50%, <code>checkout</code> and <code>payment</code> turn red within a couple of minutes:</p>
-<p><a href="../images/full/ui-otel-failure-catalog.png"><img alt="Service catalog with checkout and payment at 15% errors after paymentFailure 50%" src="../images/ui-otel-failure-catalog.png" /></a></p>
-<table>
-<thead>
-<tr>
-<th>Flag</th>
-<th>Try</th>
-<th>What to look at</th>
-<th>Preset</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>paymentFailure</code></td>
-<td><code>50%</code> / <code>100%</code></td>
-<td><strong>Verified.</strong> <code>payment</code> and <code>checkout</code> error rates; <code>ERR</code> traces; checkout returns 422 <code>PAYMENT_FAILED</code></td>
-<td><code>sampling</code> keeps every error trace</td>
-</tr>
-<tr>
-<td><code>emitRawPii</code></td>
-<td><code>on</code></td>
-<td><strong>Verified.</strong> raw <code>user.email</code>, <code>demo.payment.card_number</code>, <code>demo.payment.card_cvv</code> on spans</td>
-<td><code>pii-redaction</code> masks them, hashes <code>user.id</code></td>
-</tr>
-<tr>
-<td><code>cartFailure</code></td>
-<td><code>25%</code> … <code>100%</code></td>
-<td>cart errors, failing add-to-cart</td>
-<td><code>sampling</code></td>
-</tr>
-<tr>
-<td><code>productCatalogFailure</code></td>
-<td><code>on</code></td>
-<td>errors for one product</td>
-<td><code>connectors-metrics</code> (service graph)</td>
-</tr>
-<tr>
-<td><code>imageSlowLoad</code>, <code>intlShippingSlowdown</code></td>
-<td><code>5sec</code> / <code>10sec</code></td>
-<td>slow spans, latency percentiles</td>
-<td><code>sampling</code> (keeps &gt;500 ms traces)</td>
-</tr>
-<tr>
-<td><code>adHighCpu</code>, <code>adManualGc</code>, <code>emailMemoryLeak</code></td>
-<td><code>on</code> / <code>10x</code></td>
-<td>resource metrics of the service</td>
-<td><code>metrics-shaping</code></td>
-</tr>
-<tr>
-<td><code>loadGeneratorFloodHomepage</code></td>
-<td><code>on</code></td>
-<td>request flood; <strong>watch <code>docker stats</code> on an 8 GB machine</strong></td>
-<td><code>sampling</code>, <code>metrics-shaping</code></td>
-</tr>
-</tbody>
-</table>
-<p>Rows not marked <em>Verified</em> follow the flag descriptions and are not checked against TinyOlly yet. Flags that need Kafka (<code>kafkaQueueProblems</code>), the AI agent (<code>ai*</code>) or <code>flagd-ui</code> are not in the Docker subset.</p>
-<h2 id="let-an-ai-sre-agent-watch-it">Let an AI SRE agent watch it</h2>
-<p>The <a href="../ai-sre/">TinyOlly AI SRE Agent</a> opens an incident when a flag breaks something, investigates with the MCP tools, proposes a fix and checks recovery. <code>cd docker &amp;&amp; ./05-start-sre.sh --demo</code> also flips these flags on a timer and scores the agent against what it injected. Built with a local Ollama model; OpenAI and Claude are optional.</p>
-<h2 id="notes">Notes</h2>
-<ul>
-<li>The script pins <code>DEMO_VERSION</code> to the git tag: the demo's <code>.env</code> default (<code>latest</code>, images from <code>main</code>) does not match the checked-out compose file.</li>
-<li>The demo is cloned to <code>docker-otel-demo/.demo/</code> (git-ignored); <code>./02-stop-otel-demo.sh --purge</code> removes it.</li>
-</ul>
-<h2 id="kubernetes-kind">Kubernetes (kind)</h2>
-<p>The Helm chart (0.42.6, app 3.1.0) is deployed into the <code>default</code> namespace next to TinyOlly; its services send OTLP to <code>otel-collector</code>, which is TinyOlly's collector Service. Like the Docker version it is <strong>lean by default</strong>: no Kafka or its consumers, no AI components, no telemetry-docs or demo OpAMP server (17 Deployments), and the load generator limited to 512Mi.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">COLIMA_MEMORY</span><span class="o">=</span><span class="m">8</span><span class="w"> </span>./scripts/colima-up.sh<span class="w">                    </span><span class="c1"># the kind VM needs about 8 GB next to TinyOlly (stop the VM first to resize it)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./k8s-otel-demo/01-deploy-otel-demo-helm.sh<span class="w">               </span><span class="c1"># FULL=1 for every component (needs 10 GB or more)</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>kubectl<span class="w"> </span>get<span class="w"> </span>deploy<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/part-of<span class="o">=</span>opentelemetry-demo
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>open<span class="w"> </span>http://localhost:5005<span class="w">                                </span><span class="c1"># TinyOlly</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>./k8s-otel-demo/02-cleanup-otel-demo-helm.sh
-</code></pre></div>
-<p><strong>Failure injection on kind:</strong> flagd reads a copy of the <code>flagd-config</code> ConfigMap made at pod start, so edit the ConfigMap and restart flagd (as <code>scripts/test-otel-demo.py --mode k8s</code> does). The AI SRE Agent's demo shift uses the flagd-ui API instead, which applies at once.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>edit<span class="w"> </span>configmap<span class="w"> </span>flagd-config<span class="w">                       </span><span class="c1"># set a flag's "defaultVariant", for example paymentFailure to "50%"</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/component<span class="o">=</span>flagd<span class="w">   </span><span class="c1"># a rolling restart can stall when the node is nearly out of memory</span>
-</code></pre></div>
-<h2 id="test-it">Test it</h2>
-<p><code>scripts/test-otel-demo.py</code> checks TinyOlly against a running demo (about 12 minutes): the services in the catalog, map edges, multi-service traces, correlated logs, metrics, the MCP tools, <code>paymentFailure</code> injection and recovery, and <code>emitRawPii</code> with the <code>pii-redaction</code> preset applied and reverted through OpAMP.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>scripts/test-otel-demo.py<span class="w"> </span>--mode<span class="w"> </span>docker<span class="w">      </span><span class="c1"># flags via docker-otel-demo/03-set-flag.sh</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>scripts/test-otel-demo.py<span class="w"> </span>--mode<span class="w"> </span>k8s<span class="w">         </span><span class="c1"># flags via the flagd ConfigMap</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>scripts/test-otel-demo.py<span class="w"> </span>--mode<span class="w"> </span>docker<span class="w"> </span>--skip-flags<span class="w"> </span>--skip-preset<span class="w">   </span><span class="c1"># data checks only, about 2 minutes</span>
-</code></pre></div>
-<p>Set <code>TINYOLLY_UI</code> and <code>MCP_URL</code> for non-default ports. <code>scripts/status.sh</code> shows what is running; <code>scripts/teardown.sh --level demos</code> removes the demo from Docker and kind (<a href="../development/#tear-everything-down">details</a>).</p>
+<p>The first run pulls images for a few minutes. Keep the port-forward running. The shop is at http://localhost:8080.</p>
+<h2 id="what-you-should-see">What you should see</h2>
+<p>Within a couple of minutes, services, traces and the service map fill in at http://localhost:5005.</p>
+<p><a href="../images/full/ui-otel-service-map.png"><img alt="TinyOlly service map of the OpenTelemetry Demo" src="../images/ui-otel-service-map.png" /></a></p>
+<p>A few errors in the first minutes are normal while pods start.</p>
+<p>Next: <a href="../ai-sre/">Add AI SRE</a></p>
 
 
 

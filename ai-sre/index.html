@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="An opt-in AI SRE agent that watches TinyOlly, opens incidents, investigates them with read-only MCP tools, proposes fixes and checks recovery; plus a demo shift that injects OpenTelemetry Demo faults and scores the agent">
+        <meta name="description" content="Add the TinyOlly AI SRE Agent: it watches your telemetry, investigates incidents and proposes fixes">
       
       
         <meta name="author" content="TinyOlly">
@@ -15,10 +15,10 @@
         <link rel="canonical" href="https://tinyolly.github.io/tinyolly/ai-sre/">
       
       
-        <link rel="prev" href="../otel-demo-ai/">
+        <link rel="prev" href="../otel-demo/">
       
       
-        <link rel="next" href="../mcp/">
+        <link rel="next" href="../scenarios/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>TinyOlly AI SRE Agent - TinyOlly Documentation</title>
+        <title>3. Add AI SRE - TinyOlly Documentation</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tinyolly-ai-sre-agent" class="md-skip">
+        <a href="#3-add-ai-sre" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              TinyOlly AI SRE Agent
+              3. Add AI SRE
             
           </span>
         </div>
@@ -298,7 +298,146 @@
   <span class="md-ellipsis">
     
   
-    Quick Start
+    1. Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Add the Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Add AI SRE
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Add AI SRE
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-you-should-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you should see
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Create Scenarios
   
 
     
@@ -333,17 +472,17 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Deployment
+    Use Your Own
   
 
     
@@ -354,12 +493,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Deployment
+    Use Your Own
   
 
           </label>
@@ -372,42 +511,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../docker/" class="md-nav__link">
+      <a href="../send-telemetry/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Docker
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../kubernetes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Kubernetes
+    Send Your Own Telemetry
   
 
     
@@ -435,7 +546,7 @@
   <span class="md-ellipsis">
     
   
-    OpenTelemetry Collector
+    Your Own Collector Config
   
 
     
@@ -477,292 +588,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../mcp-deploy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MCP Server
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
-    
-    
-      
-        
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Demos
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Demos
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../otel-demo/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OpenTelemetry Demo (Astronomy Shop)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../otel-demo-ai/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Ask an AI about the OTel Demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    TinyOlly AI SRE Agent
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    TinyOlly AI SRE Agent
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#start-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Start it
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#choose-a-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Choose a model
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-console" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The console
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#demo-shift" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Demo shift
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-it-decides" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How it decides
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#limits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Limits
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -792,17 +617,17 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    MCP & API
+    Reference
   
 
     
@@ -813,16 +638,100 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
-    MCP & API
+    Reference
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kubernetes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai-sre-details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI SRE Details
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel-demo-ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ask an AI about the Demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -839,6 +748,34 @@
     
   
     MCP Tools and Playbooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-deploy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server
   
 
     
@@ -909,10 +846,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -930,8 +867,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1082,10 +1019,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
             
   
   
@@ -1103,8 +1040,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1203,65 +1140,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#start-it" class="md-nav__link">
+  <a href="#what-you-should-see" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Start it
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#choose-a-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Choose a model
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-console" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The console
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#demo-shift" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Demo shift
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-it-decides" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How it decides
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#limits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Limits
+        What you should see
       
     </span>
   </a>
@@ -1288,194 +1170,20 @@
   
 
 
-<h1 id="tinyolly-ai-sre-agent">TinyOlly AI SRE Agent</h1>
-<p>The agent watches TinyOlly's telemetry. When a service fails, slows down or goes quiet, it opens an incident, investigates it with a model and TinyOlly's read-only <a href="../mcp/">MCP tools</a>, and reports the root cause, evidence, blast radius and up to three fixes. Fixes are <strong>proposed, never applied</strong>. When the signals clear, it checks the recovery.</p>
+<h1 id="3-add-ai-sre">3. Add AI SRE</h1>
+<p>The agent watches TinyOlly. When something breaks, it investigates and proposes a fix. Fixes are never applied.</p>
 <div class="admonition note">
-<p class="admonition-title">Built with a local model</p>
-<p>Built and tested with a <strong>local Ollama model</strong>: Qwen3.8 27B (q4, MTP) on one RTX 5090 box on the home network ("Ubuntu RTX 5090 Qwen"). That is the default; any Ollama host works, and OpenAI and Claude are optional.</p>
+<p class="admonition-title">Designed for a model on your LAN</p>
+<p>Put your Ollama address in <code>SRE_LLM_URL</code>. To use Claude or OpenAI instead, see <a href="../ai-sre-details/#choose-a-model">AI SRE Details</a>.</p>
 </div>
-<p><a href="../images/ai-sre-local-setup.svg"><img alt="How the pieces fit: the OpenTelemetry Demo and TinyOlly on a Mac, the model on a GPU box" src="../images/ai-sre-local-setup.svg" /></a></p>
-<h2 id="start-it">Start it</h2>
-<p>Needs TinyOlly core and the <a href="../otel-demo/">OpenTelemetry Demo</a>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>docker
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">SRE_LLM_URL</span><span class="o">=</span>http://&lt;your-ollama-host&gt;:11434/v1<span class="w"> </span>./05-start-sre.sh<span class="w">      </span><span class="c1"># agent only</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nv">SRE_LLM_URL</span><span class="o">=</span>http://&lt;your-ollama-host&gt;:11434/v1<span class="w"> </span>./05-start-sre.sh<span class="w"> </span>--demo<span class="w">   </span><span class="c1"># agent + demo shift (quick profile)</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>./05-stop-sre.sh<span class="w">                                                             </span><span class="c1"># stop the agent (flags are reset on exit)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">SRE_LLM_URL</span><span class="o">=</span>http://&lt;your-ollama-host&gt;:11434/v1<span class="w"> </span>./k8s/06-rebuild+deploy-sre.sh
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>deploy/tinyolly-sre<span class="w"> </span><span class="m">7173</span>:8080
 </code></pre></div>
-<p>Console: <a href="http://localhost:7173">http://localhost:7173</a>. With <code>--demo</code> the first fault starts after about a minute (about 4 minutes with <code>--realistic</code>), once the agent has learned what normal looks like.</p>
-<p>On kind:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>k8s/06-rebuild+deploy-sre.sh<span class="w">          </span><span class="c1"># agent only</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>k8s/06-rebuild+deploy-sre.sh<span class="w"> </span>--demo<span class="w">   </span><span class="c1"># agent + demo shift (quick profile); needs k8s-otel-demo deployed</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>deploy/tinyolly-sre<span class="w"> </span><span class="m">7173</span>:8080
-</code></pre></div>
-<p>On k8s the shift flips flags through the demo's <code>flagd-ui</code> API (<code>http://flagd:4000</code>), live at once and without extra RBAC. Editing the <code>flagd-config</code> ConfigMap does not work: the Helm chart copies it into flagd only at pod start.</p>
-<h2 id="choose-a-model">Choose a model</h2>
-<table>
-<thead>
-<tr>
-<th>Preset</th>
-<th>Default model</th>
-<th>Enable it</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Local (Ollama), <strong>default</strong></td>
-<td><code>qwen3.8:27b-mtp-q4_K_M</code></td>
-<td><code>SRE_LLM_URL</code> (any OpenAI-compatible endpoint) and <code>SRE_MODEL</code></td>
-</tr>
-<tr>
-<td>OpenAI</td>
-<td><code>gpt-5</code> (<code>SRE_OPENAI_MODEL</code>)</td>
-<td><code>OPENAI_API_KEY</code> set in the shell that starts the agent</td>
-</tr>
-<tr>
-<td>Claude</td>
-<td><code>claude-opus-5-5</code> (<code>SRE_ANTHROPIC_MODEL</code>)</td>
-<td><code>ANTHROPIC_API_KEY</code> set in the shell that starts the agent</td>
-</tr>
-</tbody>
-</table>
-<p>Configured presets appear in the console's model picker; switching applies to the next investigation. <code>SRE_PRESET=claude</code> (or <code>openai</code>) starts on a cloud preset; on k8s put the keys in a secret: <code>kubectl create secret generic tinyolly-sre-llm --from-literal=ANTHROPIC_API_KEY=...</code>. Claude uses the official SDK with refusal fallbacks (<code>ANTHROPIC_EFFORT</code>, default <code>medium</code>). Cloud presets send telemetry excerpts (span and service names, error messages) to the provider; the local default keeps everything on your network.</p>
-<h2 id="the-console">The console</h2>
-<p><a href="../images/ai-sre-console-light.png"><img alt="Console, light theme: live investigation stream on the left, investigation cards on the right" src="../images/ai-sre-console-light.png" /></a></p>
-<ul>
-<li><strong>Live stream</strong> (left): every step as it happens: signals, evidence, prompt, tool calls and results, finding. Click a line for the full text.</li>
-<li><strong>Investigation cards</strong> (right), one per incident:<ul>
-<li><strong>Triage:</strong> <code>act now</code>, <code>watch</code> or <code>noise</code>, and whether it <strong>would page</strong> (shadow mode: nothing is paged; the shift report scores it).</li>
-<li><strong>Conclusion</strong> with confidence, and the <strong>theories</strong> considered: confirmed ✓, ruled out ✗ with the deciding fact, or open.</li>
-<li><strong>Evidence trail:</strong> the cited trace and every query the agent ran; each chip opens that view in TinyOlly, and hovering shows the result.</li>
-<li><strong>Timeline:</strong> related change marker, detection, new symptoms, investigation, conclusion, fix, recovery.</li>
-<li>Blast radius, proposed fixes, recovery result and time to resolve.</li>
-<li><strong>Write postmortem:</strong> a blameless draft (summary, impact, timeline, root cause, theories, 5 whys, evidence, action items) to copy or download as markdown.</li>
-</ul>
-</li>
-<li><strong>Ask</strong> (bottom): free-form questions about your telemetry.</li>
-</ul>
-<p><a href="../images/ai-sre-console-dark.png"><img alt="Console, dark theme" src="../images/ai-sre-console-dark.png" /></a></p>
-<h2 id="demo-shift">Demo shift</h2>
-<p>The demo shift flips <a href="../otel-demo/#failure-injection-with-feature-flags">OpenTelemetry Demo feature flags</a> on a timer, so problems come and go. All flags reset to <code>off</code> on start, stop and exit.</p>
-<p>The agent is never told what was injected. It learns of a flip as it would in production: from a <strong>change marker</strong> (<code>flag paymentFailure: off -&gt; 50%</code>) it reads with <code>what_changed</code>. <code>DEMO_ANNOUNCE=0</code> withholds the markers for a harder run.</p>
-<table>
-<thead>
-<tr>
-<th>Scenario</th>
-<th>Flag</th>
-<th>What the agent should find</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>payment-degraded</code></td>
-<td><code>paymentFailure=50%</code></td>
-<td>checkout errors; the cause is payment</td>
-</tr>
-<tr>
-<td><code>payment-down</code></td>
-<td><code>paymentUnreachable=on</code></td>
-<td>hard dependency outage</td>
-</tr>
-<tr>
-<td><code>cart-flaky</code></td>
-<td><code>cartFailure=25%</code></td>
-<td>partial errors seen by several callers</td>
-</tr>
-<tr>
-<td><code>ad-failure</code></td>
-<td><code>adFailure=on</code></td>
-<td>errors in one service</td>
-</tr>
-<tr>
-<td><code>slow-images</code></td>
-<td><code>imageSlowLoad=5sec</code></td>
-<td>frontend latency, cause upstream</td>
-</tr>
-<tr>
-<td><code>slow-shipping</code></td>
-<td><code>intlShippingSlowdown=5sec</code></td>
-<td>latency on one path only</td>
-</tr>
-<tr>
-<td><code>catalog-lock</code></td>
-<td><code>productCatalogLockContention=on</code></td>
-<td>latency from the database</td>
-</tr>
-<tr>
-<td><code>catalog-bad-product</code></td>
-<td><code>productCatalogFailure=on</code></td>
-<td>errors on one product only</td>
-</tr>
-<tr>
-<td><code>recommendation-cache</code></td>
-<td><code>recommendationCacheFailure=on</code></td>
-<td>slow path, subtle</td>
-</tr>
-<tr>
-<td><code>traffic-flood</code></td>
-<td><code>loadGeneratorFloodHomepage=on</code></td>
-<td>load, not a bug: capacity</td>
-</tr>
-<tr>
-<td><code>quiet</code></td>
-<td>none</td>
-<td><strong>control</strong>: the agent should open nothing</td>
-</tr>
-</tbody>
-</table>
-<p>Scenarios are data: <code>docker/apps/tinyolly-sre/sre/scenarios.json</code>.</p>
-<ul>
-<li><strong>Order:</strong> random (never the same fault twice in a row, a quiet period every 4 faults; <code>DEMO_SEED</code> makes it repeatable), or fixed for a rehearsed demo: <code>DEMO_SCRIPT=payment-degraded,slow-shipping,quiet ./05-start-sre.sh --demo</code> (the shift ends with the script).</li>
-<li><strong>Controls:</strong> <code>POST /demo/start</code>, <code>/demo/pause</code>, <code>/demo/stop</code>, <code>/demo/reset</code> (all flags off), <code>/demo/trigger</code> with <code>{"id": "slow-images"}</code>. <code>GET /demo/status</code> shows what runs; the header shows only <code>demo: running · next fault in 2:40</code>, so the room does not see the answer first.</li>
-<li><strong>Scores:</strong> <strong>Reveal scores</strong> marks each card against the injected fault: <code>correct</code> (service and cause), <code>partial</code>, <code>wrong</code>, <code>false positive</code>, <code>no answer</code>; faults with no incident count as missed. <code>GET /demo/report</code> is the shift report: counts, paging decisions, time to detect and resolve, tool calls and tokens. Samples are small, so it gives counts, not percentages.</li>
-</ul>
-<p><strong>Profiles.</strong> <strong>Quick</strong> is the default: a scenario takes about 2 minutes (all 11 in about 25).</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>Quick (default)</th>
-<th>Realistic (<code>--realistic</code>)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Faults</td>
-<td>stronger variants (<code>paymentFailure=90%</code>, <code>cartFailure=75%</code>, <code>10sec</code> slowdowns), 75-90 s each</td>
-<td>the variants in the table above, 4-6 min each</td>
-</tr>
-<tr>
-<td>Between faults</td>
-<td>30 s cooldown and a clean cutoff (earlier telemetry is ignored), 20-30 s gap</td>
-<td>2.5-3 min cooldown for errors to age out, 1-2 min gap</td>
-</tr>
-<tr>
-<td>Shop load</td>
-<td>20 simulated users (<code>DEMO_LOAD_USERS</code>)</td>
-<td>the demo's default (3 users)</td>
-</tr>
-<tr>
-<td>Detection</td>
-<td>every 5 s; error rate, rate and p95 from the last 30 s of spans</td>
-<td>every 30 s; rate and p95 from the service catalog</td>
-</tr>
-<tr>
-<td>Change notes</td>
-<td>off (the model stays free for investigations)</td>
-<td>a change-risk note and a post-change check per flip</td>
-</tr>
-</tbody>
-</table>
-<p>To tune without waiting, record a shift once (<code>SRE_RECORD=/tmp/shift.jsonl</code>) and replay it through the detectors in seconds or the model in minutes: see "Fast iteration" in the <a href="https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre">agent's README</a>.</p>
-<h2 id="how-it-decides">How it decides</h2>
-<p>Detectors run without a model: error spans, error rate (per service and per operation), p95 latency, traffic drop, a service that stops reporting, error logs, mesh denials, and TinyOlly's storage pressure. Each service learns its normal; a change must hold for two polls. Signals on a service and its direct callers or callees join one incident, investigated from the deepest service. Settings are in the <a href="https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre">agent's README</a>.</p>
-<p><strong>Guardrails:</strong> at most 8 tool calls and 120 s per investigation, 12 investigations an hour, read-only tools, and cited traces and services are kept only if they appeared in the evidence.</p>
-<h2 id="limits">Limits</h2>
-<ul>
-<li>Synthetic faults are not production; a good score says little about real incidents.</li>
-<li>With <code>--realistic</code>, several faults leave too little signal at the demo's low traffic to detect.</li>
-<li>Two unrelated faults close together can merge into one incident through a shared caller such as <code>frontend</code>.</li>
-<li>One model run at a time: a review can delay an investigation by up to a minute.</li>
-</ul>
+<p>Keep the port-forward running.</p>
+<h2 id="what-you-should-see">What you should see</h2>
+<p>The console at <a href="http://localhost:7173">http://localhost:7173</a> says it is watching your telemetry. Give it a few minutes to learn what normal looks like.</p>
+<p><a href="../images/ai-sre-console-light.png"><img alt="The TinyOlly AI SRE Agent console" src="../images/ai-sre-console-light.png" /></a></p>
+<p>Next: <a href="../scenarios/">Create Scenarios</a></p>
 
 
 
