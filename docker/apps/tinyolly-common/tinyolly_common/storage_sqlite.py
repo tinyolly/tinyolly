@@ -62,18 +62,21 @@ class StorageSQLite(SpansMixin, LogsMixin, MetricsMixin, ServicesMixin, EventsMi
         """Compatibility method with Redis storage."""
         return None
 
-    async def _connect(self) -> aiosqlite.Connection:
+    async def _connect(self, init: bool = False) -> aiosqlite.Connection:
         conn = await aiosqlite.connect(self.db_path, isolation_level=None)
         try:
             conn.row_factory = aiosqlite.Row
-            # auto_vacuum only takes effect on a database that has no tables yet, and journal_mode=WAL creates the
-            # file header, so it must be set BEFORE journal_mode. Existing databases are converted in
-            # _ensure_initialized (one-time VACUUM).
             # busy_timeout FIRST: the UI and the OTLP receiver are separate processes opening the same file, and
             # switching to WAL needs a lock; without a timeout the second opener failed instantly with "database is locked".
             await conn.execute("PRAGMA busy_timeout=5000")
-            await conn.execute("PRAGMA auto_vacuum=INCREMENTAL")
-            await conn.execute("PRAGMA journal_mode=WAL")
+            # Both settings are stored in the file, so only initialization sets them: they need the write lock, and on
+            # every connection they made reads and /health fail with "database is locked" under heavy ingest.
+            # auto_vacuum only takes effect on a database that has no tables yet, and journal_mode=WAL creates the
+            # file header, so it must be set BEFORE journal_mode. Existing databases are converted in
+            # _ensure_initialized (one-time VACUUM).
+            if init:
+                await conn.execute("PRAGMA auto_vacuum=INCREMENTAL")
+                await conn.execute("PRAGMA journal_mode=WAL")
             await conn.execute("PRAGMA synchronous=NORMAL")
             await conn.execute("PRAGMA temp_store=MEMORY")
             await conn.execute("PRAGMA cache_size=-64000")
@@ -108,7 +111,7 @@ class StorageSQLite(SpansMixin, LogsMixin, MetricsMixin, ServicesMixin, EventsMi
             if self._initialized:
                 return
 
-            conn = await self._connect()
+            conn = await self._connect(init=True)
             try:
                 await self._migrate_auto_vacuum(conn)
                 await conn.executescript(
@@ -228,6 +231,9 @@ class StorageSQLite(SpansMixin, LogsMixin, MetricsMixin, ServicesMixin, EventsMi
                     CREATE INDEX IF NOT EXISTS idx_trace_index_ts ON trace_index(ts DESC);
                     CREATE INDEX IF NOT EXISTS idx_trace_index_exp ON trace_index(expires_at);
                     CREATE INDEX IF NOT EXISTS idx_span_index_ts ON span_index(ts DESC);
+                    -- the minute-by-minute expiry would otherwise scan every span while holding the write lock
+                    CREATE INDEX IF NOT EXISTS idx_spans_exp ON spans(expires_at);
+                    CREATE INDEX IF NOT EXISTS idx_trace_spans_exp ON trace_spans(expires_at);
                     CREATE INDEX IF NOT EXISTS idx_span_index_exp ON span_index(expires_at);
                     CREATE INDEX IF NOT EXISTS idx_trace_spans_trace ON trace_spans(trace_id, start_time);
                     CREATE INDEX IF NOT EXISTS idx_logs_ts ON logs(ts DESC);

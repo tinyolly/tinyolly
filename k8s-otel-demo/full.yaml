@@ -1,0 +1,9 @@
+# Full profile (a Mac with 48 GB and up): every shop component, browser traffic.
+# Limits sized from use at 40 users with browsers: load-generator about 2000Mi, kafka 550, fraud-detection 230,
+# ad 250, accounting 120 (the chart gives kafka 700Mi, fraud-detection 300, ad 300, accounting 160).
+components:
+  load-generator: {resources: {limits: {memory: 4Gi}}}
+  kafka: {resources: {limits: {memory: 1Gi}}}
+  fraud-detection: {resources: {limits: {memory: 512Mi}}}
+  ad: {resources: {limits: {memory: 512Mi}}}
+  accounting: {resources: {limits: {memory: 384Mi}}}

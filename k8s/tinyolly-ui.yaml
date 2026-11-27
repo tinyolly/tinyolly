@@ -61,7 +61,7 @@ spec:
             cpu: "100m"
           limits:
             memory: "2Gi"
-            cpu: "500m"
+            cpu: "2"   # 500m throttled it under the full profile's load: ingest timed out, health probes failed
         livenessProbe:
           httpGet:
             path: /health

@@ -1,8 +1,8 @@
 """Demo shift driver (opt-in): runs fault scenarios on a timer so problems come and go while the agent is on shift.
 
 Scenarios are data (scenarios.json). Flags change through a FlagBackend (the flagd JSON file on Docker, or the flagd-ui API on k8s).
-The agent is never told what was injected: each flip is published as an ordinary change marker (unless DEMO_ANNOUNCE=0),
-exactly as a real flag change would be. Every flag is reset on start, stop and exit, so the shop is never left broken."""
+The agent is never told what was injected: it finds problems from telemetry alone. DEMO_ANNOUNCE=1 also publishes each flip
+as an ordinary change marker, as a real flag system would. Every flag is reset on start, stop and exit, so the shop is never left broken."""
 from __future__ import annotations
 import json, logging, os, random, threading, time
 import httpx
@@ -76,7 +76,7 @@ class Shift:
     `announce(title, attrs)` publishes a change marker; `clock`/`sleep` are injectable for tests."""
     def __init__(self, flags: FlagBackend, scenarios: list[dict], announce=None, seed=None, script=None, speed=None,
                  quiet_every=None, gap_s=None, first_gap_s=None, clock=time.time):
-        self.flags, self.announce, self.clock = flags, announce if E("DEMO_ANNOUNCE", "1") == "1" else None, clock
+        self.flags, self.announce, self.clock = flags, announce if E("DEMO_ANNOUNCE", "0") == "1" else None, clock
         self.by_id = {s["id"]: s for s in scenarios}
         seed = seed if seed is not None else E("DEMO_SEED")
         self.rng = random.Random(int(seed) if seed not in (None, "") else None)

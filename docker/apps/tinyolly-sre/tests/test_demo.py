@@ -45,7 +45,8 @@ def test_unknown_script_entry_is_rejected(flags):
     with pytest.raises(ValueError): shift(flags, script=["pay", "bogus"])
 
 
-def test_scripted_shift_runs_in_order_announces_and_resets(flags):
+def test_scripted_shift_runs_in_order_announces_and_resets(flags, monkeypatch):
+    monkeypatch.setenv("DEMO_ANNOUNCE", "1")
     marks = []; s = shift(flags, marks, script=["pay", "ad"])
     s.start(); s.thread.join(5)
     assert [h["id"] for h in s.history] == ["pay", "ad"] and s.state == "stopped"
@@ -55,8 +56,8 @@ def test_scripted_shift_runs_in_order_announces_and_resets(flags):
     assert flags.get_all()["paymentFailure"] == "off" and flags.get_all()["adFailure"] == "off"
 
 
-def test_announce_off_publishes_nothing(flags, monkeypatch):
-    monkeypatch.setenv("DEMO_ANNOUNCE", "0")
+def test_announce_off_by_default_publishes_nothing(flags, monkeypatch):
+    monkeypatch.delenv("DEMO_ANNOUNCE", raising=False)
     s = demo.Shift(flags, SC, announce=lambda *a: pytest.fail("announced"), seed=1, script=["pay"], gap_s=[0.1, 0.1], first_gap_s=0)
     s.start(); s.thread.join(5)
     assert s.history[0]["announced"] is False

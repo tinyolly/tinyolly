@@ -14,35 +14,17 @@ helm repo update
 # The chart's services send OTLP to the host named OTEL_COLLECTOR_NAME (default "otel-collector"), which in the
 # default namespace is TinyOlly's own collector Service, so no endpoint override is needed.
 #
-# Lean by default, like docker-otel-demo/: skip Kafka and its consumers (accounting, fraud-detection; checkout would
-# otherwise wait for Kafka), the AI components (agent, chatbot, mcp), telemetry-docs and the demo's own OpAMP server.
-# The load generator's 1500Mi limit is also its request, so it is cut to 512Mi (3 Locust users need far less).
-# That leaves about 16 services; the VM needs about 8 GB next to TinyOlly (COLIMA_MEMORY=8 ./scripts/colima-up.sh).
-# FULL=1 deploys everything (needs 10 GB+).
-LEAN_ARGS=()
-if [ "${FULL:-0}" != "1" ]; then
-  LEAN_ARGS=(
-    --set components.kafka.enabled=false
-    --set components.accounting.enabled=false
-    --set components.fraud-detection.enabled=false
-    --set components.agent.enabled=false
-    --set components.chatbot.enabled=false
-    --set components.mcp.enabled=false
-    --set components.telemetry-docs.enabled=false
-    --set components.opamp-server.enabled=false
-    --set components.checkout.initContainers=null
-    --set components.load-generator.resources.limits.memory=512Mi
-    # checkout only skips Kafka when KAFKA_ADDR is empty; with it set and no broker it panics on every order
-    --set 'components.checkout.envOverrides[0].name=KAFKA_ADDR'
-    --set-string 'components.checkout.envOverrides[0].value='
-  )
-fi
+# The Mac's size profile (scripts/lib/size.sh; PROFILE=lean|full) picks the components, their memory limits
+# (lean.yaml / full.yaml next to this script) and the load.
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DIR/../scripts/lib/size.sh"
+echo "Profile $PROFILE: ${LOCUST_USERS:-$LOAD_USERS} users, browser traffic $BROWSER_TRAFFIC."
 
 # Helm 4 refuses to overwrite fields edited with kubectl (for example flags changed in the flagd-config ConfigMap);
 # re-running this script should reset them, so force it where the flag exists.
 FORCE_ARGS=()
 helm upgrade --help 2>/dev/null | grep -q -- --force-conflicts && FORCE_ARGS=(--force-conflicts)
-# The chart's own notes list Jaeger, Grafana and other UIs this lean install does not run; print our own summary instead.
+# The chart's own notes list Jaeger, Grafana and other UIs this install does not run; print our own summary instead.
 helm upgrade --help 2>/dev/null | grep -q -- --hide-notes && FORCE_ARGS+=(--hide-notes)
 
 helm upgrade --install my-otel-demo open-telemetry/opentelemetry-demo --version 0.42.6 \
@@ -51,11 +33,11 @@ helm upgrade --install my-otel-demo open-telemetry/opentelemetry-demo --version 
   --set grafana.enabled=false \
   --set prometheus.enabled=false \
   --set opensearch.enabled=false \
-  "${FORCE_ARGS[@]}" "${LEAN_ARGS[@]}" \
+  "${FORCE_ARGS[@]}" -f "$DIR/$PROFILE.yaml" \
   --set 'components.load-generator.envOverrides[0].name=LOCUST_BROWSER_TRAFFIC_ENABLED' \
-  --set-string 'components.load-generator.envOverrides[0].value=false' \
+  --set-string "components.load-generator.envOverrides[0].value=$BROWSER_TRAFFIC" \
   --set 'components.load-generator.envOverrides[1].name=LOCUST_USERS' \
-  --set-string "components.load-generator.envOverrides[1].value=${LOCUST_USERS:-3}"
+  --set-string "components.load-generator.envOverrides[1].value=${LOCUST_USERS:-$LOAD_USERS}"
 
 echo ""
 echo "OpenTelemetry Demo deployed (release my-otel-demo, sending to TinyOlly's otel-collector)."

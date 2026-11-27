@@ -65,7 +65,7 @@ Configured presets appear in the console's model picker; switching applies to th
 
 The demo shift flips [OpenTelemetry Demo feature flags](otel-demo.md#failure-injection-with-feature-flags) on a timer, so problems come and go. All flags reset to `off` on start, stop and exit.
 
-The agent is never told what was injected. It learns of a flip as it would in production: from a **change marker** (`flag paymentFailure: off -> 50%`) it reads with `what_changed`. `DEMO_ANNOUNCE=0` withholds the markers for a harder run.
+The agent is never told what was injected. It finds problems from telemetry alone. `DEMO_ANNOUNCE=1` also publishes each flip as a **change marker** (`flag paymentFailure: off -> 50%`) it can read with `what_changed`, as a real flag system would.
 
 | Scenario | Flag | What the agent should find |
 |---|---|---|
