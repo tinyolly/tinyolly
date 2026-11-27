@@ -20,7 +20,7 @@ RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -o /tinyolly-opamp-server .
 
 # Runtime stage
-FROM alpine:3.22
+FROM alpine:3.24
 
 RUN apk add --no-cache ca-certificates \
     && adduser -D -H -u 10001 opamp
