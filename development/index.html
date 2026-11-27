@@ -626,6 +626,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../ui-tour/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UI Tour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ai-sre-details/" class="md-nav__link">
         
   
@@ -1342,7 +1370,7 @@
 </code></pre></div>
 </li>
 <li>
-<p><strong>All local tests</strong>: common, UI/API, receiver, MCP server, frontend JS (<code>node --test</code>), Go, collector configs, kubectl guard. <code>--stack</code> adds the e2e run against the running stack; <code>--kind</code> adds the kind smoke test (briefly stops the compose stack):</p>
+<p><strong>All local tests</strong>: common, UI/API, receiver, MCP server, frontend JS (<code>node --test</code>), Go, collector configs, kubectl guard. <code>--stack</code> adds the e2e run against the running stack; <code>--kind</code> adds the kind smoke test (throwaway cluster; delete yours first):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./scripts/test-all.sh
 </code></pre></div>
 </li>
@@ -1362,7 +1390,7 @@
 </li>
 <li>
 <p>OpenTelemetry Demo (demo running on kind, ~12 min; see <a href="../otel-demo/">Add the Demo</a>): checks the data, the MCP tools, failure flags and the PII preset:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>scripts/test-otel-demo.py<span class="w"> </span>--mode<span class="w"> </span>k8s
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>scripts/test-otel-demo.py
 </code></pre></div>
 </li>
 <li>
@@ -1412,15 +1440,14 @@
 </table>
 <p>Builds are native-architecture and uncached and tag <code>latest</code> plus the version; <code>DOCKER_HUB_ORG</code> overrides the organization. Publishing a GitHub release runs <code>.github/workflows/release.yml</code>, which runs <code>02-build-all.sh</code> and <code>03-push-all.sh</code> with the release tag. Details: <a href="https://github.com/tinyolly/tinyolly/blob/main/build/README.md">build/README.md</a>.</p>
 <h2 id="testing-mesh-features-without-istio">Testing mesh features without Istio</h2>
-<p><code>scripts/seed_mesh.py</code> posts synthetic Istio metrics (OTLP/JSON) for an Online Boutique mesh: scenarios <code>baseline</code>, <code>flaky</code>, <code>fault</code>, <code>canary</code>, <code>deny</code>, <code>multicluster</code>, plus <code>--trace</code> (a trace through a gateway and a waypoint), <code>--l7 &lt;service&gt;</code> and <code>--ui &lt;url&gt;</code> (records a change marker). To run the Compose stack next to kind, use the second Colima VM and shifted ports (UI 5105, MCP 8865, OTLP 4418):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>scripts/docker-alt.sh<span class="w">                      </span><span class="c1"># rebuild python-base and every service, then start (docker/docker-compose.altports.yml)</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>python3<span class="w"> </span>scripts/seed_mesh.py<span class="w"> </span>--otlp<span class="w"> </span>http://localhost:4418<span class="w"> </span>--scenario<span class="w"> </span>flaky<span class="w"> </span>--ui<span class="w"> </span>http://localhost:5105
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nv">MCP_URL</span><span class="o">=</span>http://localhost:8865/mcp<span class="w"> </span>...<span class="w">      </span><span class="c1"># then ask the MCP server (get_edge, what_changed, chart_map_diff)</span>
+<p><code>scripts/seed_mesh.py</code> posts synthetic Istio metrics (OTLP/JSON) for an Online Boutique mesh: scenarios <code>baseline</code>, <code>flaky</code>, <code>fault</code>, <code>canary</code>, <code>deny</code>, <code>multicluster</code>, plus <code>--trace</code> (a trace through a gateway and a waypoint), <code>--l7 &lt;service&gt;</code> and <code>--ui &lt;url&gt;</code> (records a change marker). With TinyOlly running on kind:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python3<span class="w"> </span>scripts/seed_mesh.py<span class="w"> </span>--scenario<span class="w"> </span>flaky<span class="w"> </span>--ui<span class="w"> </span>http://localhost:5005
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># then ask the MCP server (get_edge, what_changed, chart_map_diff)</span>
 </code></pre></div>
 <h2 id="agent-eval">Agent eval</h2>
-<p><code>scripts/agent_eval/eval.py</code> injects a known fault, lets a local model investigate through the MCP tools, and grades the answer against ground truth (service, cause, evidence). Five scenarios including a healthy control, on Compose (seeded metrics) or kind (real faults from the Istio demo repo). Needs Ollama (<code>LOCAL_BASE</code>, <code>LOCAL_MODEL</code>); results go to <code>eval-results.json</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>docker<span class="w"> </span>--repeat<span class="w"> </span><span class="m">3</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--target<span class="w"> </span>kind<span class="w"> </span>--scenarios<span class="w"> </span>flaky,deny<span class="w"> </span>--no-skill-hint
+<p><code>scripts/agent_eval/eval.py</code> injects a known fault, lets a local model investigate through the MCP tools, and grades the answer against ground truth (service, cause, evidence). Five scenarios including a healthy control, on kind (real faults from the Istio demo repo). Needs Ollama (<code>LOCAL_BASE</code>, <code>LOCAL_MODEL</code>); results go to <code>eval-results.json</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--repeat<span class="w"> </span><span class="m">3</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>python3<span class="w"> </span>scripts/agent_eval/eval.py<span class="w"> </span>--scenarios<span class="w"> </span>flaky,deny<span class="w"> </span>--no-skill-hint
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pytest<span class="w"> </span>scripts/agent_eval
 </code></pre></div>
@@ -1447,7 +1474,7 @@
 </ol>
 <p>Common mistakes: a wrong path prefix (see above), not committing <code>docs/images/full/&lt;name&gt;.png</code> (the click opens a 404), editing a generated preview by hand.</p>
 <h2 id="what-is-running">What is running?</h2>
-<p><code>scripts/status.sh</code> prints, read-only and in about four seconds, the Colima VMs, containers per compose project (unhealthy ones named), the kind cluster's namespaces, Helm releases and node memory, which stacks and demos are deployed with <strong>the command that removes each</strong>, TinyOlly's endpoints with their service counts, and disk use.</p>
+<p><code>scripts/status.sh</code> prints, read-only and in about four seconds, the Colima VMs, the kind cluster's namespaces, Helm releases and node memory, which stacks and demos are deployed with <strong>the command that removes each</strong>, TinyOlly's endpoints with their service counts, and disk use.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>scripts/status.sh<span class="w">            </span><span class="c1"># everything</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>scripts/status.sh<span class="w"> </span>--short<span class="w">    </span><span class="c1"># skip the disk and node-memory details</span>
 </code></pre></div>
@@ -1456,13 +1483,13 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>demos<span class="w">      </span><span class="c1"># OpenTelemetry Demo (Docker and kind), Istio ambient demo</span>
 <a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>stacks<span class="w">     </span><span class="c1"># + TinyOlly itself, Docker and kind, data volumes included</span>
 <a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>cluster<span class="w">    </span><span class="c1"># + the kind cluster</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>vms<span class="w">        </span><span class="c1"># + stop both Colima VMs</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>vms<span class="w">        </span><span class="c1"># + stop the tinyolly Colima VM</span>
 <a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>vms<span class="w"> </span>--prune<span class="w">            </span><span class="c1"># also prune build cache and dangling images first</span>
 <a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>scripts/teardown.sh<span class="w"> </span>--level<span class="w"> </span>vms<span class="w"> </span>--delete-vms<span class="w"> </span>--yes<span class="w"> </span><span class="c1"># delete the VMs and their disks (data loss)</span>
 </code></pre></div>
 <p>It only touches what this project creates and lists other containers that would stop with a VM. <code>--prune-images</code> also removes all unused images.</p>
 <h2 id="docker-contexts">Docker contexts</h2>
-<p>Two Colima VMs can coexist: <code>colima</code> (default) and <code>colima-tinyolly</code> (this project). Every script pins <code>DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}</code>; new scripts that call <code>docker</code> must too (copy the 3-line block from any <code>0N-*.sh</code>). Ad hoc: <code>docker --context colima-tinyolly ...</code>.</p>
+<p>This project uses its own Colima VM, <code>colima-tinyolly</code>. Every script pins <code>DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}</code>; new scripts that call <code>docker</code> must too (copy the block from <code>build/local/build-core-kind.sh</code>). Ad hoc: <code>docker --context colima-tinyolly ...</code>.</p>
 <h2 id="service-catalog-actions-easy-revert">Service catalog actions (easy revert)</h2>
 <p>Per-service actions in the APM Service Catalog are a popover menu on the service name. To get back the old row of buttons, set <code>ACTIONS_STYLE = 'buttons'</code> at the top of <code>docker/apps/tinyolly-ui/static/serviceCatalog.js</code> and rebuild the UI:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>build/local/build-core-kind.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deploy/tinyolly-ui

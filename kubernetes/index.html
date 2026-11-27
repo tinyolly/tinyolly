@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Reference for TinyOlly on kind in Colima: size profiles, ports, manifests, local builds, cleanup, troubleshooting, UI tour">
+        <meta name="description" content="Reference for TinyOlly on kind in Colima: commands, ports, size profiles, troubleshooting, manifests">
       
       
         <meta name="author" content="TinyOlly">
@@ -18,7 +18,7 @@
         <link rel="prev" href="../collector-presets/">
       
       
-        <link rel="next" href="../ai-sre-details/">
+        <link rel="next" href="../ui-tour/">
       
       
         
@@ -658,10 +658,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#size-profiles" class="md-nav__link">
+  <a href="#start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Size profiles
+        Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rebuild-from-your-checkout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rebuild from your checkout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remove
       
     </span>
   </a>
@@ -680,32 +713,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#manifests-and-images" class="md-nav__link">
+  <a href="#size-profiles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Manifests and images
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#local-builds" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local builds
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cleanup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cleanup
+        Size profiles
       
     </span>
   </a>
@@ -724,10 +735,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ui-tour" class="md-nav__link">
+  <a href="#manifests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        UI tour
+        Manifests
       
     </span>
   </a>
@@ -738,6 +749,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui-tour/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UI Tour
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1206,10 +1245,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#size-profiles" class="md-nav__link">
+  <a href="#start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Size profiles
+        Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rebuild-from-your-checkout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rebuild from your checkout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remove
       
     </span>
   </a>
@@ -1228,32 +1300,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#manifests-and-images" class="md-nav__link">
+  <a href="#size-profiles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Manifests and images
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#local-builds" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local builds
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cleanup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cleanup
+        Size profiles
       
     </span>
   </a>
@@ -1272,10 +1322,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ui-tour" class="md-nav__link">
+  <a href="#manifests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        UI tour
+        Manifests
       
     </span>
   </a>
@@ -1303,9 +1353,64 @@
 
 
 <h1 id="kubernetes">Kubernetes</h1>
-<p>TinyOlly runs on kind (Kubernetes) inside a Colima VM. To get started, follow the <a href="../quickstart/">Quick Start</a>.</p>
+<p>TinyOlly runs on kind (Kubernetes) inside a Colima VM. First time? Follow the <a href="../quickstart/">Quick Start</a>.</p>
+<h2 id="start">Start</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./scripts/colima-up.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./scripts/kind-up.sh
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./k8s/02-deploy-tinyolly.sh
+</code></pre></div>
+<h2 id="check">Check</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./scripts/status.sh
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods
+</code></pre></div>
+<h2 id="rebuild-from-your-checkout">Rebuild from your checkout</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./build/local/build-core-kind.sh<span class="w">                                     </span><span class="c1"># core images</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deploy/tinyolly-ui<span class="w"> </span>deploy/tinyolly-otlp-receiver
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>./k8s/05-rebuild+deploy-mcp.sh<span class="w">                                       </span><span class="c1"># MCP server (also after editing docs/)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>./k8s/06-rebuild+deploy-sre.sh<span class="w">                                       </span><span class="c1"># AI SRE Agent</span>
+</code></pre></div>
+<h2 id="remove">Remove</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./k8s-otel-demo/02-cleanup-otel-demo-helm.sh<span class="w">   </span><span class="c1"># the demo only</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>./k8s/03-cleanup.sh<span class="w">                            </span><span class="c1"># TinyOlly</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>kind<span class="w"> </span>delete<span class="w"> </span>cluster<span class="w"> </span>--name<span class="w"> </span>tinyolly<span class="w">            </span><span class="c1"># the cluster</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>colima<span class="w"> </span>stop<span class="w"> </span>-p<span class="w"> </span>tinyolly<span class="w">                        </span><span class="c1"># the VM</span>
+</code></pre></div>
+<h2 id="ports">Ports</h2>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Address</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UI (<a href="../ui-tour/">tour</a>)</td>
+<td><code>http://localhost:5005</code></td>
+</tr>
+<tr>
+<td>OTLP from your Mac</td>
+<td><code>localhost:4317</code> (gRPC), <code>localhost:4318</code> (HTTP)</td>
+</tr>
+<tr>
+<td>OTLP from inside the cluster</td>
+<td><code>otel-collector:4317</code>, <code>otel-collector:4318</code></td>
+</tr>
+<tr>
+<td>MCP server (<a href="../mcp-deploy/">connect</a>)</td>
+<td><code>http://localhost:8765/mcp</code></td>
+</tr>
+<tr>
+<td>Demo shop and flag panel</td>
+<td><code>kubectl port-forward svc/frontend-proxy 8080:8080</code></td>
+</tr>
+<tr>
+<td>AI SRE console</td>
+<td><code>kubectl port-forward deploy/tinyolly-sre 7173:8080</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="size-profiles">Size profiles</h2>
-<p>Picked from the Mac's RAM; <code>PROFILE=lean</code> or <code>PROFILE=full</code> overrides it. Pass the override to each script.</p>
+<p>The scripts pick one from your Mac's RAM. To override, put <code>PROFILE=lean</code> or <code>PROFILE=full</code> before each script.</p>
 <table>
 <thead>
 <tr>
@@ -1322,114 +1427,36 @@
 </tr>
 <tr>
 <td>Demo load</td>
-<td>15 users, no browser traffic</td>
-<td>40 users with browser traffic</td>
+<td>15 users</td>
+<td>40 users and browser traffic</td>
 </tr>
 <tr>
 <td>Demo components</td>
-<td>without Kafka and its consumers, AI components, telemetry-docs, demo OpAMP server</td>
+<td>no Kafka, AI components, telemetry-docs or demo OpAMP server</td>
 <td>all</td>
 </tr>
 </tbody>
 </table>
-<p><code>COLIMA_CPU</code>, <code>COLIMA_MEMORY</code> and <code>COLIMA_DISK</code> override the VM size. An existing VM is not resized: <code>colima stop -p tinyolly</code>, then run <code>./scripts/colima-up.sh</code> again. The VM disk lives in <code>${COLIMA_HOME:-~/.colima}</code>; keep it on APFS.</p>
+<p>To resize an existing VM: <code>colima stop -p tinyolly</code>, then <code>./scripts/colima-up.sh</code>. <code>COLIMA_CPU</code>, <code>COLIMA_MEMORY</code> and <code>COLIMA_DISK</code> override the numbers.</p>
 <div class="admonition warning">
-<p class="admonition-title">Known limit of <code>full</code></p>
-<p>At <code>full</code> load some telemetry batches are dropped (<code>database is locked</code> and timeouts in the <code>tinyolly-otlp-receiver</code> log). <code>full</code> has not been verified on a 64 GB Mac.</p>
+<p class="admonition-title"><code>full</code> can drop telemetry</p>
+<p>Under <code>full</code> load some batches are lost (<code>database is locked</code> or timeouts in the <code>tinyolly-otlp-receiver</code> log). <code>full</code> is not yet verified on a 64 GB Mac.</p>
 </div>
-<h2 id="ports">Ports</h2>
-<table>
-<thead>
-<tr>
-<th>What</th>
-<th>Address</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>UI</td>
-<td><code>http://localhost:5005</code></td>
-</tr>
-<tr>
-<td>OTLP from your Mac</td>
-<td><code>localhost:4317</code> (gRPC), <code>localhost:4318</code> (HTTP)</td>
-</tr>
-<tr>
-<td>OTLP from inside the cluster</td>
-<td><code>otel-collector:4317</code>, <code>otel-collector:4318</code></td>
-</tr>
-<tr>
-<td>MCP server</td>
-<td><code>http://localhost:8765/mcp</code> (<a href="../mcp-deploy/">connect a client</a>)</td>
-</tr>
-<tr>
-<td>Demo shop</td>
-<td><code>kubectl port-forward svc/frontend-proxy 8080:8080</code></td>
-</tr>
-<tr>
-<td>AI SRE console</td>
-<td><code>kubectl port-forward deploy/tinyolly-sre 7173:8080</code></td>
-</tr>
-</tbody>
-</table>
-<p>The first four are mapped by <code>scripts/kind-config.yaml</code>, so they need no port-forward.</p>
-<h2 id="manifests-and-images">Manifests and images</h2>
-<p>The manifests are in <code>k8s/</code>; images come from Docker Hub. To apply the manifests yourself instead of the deploy script (not <code>kubectl apply -f k8s/</code>: that skips the collector ConfigMaps in <code>k8s/otelcol-configs/</code> and also deploys the AI SRE Agent):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-R<span class="w"> </span>-f<span class="w"> </span>k8s/otelcol-configs/
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>k8s/tinyolly-sqlite-pvc.yaml<span class="w"> </span>-f<span class="w"> </span>k8s/tinyolly-otlp-receiver.yaml<span class="w"> </span>-f<span class="w"> </span>k8s/tinyolly-opamp-server.yaml<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>-f<span class="w"> </span>k8s/otel-collector.yaml<span class="w"> </span>-f<span class="w"> </span>k8s/tinyolly-ui.yaml<span class="w"> </span>-f<span class="w"> </span>k8s/tinyolly-mcp.yaml
-</code></pre></div>
-<h2 id="local-builds">Local builds</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./build/local/build-core-kind.sh<span class="w">      </span><span class="c1"># core images, loaded into kind</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./k8s/05-rebuild+deploy-mcp.sh<span class="w">        </span><span class="c1"># MCP server (also after editing docs/)</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>./k8s/06-rebuild+deploy-sre.sh<span class="w">        </span><span class="c1"># AI SRE Agent</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deploy/tinyolly-ui<span class="w"> </span>deploy/tinyolly-otlp-receiver
-</code></pre></div>
-<p>To publish images, see <a href="../development/#building-and-publishing-images">Development and testing</a>.</p>
-<h2 id="cleanup">Cleanup</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./k8s-otel-demo/02-cleanup-otel-demo-helm.sh<span class="w">   </span><span class="c1"># the demo only</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./k8s/03-cleanup.sh<span class="w">                            </span><span class="c1"># TinyOlly</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>kind<span class="w"> </span>delete<span class="w"> </span>cluster<span class="w"> </span>--name<span class="w"> </span>tinyolly
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>colima<span class="w"> </span>stop<span class="w"> </span>-p<span class="w"> </span>tinyolly
-</code></pre></div>
 <h2 id="troubleshooting">Troubleshooting</h2>
-<p><strong>No traces, logs or metrics:</strong> wait a minute or two, then:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>deploy/otel-collector<span class="w"> </span>--tail<span class="w"> </span><span class="m">20</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>deploy/load-generator<span class="w"> </span>--tail<span class="w"> </span><span class="m">20</span>
+<p><strong>Nothing in the UI:</strong> wait a minute or two, then check the pods and logs:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>deploy/otel-collector<span class="w"> </span>--tail<span class="w"> </span><span class="m">20</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>deploy/load-generator<span class="w"> </span>--tail<span class="w"> </span><span class="m">20</span>
 </code></pre></div>
-<p><strong>Port conflicts:</strong> the cluster uses 4317, 4318, 5001, 5005 and 8765 on your Mac. Stop whatever else listens there.</p>
-<h2 id="ui-tour">UI tour</h2>
-<p>Open <code>http://localhost:5005</code>.</p>
-<p><strong>Traces:</strong> each trace's span waterfall with its correlated logs; click a span for its full JSON.</p>
-<div align="center">
-  <a href="../images/full/ui-traces.png"><img src="../images/ui-traces.png" alt="TinyOlly Traces View" width="700"></a>
-</div>
-
-<p><strong>Logs:</strong> linked to their trace and span, filterable by severity.</p>
-<div align="center">
-  <a href="../images/full/ui-logs.png"><img src="../images/ui-logs.png" alt="Logs View" width="700"></a>
-</div>
-
-<p><strong>Metrics:</strong> every metric with charts and cardinality.</p>
-<div align="center">
-  <a href="../images/full/ui-metrics.png"><img src="../images/ui-metrics.png" alt="Metrics View" width="700"></a>
-</div>
-
-<p><strong>Service Catalog:</strong> rate, errors and duration per service; click a name to jump to its map node, traces, spans, logs or metrics.</p>
-<div align="center">
-  <a href="../images/full/ui-otel-catalog.png"><img src="../images/ui-otel-catalog.png" alt="Service Catalog" width="700"></a>
-</div>
-
-<p><strong>Service Map:</strong> dependencies with shape for service type and colour for health (legend above the map); click a node for latency.</p>
-<div align="center">
-  <a href="../images/full/ui-otel-service-map.png"><img src="../images/ui-otel-service-map.png" alt="Service Map" width="700"></a>
-</div>
-
-<p><strong>OpenTelemetry Collector + OpAMP Config:</strong> view a connected collector's config, apply changes with validation and a diff preview, or apply a <a href="../collector-presets/">collector preset</a> (sampling, PII redaction, transforms, connectors and more). The collector needs the OpAMP extension (see <a href="../otel-collector/#opamp-configuration-optional">OpAMP configuration</a>).</p>
-<div align="center">
-  <a href="../images/full/ui-collector.png"><img src="../images/ui-collector.png" alt="OpAMP Config" width="700"></a>
-</div>
+<p><strong>Port already in use:</strong> the cluster needs 4317, 4318, 5001, 5005, 8765 and 19291 on your Mac.</p>
+<p><strong>VM creation hangs:</strong> the VM disk is in <code>${COLIMA_HOME:-~/.colima}</code>; keep it on an APFS disk.</p>
+<h2 id="manifests">Manifests</h2>
+<p>The manifests are in <code>k8s/</code> and pull images from Docker Hub. <code>02-deploy-tinyolly.sh</code> is the normal way to apply them; by hand:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-R<span class="w"> </span>-f<span class="w"> </span>k8s/otelcol-configs/
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>k8s/tinyolly-sqlite-pvc.yaml<span class="w"> </span>-f<span class="w"> </span>k8s/tinyolly-otlp-receiver.yaml<span class="w"> </span>-f<span class="w"> </span>k8s/tinyolly-opamp-server.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-f<span class="w"> </span>k8s/otel-collector.yaml<span class="w"> </span>-f<span class="w"> </span>k8s/tinyolly-ui.yaml<span class="w"> </span>-f<span class="w"> </span>k8s/tinyolly-mcp.yaml
+</code></pre></div>
+<p>Do not use <code>kubectl apply -f k8s/</code>: it skips the collector ConfigMaps and also deploys the AI SRE Agent. To publish images, see <a href="../development/#building-and-publishing-images">Development and testing</a>.</p>
 
 
 
