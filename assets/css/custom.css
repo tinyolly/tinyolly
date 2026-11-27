@@ -88,17 +88,60 @@
   opacity: 0.8;
 }
 
-/* Sidebar styling - always visible */
+/* Sidebar styling - always permanent, never a floating drawer */
 .md-sidebar {
   background-color: var(--md-default-bg-color);
   border-right: 1px solid var(--md-default-fg-color--lightest);
 }
 
-/* Wide screens only: hide the site title above the sidebar. Narrow screens need
-   the drawer titles: they are the "back" buttons to the parent menu. */
-@media screen and (min-width: 76.25em) {
-  .md-nav--primary > .md-nav__title {
-    display: none;
+/* Hide duplicate site title and logo in left sidebar */
+.md-sidebar .md-nav__title[for="__drawer"],
+.md-sidebar .md-nav__title--site,
+.md-sidebar .md-logo,
+.md-nav--primary > .md-nav__title {
+  display: none !important;
+}
+
+/* Keep primary sidebar permanently visible - never a drawer */
+.md-sidebar--primary {
+  display: block !important;
+  transform: translateX(0) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Hide hamburger menu button */
+label.md-header__button[for="__drawer"],
+.md-header__button--menu {
+  display: none !important;
+}
+
+/* Prevent drawer overlay backdrop */
+.md-overlay {
+  display: none !important;
+}
+
+/* Ensure sidebar is permanently visible on all screen sizes */
+@media screen and (max-width: 76.234375em) {
+  .md-sidebar--primary {
+    display: block !important;
+    transform: translateX(0) !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 2.4rem !important;
+    width: 12.1rem !important;
+    height: calc(100% - 2.4rem) !important;
+    z-index: 1 !important;
+    background-color: var(--md-default-bg-color) !important;
+  }
+  
+  .md-content {
+    margin-left: 12.1rem !important;
+  }
+  
+  label.md-header__button[for="__drawer"],
+  .md-header__button--menu {
+    display: none !important;
   }
 }
 
@@ -231,4 +274,3 @@ a:hover {
 .md-content__inner {
   margin-right: 0 !important;
 }
-
