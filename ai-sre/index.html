@@ -1208,6 +1208,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">SRE_LLM_URL</span><span class="o">=</span>http://&lt;your-ollama-host&gt;:11434/v1<span class="w"> </span>./k8s/06-rebuild+deploy-sre.sh
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>deploy/tinyolly-sre<span class="w"> </span><span class="m">7173</span>:8080
 </code></pre></div>
+<p>The script also deploys <code>tinyolly-k8s-state</code>, a small collector that reports container restarts and readiness. It has read-only, cluster-wide access to workload objects and events.</p>
 <p>Keep the port-forward running.</p>
 <h2 id="what-you-should-see">What you should see</h2>
 <p>The console at <a href="http://localhost:7173">http://localhost:7173</a> says it is watching your telemetry. Give it a few minutes to learn what normal looks like.</p>

@@ -1349,7 +1349,7 @@
 <p><a href="../images/ai-sre-console-light.png"><img alt="Console, light theme: live investigation stream on the left, investigations on the right" src="../images/ai-sre-console-light.png" /></a></p>
 <ul>
 <li><strong>Live stream</strong> (left): every step as it happens: signals, evidence, prompt, tool calls and results, finding. Click a line for the full text.</li>
-<li><strong>Investigations</strong> (right): a list with each incident's name, status and cause. Click one for the full investigation:<ul>
+<li><strong>Investigations</strong> (right): a list with each incident's name, status and cause. An incident is named after the signal that opened it, then renamed after its cause once concluded. Click one for the full investigation:<ul>
 <li><strong>Triage:</strong> <code>act now</code>, <code>watch</code> or <code>noise</code>, and whether it <strong>would page</strong> (shadow mode: nothing is paged; the shift report scores it).</li>
 <li><strong>Conclusion</strong> with confidence, and the <strong>theories</strong> considered: confirmed ✓, ruled out ✗ with the deciding fact, or open.</li>
 <li><strong>Evidence trail:</strong> the cited trace and every query the agent ran; each chip opens that view in TinyOlly, and hovering shows the result.</li>
@@ -1358,9 +1358,8 @@
 <li><strong>Write postmortem:</strong> a blameless draft (summary, impact, timeline, root cause, theories, 5 whys, evidence, action items) to copy or download as markdown.</li>
 </ul>
 </li>
-<li><strong>Ask</strong> (bottom): free-form questions about your telemetry.</li>
+<li><strong>Ask</strong> (bottom): free-form questions about your telemetry. Answers take the agent's unresolved and recent incidents into account. Asking never opens an investigation; only a detector does.</li>
 </ul>
-<p><a href="../images/ai-sre-console-dark.png"><img alt="Console, dark theme" src="../images/ai-sre-console-dark.png" /></a></p>
 <h2 id="demo-shift">Demo shift</h2>
 <p>The demo shift flips <a href="../scenarios/">OpenTelemetry Demo feature flags</a> on a timer, so problems come and go. All flags reset to <code>off</code> on start, stop and exit.</p>
 <p>The agent is never told what was injected. It finds problems from telemetry alone. <code>DEMO_ANNOUNCE=1</code> also publishes each flip as a <strong>change marker</strong> (<code>flag paymentFailure: off -&gt; 50%</code>) it can read with <code>what_changed</code>, as a real flag system would.</p>
@@ -1475,7 +1474,7 @@
 </table>
 <p>To tune without waiting, record a shift once (<code>SRE_RECORD=/tmp/shift.jsonl</code>) and replay it through the detectors in seconds or the model in minutes: see "Fast iteration" in the <a href="https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre">agent's README</a>.</p>
 <h2 id="how-it-decides">How it decides</h2>
-<p>Detectors run without a model: error spans, error rate (per service and per operation), p95 latency, traffic drop, a service that stops reporting, error logs, mesh denials, and TinyOlly's storage pressure. Each service learns its normal; a change must hold for two polls. Signals on a service and its direct callers or callees join one incident, investigated from the deepest service. Settings are in the <a href="https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre">agent's README</a>.</p>
+<p>Detectors run without a model: error spans, error rate (per service and per operation), p95 latency, traffic drop, a service that stops reporting, error logs, high CPU, failing health checks, container restarts (Kubernetes), mesh denials, and TinyOlly's storage pressure. Errors are attributed to the service where they start, so separate faults stay separate incidents. Each service learns its normal; a change must hold for two polls. Signals on a service and its direct callers or callees join one incident, investigated from the deepest service. Settings are in the <a href="https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre">agent's README</a>.</p>
 <p><strong>Guardrails:</strong> at most 8 tool calls and 120 s per investigation, 12 investigations an hour, read-only tools (not TinyOlly's docs or playbooks, which describe the demo's faults), and cited traces and services are kept only if they appeared in the evidence.</p>
 <h2 id="limits">Limits</h2>
 <ul>

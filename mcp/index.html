@@ -1424,6 +1424,14 @@
 <td>Canary view: traffic share, error rate and <code>avg_ms</code> per version, with <code>findings</code> when one version is slower or fails more</td>
 </tr>
 <tr>
+<td><code>find_failures</code></td>
+<td>Where current failures start: newest failing traces grouped by the deepest failing span, with the affected callers</td>
+</tr>
+<tr>
+<td><code>resource_health</code></td>
+<td>CPU and memory per service from runtime metrics, plus container restarts and last exit reason on Kubernetes</td>
+</tr>
+<tr>
 <td><code>what_changed</code></td>
 <td>Change markers (deploys, policies, scenarios; <code>POST /api/events</code>) and how failures, response flags and traffic changed around each</td>
 </tr>
