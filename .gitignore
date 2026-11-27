@@ -62,7 +62,8 @@ site/
 *.tmp
 *.orig
 
-# OpenTelemetry Demo clone (docker-otel-demo/01-start-otel-demo.sh)
+# OpenTelemetry Demo clone left by the retired Compose demo
+archive/docker-compose/docker-otel-demo/.demo/
 docker-otel-demo/.demo/
 
 .preset-test-*/

@@ -12,7 +12,7 @@ if __name__ == '__main__':
     from app.config import settings
     
     # Port 5002 is the internal container port
-    # Docker maps this to 5005 externally (see docker-compose-tinyolly-core.yml)
+    # kind maps this to 5005 on the host (see scripts/kind-config.yaml)
     # Kubernetes uses port 5002 directly (see k8s/tinyolly-ui.yaml)
     port = settings.port
     import logging

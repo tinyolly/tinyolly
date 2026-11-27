@@ -2,7 +2,7 @@
 # Run the local test suites (nothing runs in CI).
 #   ./scripts/test-all.sh            fast suites: common, UI/API, receiver, MCP, frontend JS, Go, configs, kube guard
 #   ./scripts/test-all.sh --stack    + e2e against the RUNNING stack (~8 min)
-#   ./scripts/test-all.sh --kind     + kind smoke test (stops the compose stack temporarily)
+#   ./scripts/test-all.sh --kind     + kind smoke test (throwaway cluster; needs no other kind cluster running)
 set -uo pipefail
 unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
 export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"

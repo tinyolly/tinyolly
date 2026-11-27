@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 # Local-only smoke test of the Kubernetes path on kind (inside the Colima VM).
 #   ./scripts/test-kind.sh          core + collector (k8s/) and core-only (misc/k8s-core-only/)
-# Stops the compose stack (it owns host ports 5005/4317), creates a throwaway kind cluster, loads the LOCAL
-# images (build them first: docker/01-start-core-local.sh), checks the UI and ingest, then deletes the
-# cluster and restarts the compose stack if it was running.
+# Creates a throwaway kind cluster ('tinyolly-smoke'), builds this checkout's images into it, checks the UI and
+# ingest, then deletes it. It needs the same host ports as your 'tinyolly' cluster, so it refuses to run beside it.
 set -uo pipefail
 unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH
 export DOCKER_CONTEXT="${DOCKER_CONTEXT:-colima-${COLIMA_PROFILE:-tinyolly}}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CLUSTER="${KIND_CLUSTER:-tinyolly}"
-COMPOSE=(docker compose -f "$ROOT/docker/docker-compose-tinyolly-core-local.yml")
+CLUSTER="${SMOKE_CLUSTER:-tinyolly-smoke}"
+export KIND_CLUSTER="$CLUSTER"                # kind-up, the build and the context guard all follow it
 FAILS=0
 ok()   { echo "  ✓ $*"; }
 bad()  { echo "  ✗ $*"; FAILS=$((FAILS+1)); }
@@ -17,23 +16,17 @@ check(){ local d=$1; shift; if "$@" >/dev/null 2>&1; then ok "$d"; else bad "$d"
 
 for c in kind kubectl docker; do command -v $c >/dev/null || { echo "missing: $c (brew install $c)"; exit 2; }; done
 docker info >/dev/null 2>&1 || { echo "Colima VM '$DOCKER_CONTEXT' not running: scripts/colima-up.sh"; exit 2; }
-for i in ui otlp-receiver opamp-server otel-supervisor; do
-  docker image inspect "tinyolly/$i:latest" >/dev/null 2>&1 || { echo "missing local image tinyolly/$i:latest: build with docker/01-start-core-local.sh"; exit 2; }
-done
-
-WAS_UP=0; [ -n "$("${COMPOSE[@]}" ps -q 2>/dev/null)" ] && WAS_UP=1
-cleanup() {
-  echo "== cleanup"
-  kind delete cluster --name "$CLUSTER" >/dev/null 2>&1
-  [ "$WAS_UP" = 1 ] && "${COMPOSE[@]}" start >/dev/null 2>&1 && echo "  compose stack restarted"
-  return 0
-}
+if kind get clusters 2>/dev/null | grep -q .; then
+  echo "A kind cluster already exists and may hold ports 5005/4317: $(kind get clusters | tr '\n' ' ')"
+  echo "Delete it first (scripts/teardown.sh --level cluster)."; exit 2
+fi
+cleanup() { echo "== cleanup"; kind delete cluster --name "$CLUSTER" >/dev/null 2>&1; return 0; }
 trap cleanup EXIT
 
-[ "$WAS_UP" = 1 ] && { echo "== stopping compose stack"; "${COMPOSE[@]}" stop >/dev/null 2>&1; }
 echo "== kind cluster"
 "$ROOT/scripts/kind-up.sh" >/dev/null 2>&1 && ok "cluster up" || { bad "kind-up.sh failed"; exit 1; }
-for i in ui otlp-receiver opamp-server otel-supervisor; do kind load docker-image "tinyolly/${i}:latest" --name "$CLUSTER" >/dev/null 2>&1; done
+echo "== build images (a few minutes)"
+"$ROOT/build/local/build-core-kind.sh" >/dev/null 2>&1 && ok "images built and loaded" || { bad "build-core-kind.sh failed"; exit 1; }
 
 wait_ready() { kubectl wait --for=condition=available deploy --all --timeout=180s >/dev/null 2>&1; }
 ui_ok()      { curl -sf -o /dev/null localhost:5005/; }

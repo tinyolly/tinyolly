@@ -89,7 +89,7 @@ cd build/local
 | `tinyolly/otlp-receiver` | OTLP receiver service |
 | `tinyolly/opamp-server` | OpAMP configuration server |
 | `tinyolly/otel-supervisor` | OTel Collector supervisor |
-| `tinyolly/sre` | TinyOlly AI SRE Agent (opt-in; `docker/05-start-sre.sh`, `k8s/06-rebuild+deploy-sre.sh`) |
+| `tinyolly/sre` | TinyOlly AI SRE Agent (opt-in; `k8s/06-rebuild+deploy-sre.sh`) |
 
 The old demo apps' images (demo, eBPF demo, AI agent demo) and their build scripts are in `archive/build/`.
 
@@ -169,11 +169,7 @@ cd build/dockerhub
 # Step 4: Verify
 docker pull tinyolly/ui:v2.1.0
 
-# Step 5: Test Docker deployment
-cd ../../docker
-./01-start-core.sh
-
-# Step 6: Test Kubernetes deployment
-cd ../k8s
+# Step 5: Test the Kubernetes deployment
+cd ../../k8s
 ./02-deploy-tinyolly.sh
 ```

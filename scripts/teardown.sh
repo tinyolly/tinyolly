@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 # Tear down what scripts/status.sh shows, in levels. DESTRUCTIVE, so it is a dry run until you confirm.
 #
-#   scripts/teardown.sh --level demos      # OpenTelemetry Demo (Docker + kind), Istio ambient demo
-#   scripts/teardown.sh --level stacks     # + TinyOlly itself (Docker stacks and the kind deployment, data included)
+#   scripts/teardown.sh --level demos      # OpenTelemetry Demo, Istio ambient demo
+#   scripts/teardown.sh --level stacks     # + TinyOlly itself (its kind deployment, data included)
 #   scripts/teardown.sh --level cluster    # + the kind cluster
-#   scripts/teardown.sh --level vms        # + stop both Colima VMs
+#   scripts/teardown.sh --level vms        # + stop the tinyolly Colima VM
 #
 # Options: --yes            run without asking (otherwise it prints the plan and asks; with no terminal it only prints)
-#          --prune          also prune Docker build cache and dangling images on each running VM
+#          --prune          also prune Docker build cache and dangling images on the VM
 #          --prune-images   also remove ALL unused images (you will have to rebuild or re-pull)
 #          --delete-vms     with --level vms: DELETE the VMs and their disks instead of stopping them (data loss)
-# Only the things this project creates are touched (compose projects "otel-demo" and "docker", the kind cluster,
-# Helm release my-otel-demo, the Istio demo namespaces). Other containers in the VMs are listed, never removed,
+# Only the things this project creates are touched (the kind cluster, Helm release
+# my-otel-demo, the Istio demo namespaces). Other containers in the VM are listed, never removed,
 # but stopping a VM stops them too.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 1
 KIND_NAME="${KIND_CLUSTER:-tinyolly}"; KCTX="kind-$KIND_NAME"
-CTXS="colima-tinyolly colima"
+CTXS="colima-tinyolly"
 ISTIO_DEMO="$ROOT/../istio-ambient-demo"
 LEVEL=""; YES=0; PRUNE=0; PRUNE_IMAGES=0; DELETE_VMS=0
 while [ $# -gt 0 ]; do
@@ -39,7 +39,6 @@ case "$LEVEL" in demos) N=1 ;; stacks) N=2 ;; cluster) N=3 ;; vms) N=4 ;;
 B=$'\033[1m'; R=$'\033[31m'; Y=$'\033[33m'; D=$'\033[2m'; X=$'\033[0m'
 docker_up() { docker --context "$1" info >/dev/null 2>&1; }
 kube_up()   { kubectl --context "$KCTX" get ns >/dev/null 2>&1; }
-has_ctr()   { docker --context "$1" ps -a --format '{{.Names}}' 2>/dev/null | grep -qx "$2"; }
 STEP_DESC=(); STEP_CMD=()
 add() { STEP_DESC+=("$1"); STEP_CMD+=("$2"); }
 KUBE_OK=1
@@ -48,12 +47,6 @@ if kube_up && [ "$(kubectl config current-context 2>/dev/null)" != "$KCTX" ]; th
 fi
 
 # ---- level 1: demos
-for c in $CTXS; do
-  docker_up "$c" || continue
-  if has_ctr "$c" checkout && has_ctr "$c" flagd; then
-    add "OpenTelemetry Demo on Docker ($c)" "if [ -d docker-otel-demo/.demo ]; then DOCKER_CONTEXT=$c docker-otel-demo/02-stop-otel-demo.sh; else docker --context $c rm -f \$(docker --context $c ps -aq --filter label=com.docker.compose.project=otel-demo); fi"
-  fi
-done
 if kube_up && [ "$KUBE_OK" = 1 ]; then
   helm --kube-context "$KCTX" list -A -o json 2>/dev/null | jq -e '.[] | select(.name=="my-otel-demo")' >/dev/null 2>&1 \
     && add "OpenTelemetry Demo on kind (helm my-otel-demo)" "k8s-otel-demo/02-cleanup-otel-demo-helm.sh"
@@ -67,10 +60,6 @@ if [ "$N" -ge 2 ]; then
   if kube_up && [ "$KUBE_OK" = 1 ] && kubectl --context "$KCTX" get deploy tinyolly-ui >/dev/null 2>&1; then
     add "TinyOlly on kind (deployments, services, data volume)" "k8s/03-cleanup.sh --yes"
   fi
-  for c in $CTXS; do
-    docker_up "$c" || continue
-    has_ctr "$c" tinyolly-ui && add "TinyOlly on Docker ($c), including its data volume" "DOCKER_CONTEXT=$c docker/02-stop-core.sh"
-  done
 fi
 
 # ---- level 3: the kind cluster
@@ -90,14 +79,14 @@ fi
 # ---- level 4: the VMs
 OTHERS=""
 if [ "$N" -ge 4 ]; then
-  for p in tinyolly default; do
+  for p in tinyolly; do
     colima status -p "$p" >/dev/null 2>&1 || continue
     if [ "$DELETE_VMS" = 1 ]; then add "DELETE Colima VM '$p' and its disk (data loss)" "colima delete -p $p -f"
     else add "Stop Colima VM '$p'" "colima stop -p $p"; fi
-    c=$([ "$p" = default ] && echo colima || echo "colima-$p")
-    # containers that are not part of this project (its compose projects are "otel-demo" and "docker"; plus the kind node)
-    docker_up "$c" && OTHERS="$OTHERS$(docker --context "$c" ps --format '{{.Names}}|{{.Label "com.docker.compose.project"}}' 2>/dev/null \
-      | awk -F'|' -v ctx="$c" '$2!="otel-demo" && $2!="docker" && $1!~/-control-plane$/ {print "  " $1 " (" ctx ")"}')"$'\n'
+    c="colima-$p"
+    # containers other than the kind node
+    docker_up "$c" && OTHERS="$OTHERS$(docker --context "$c" ps --format '{{.Names}}' 2>/dev/null \
+      | awk -v ctx="$c" '$1!~/-control-plane$/ {print "  " $1 " (" ctx ")"}')"$'\n'
   done
 fi
 

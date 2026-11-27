@@ -66,6 +66,7 @@ nav:
       - Collector Presets: collector-presets.md
   - Reference:
       - Kubernetes: kubernetes.md
+      - UI Tour: ui-tour.md
       - AI SRE Details: ai-sre-details.md
       - Ask an AI about the Demo: otel-demo-ai.md
       - MCP Tools and Playbooks: mcp.md

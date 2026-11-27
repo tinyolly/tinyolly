@@ -11,11 +11,11 @@ For "how do I set up / configure X" questions, answer from the docs: `search_doc
 
 | Symptom | Check |
 |---|---|
-| Tool error "Cannot reach TinyOlly at http://localhost:5005" | Stack is down. `colima list`; start with `./scripts/colima-up.sh`, then `cd docker && ./01-start-core.sh` (or `01-start-core-local.sh`). |
-| UI loads but no services/traces | Nothing is sending. Confirm the app exports to `localhost:4318` (HTTP) or `4317` (gRPC) and that the collector is up: `docker --context colima-tinyolly ps`. Wait ~30 s after starting demos. |
-| Data vanished | Retention is 30 minutes by default and `01-start-core.sh` wipes the SQLite volume on every run. |
-| Port already in use (4317/4318/5005) | The kind cluster and the Docker stack share these host ports; run one at a time. Also check the *other* Colima VM (`colima list`). |
-| `docker ps` shows the wrong containers | Plain `docker` uses the active context; TinyOlly's is `colima-tinyolly`: `docker --context colima-tinyolly ps`. |
+| Tool error "Cannot reach TinyOlly at http://localhost:5005" | TinyOlly is down. `colima list`; start with `./scripts/colima-up.sh && ./scripts/kind-up.sh`, then `./k8s/02-deploy-tinyolly.sh`; check `kubectl get pods`. |
+| UI loads but no services/traces | Nothing is sending. Confirm the app exports to `localhost:4318` (HTTP) or `4317` (gRPC) and that the collector is up: `kubectl get pods`. Wait ~30 s after starting demos. |
+| Data vanished | Retention is 30 minutes by default and `k8s/03-cleanup.sh` removes the data volume. |
+| Port already in use (4317/4318/5005) | Stop whatever else listens there; check other Colima VMs too (`colima list`). |
+| `kubectl` shows the wrong cluster | TinyOlly's context is `kind-tinyolly`: `kubectl config use-context kind-tinyolly`. |
 | Collector config change not applied | Config is in `docker/otelcol-configs/config.yaml`; remote changes via the UI arrive at the next OpAMP check-in (10-30 s). For Kubernetes run `scripts/sync-k8s-configs.sh` first. |
 
 ## Verifying with the MCP tools

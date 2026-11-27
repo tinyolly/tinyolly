@@ -190,7 +190,7 @@ class Agent:
             if self.b.mcp_url and not recovery and (not duty or duty in TOOL_DUTIES):
                 try:
                     mcp = MCP(self.b.mcp_url, self.b.mcp_auth)
-                    listed = [t for t in mcp.tools() if self.b.mcp_allow is None or t["name"] in self.b.mcp_allow]
+                    listed = self.b.usable(mcp.tools())
                     allow = {t["name"] for t in listed}; tools = to_openai(listed)
                 except Exception as e: log.warning("MCP unavailable (%s); investigating from evidence only", type(e).__name__)
             elif getattr(self.b, "local_tools", None) and not recovery and (not duty or duty in TOOL_DUTIES):

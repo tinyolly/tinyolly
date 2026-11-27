@@ -20,7 +20,7 @@ description: "Developer notes: pinned versions, lint, local test suites, Docker 
     ruff check docker/apps/
     ```
 
-- **All local tests**: common, UI/API, receiver, MCP server, frontend JS (`node --test`), Go, collector configs, kubectl guard. `--stack` adds the e2e run against the running stack; `--kind` adds the kind smoke test (briefly stops the compose stack):
+- **All local tests**: common, UI/API, receiver, MCP server, frontend JS (`node --test`), Go, collector configs, kubectl guard. `--stack` adds the e2e run against the running stack; `--kind` adds the kind smoke test (throwaway cluster; delete yours first):
 
     ```bash
     ./scripts/test-all.sh
@@ -47,7 +47,7 @@ description: "Developer notes: pinned versions, lint, local test suites, Docker 
 - OpenTelemetry Demo (demo running on kind, ~12 min; see [Add the Demo](otel-demo.md)): checks the data, the MCP tools, failure flags and the PII preset:
 
     ```bash
-    scripts/test-otel-demo.py --mode k8s
+    scripts/test-otel-demo.py
     ```
 
 - Collector configs: `./scripts/test-collector-configs.sh` (validate and start every preset); after editing them run `./scripts/sync-k8s-configs.sh`.
@@ -71,21 +71,20 @@ Builds are native-architecture and uncached and tag `latest` plus the version; `
 
 ## Testing mesh features without Istio
 
-`scripts/seed_mesh.py` posts synthetic Istio metrics (OTLP/JSON) for an Online Boutique mesh: scenarios `baseline`, `flaky`, `fault`, `canary`, `deny`, `multicluster`, plus `--trace` (a trace through a gateway and a waypoint), `--l7 <service>` and `--ui <url>` (records a change marker). To run the Compose stack next to kind, use the second Colima VM and shifted ports (UI 5105, MCP 8865, OTLP 4418):
+`scripts/seed_mesh.py` posts synthetic Istio metrics (OTLP/JSON) for an Online Boutique mesh: scenarios `baseline`, `flaky`, `fault`, `canary`, `deny`, `multicluster`, plus `--trace` (a trace through a gateway and a waypoint), `--l7 <service>` and `--ui <url>` (records a change marker). With TinyOlly running on kind:
 
 ```bash
-scripts/docker-alt.sh                      # rebuild python-base and every service, then start (docker/docker-compose.altports.yml)
-python3 scripts/seed_mesh.py --otlp http://localhost:4418 --scenario flaky --ui http://localhost:5105
-MCP_URL=http://localhost:8865/mcp ...      # then ask the MCP server (get_edge, what_changed, chart_map_diff)
+python3 scripts/seed_mesh.py --scenario flaky --ui http://localhost:5005
+# then ask the MCP server (get_edge, what_changed, chart_map_diff)
 ```
 
 ## Agent eval
 
-`scripts/agent_eval/eval.py` injects a known fault, lets a local model investigate through the MCP tools, and grades the answer against ground truth (service, cause, evidence). Five scenarios including a healthy control, on Compose (seeded metrics) or kind (real faults from the Istio demo repo). Needs Ollama (`LOCAL_BASE`, `LOCAL_MODEL`); results go to `eval-results.json`.
+`scripts/agent_eval/eval.py` injects a known fault, lets a local model investigate through the MCP tools, and grades the answer against ground truth (service, cause, evidence). Five scenarios including a healthy control, on kind (real faults from the Istio demo repo). Needs Ollama (`LOCAL_BASE`, `LOCAL_MODEL`); results go to `eval-results.json`.
 
 ```bash
-python3 scripts/agent_eval/eval.py --target docker --repeat 3
-python3 scripts/agent_eval/eval.py --target kind --scenarios flaky,deny --no-skill-hint
+python3 scripts/agent_eval/eval.py --repeat 3
+python3 scripts/agent_eval/eval.py --scenarios flaky,deny --no-skill-hint
 ```
 
 ```bash
@@ -121,7 +120,7 @@ Common mistakes: a wrong path prefix (see above), not committing `docs/images/fu
 
 ## What is running?
 
-`scripts/status.sh` prints, read-only and in about four seconds, the Colima VMs, containers per compose project (unhealthy ones named), the kind cluster's namespaces, Helm releases and node memory, which stacks and demos are deployed with **the command that removes each**, TinyOlly's endpoints with their service counts, and disk use.
+`scripts/status.sh` prints, read-only and in about four seconds, the Colima VMs, the kind cluster's namespaces, Helm releases and node memory, which stacks and demos are deployed with **the command that removes each**, TinyOlly's endpoints with their service counts, and disk use.
 
 ```bash
 scripts/status.sh            # everything
@@ -136,7 +135,7 @@ scripts/status.sh --short    # skip the disk and node-memory details
 scripts/teardown.sh --level demos      # OpenTelemetry Demo (Docker and kind), Istio ambient demo
 scripts/teardown.sh --level stacks     # + TinyOlly itself, Docker and kind, data volumes included
 scripts/teardown.sh --level cluster    # + the kind cluster
-scripts/teardown.sh --level vms        # + stop both Colima VMs
+scripts/teardown.sh --level vms        # + stop the tinyolly Colima VM
 scripts/teardown.sh --level vms --prune            # also prune build cache and dangling images first
 scripts/teardown.sh --level vms --delete-vms --yes # delete the VMs and their disks (data loss)
 ```
@@ -145,7 +144,7 @@ It only touches what this project creates and lists other containers that would 
 
 ## Docker contexts
 
-Two Colima VMs can coexist: `colima` (default) and `colima-tinyolly` (this project). Every script pins `DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}`; new scripts that call `docker` must too (copy the 3-line block from any `0N-*.sh`). Ad hoc: `docker --context colima-tinyolly ...`.
+This project uses its own Colima VM, `colima-tinyolly`. Every script pins `DOCKER_CONTEXT=colima-${COLIMA_PROFILE:-tinyolly}`; new scripts that call `docker` must too (copy the block from `build/local/build-core-kind.sh`). Ad hoc: `docker --context colima-tinyolly ...`.
 
 ## Service catalog actions (easy revert)
 

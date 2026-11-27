@@ -8,4 +8,5 @@ nodes:
       - { containerPort: 30001, hostPort: 5001, protocol: TCP }   # demo frontend
       - { containerPort: 30317, hostPort: 4317, protocol: TCP }   # OTLP gRPC
       - { containerPort: 30318, hostPort: 4318, protocol: TCP }   # OTLP HTTP
+      - { containerPort: 30291, hostPort: 19291, protocol: TCP }  # Prometheus remote write (collector preset)
       - { containerPort: 30876, hostPort: 8765, protocol: TCP }   # TinyOlly MCP server (http://localhost:8765/mcp)

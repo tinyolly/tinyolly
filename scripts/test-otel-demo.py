@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Full test of TinyOlly against the OpenTelemetry Demo (Astronomy Shop), on Docker or kind.
+"""Full test of TinyOlly against the OpenTelemetry Demo (Astronomy Shop) on kind.
 
 Assumes TinyOlly and the demo are already running (see docs/otel-demo.md); it asserts what TinyOlly shows
 through its REST API and MCP server, injects failures with the demo's feature flags, and puts everything back.
 
-    scripts/test-otel-demo.py --mode docker       # flags via docker-otel-demo/03-set-flag.sh
-    scripts/test-otel-demo.py --mode k8s          # flags via the flagd ConfigMap in the kind cluster
-    scripts/test-otel-demo.py --mode docker --skip-flags --skip-preset   # data checks only
+    scripts/test-otel-demo.py                                  # flags via the flagd ConfigMap in the kind cluster
+    scripts/test-otel-demo.py --skip-flags --skip-preset       # data checks only
 
 Env: TINYOLLY_UI (default http://localhost:5005), MCP_URL (default http://localhost:8765/mcp),
-DOCKER_CONTEXT (docker mode, passed to 03-set-flag.sh), KUBE_CONTEXT (k8s mode, default kind-tinyolly).
+KUBE_CONTEXT (default kind-tinyolly).
 Stdlib only. Exit code 1 if any check fails.
 """
 import argparse
@@ -95,13 +94,8 @@ class MCP:
 
 
 # ------------------------------------------------------------------------------------------------- flags
-def set_flag(mode, flag, variant):
+def set_flag(flag, variant):
     """Turn a demo feature flag on (variant) or reset everything (flag None)."""
-    if mode == "docker":
-        script = os.path.join(ROOT, "docker-otel-demo", "03-set-flag.sh")
-        cmd = [script, "--reset"] if flag is None else [script, flag, variant]
-        out = subprocess.run(cmd, capture_output=True, text=True, cwd=os.path.dirname(script))
-        return out.returncode == 0, (out.stdout + out.stderr).strip()[-200:]
     # The Helm chart copies this ConfigMap into an emptyDir at pod start and flagd reads the copy, so a patch only
     # takes effect after the flagd pod restarts.
     name = os.environ.get("FLAGD_CONFIGMAP", "flagd-config")
@@ -219,16 +213,16 @@ def suite_data(mcp):
     check("MCP search_docs answers about the demo", "demo" in mcp.text("search_docs", {"query": "OpenTelemetry demo feature flags"}).lower(), None)
 
 
-def suite_flags(mode, mcp):
+def suite_flags(mcp):
     log("\n== failure injection: paymentFailure")
-    ok, detail = set_flag(mode, None, None)
+    ok, detail = set_flag(None, None)
     check("reset all flags", ok, detail)
     time.sleep(45)
     t0 = time.time()
     base = recent_error_traces(t0 - 60, "payment")
     check("baseline: no payment errors in the last minute", len(base) == 0, len(base))
 
-    ok, detail = set_flag(mode, "paymentFailure", "50%")
+    ok, detail = set_flag("paymentFailure", "50%")
     check("set paymentFailure 50%", ok, detail)
     t_on = time.time()
     err = eventually(lambda: recent_error_traces(t_on, "payment"), 240, 10)
@@ -240,7 +234,7 @@ def suite_flags(mode, mcp):
     posture_text = mcp.text("get_service_map", {"only": "errors"})
     check("MCP get_service_map(only=errors) lists the failing edge", "payment" in posture_text or "checkout" in posture_text, posture_text[:200])
 
-    ok, detail = set_flag(mode, None, None)
+    ok, detail = set_flag(None, None)
     check("reset flags after the failure", ok, detail)
     t_off = time.time()
     time.sleep(90)  # flagd reloads, in-flight requests drain
@@ -248,9 +242,9 @@ def suite_flags(mode, mcp):
     check("recovery: no new payment errors once the flag is off", len(after) == 0, len(after))
 
 
-def suite_pii(mode):
+def suite_pii():
     log("\n== PII flag and the pii-redaction preset")
-    ok, detail = set_flag(mode, "emitRawPii", "on")
+    ok, detail = set_flag("emitRawPii", "on")
     check("set emitRawPii on", ok, detail)
 
     def raw_pii(since):
@@ -272,7 +266,7 @@ def suite_pii(mode):
     code, tpl = http("/api/opamp/templates/pii-redaction")
     if code != 200:
         check("pii-redaction template exists", False, code)
-        set_flag(mode, None, None)
+        set_flag(None, None)
         return
     code, out = http("/api/opamp/config?wait=90", "POST", {"config": tpl["config"]}, timeout=110)
     applied = code == 200 and out and out.get("agents") and all(a.get("applied") for a in out["agents"].values())
@@ -282,7 +276,7 @@ def suite_pii(mode):
     masked = eventually(lambda: raw_pii(t_mask), 240, 10)
     check("after the preset, the same attributes are masked", masked and "*" in masked[1], masked)
 
-    ok, detail = set_flag(mode, None, None)
+    ok, detail = set_flag(None, None)
     check("reset flags", ok, detail)
     code, tpl = http("/api/opamp/templates/default")
     code, out = http("/api/opamp/config?wait=90", "POST", {"config": tpl["config"]}, timeout=110)
@@ -291,7 +285,6 @@ def suite_pii(mode):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mode", choices=["docker", "k8s"], required=True)
     ap.add_argument("--skip-flags", action="store_true")
     ap.add_argument("--skip-preset", action="store_true")
     args = ap.parse_args()
@@ -302,9 +295,9 @@ def main():
     mcp = MCP(MCP_URL)
     suite_data(mcp)
     if not args.skip_flags:
-        suite_flags(args.mode, mcp)
+        suite_flags(mcp)
     if not args.skip_preset:
-        suite_pii(args.mode)
+        suite_pii()
     failed = [n for n, ok in results if not ok]
     log(f"\nSUMMARY {len(results) - len(failed)}/{len(results)} passed")
     if failed:

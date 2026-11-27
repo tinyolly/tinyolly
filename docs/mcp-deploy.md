@@ -11,11 +11,10 @@ The **read-only** TinyOlly MCP server lets an AI assistant (Claude Code, Claude 
 
 | Deployment | How it runs | URL |
 |---|---|---|
-| **Docker Compose** | A `tinyolly-mcp` service in the core compose files (`docker/` and `misc/docker-core-only/`), started and stopped with the stack. | `http://localhost:8765/mcp` |
 | **Kubernetes (kind)** | A `tinyolly-mcp` Deployment and NodePort Service (`k8s/tinyolly-mcp.yaml`, `misc/k8s-core-only/tinyolly-mcp.yaml`); the kind config maps host port 8765 to it. | `http://localhost:8765/mcp` |
 | **Standalone** | You run `server.py`, or the client starts it over stdio (see below). | your choice |
 
-Docker and Kubernetes use the same URL, so client setup is identical. All clients share one server over streamable HTTP. It reads TinyOlly through the REST API (`TINYOLLY_URL`, `http://tinyolly-ui:5002` inside the stack), bundles the docs and playbooks, and binds to `127.0.0.1` in Docker.
+All clients share one server over streamable HTTP. It reads TinyOlly through the REST API (`TINYOLLY_URL`, `http://tinyolly-ui:5002` inside the stack), bundles the docs and playbooks, and is reachable only from your Mac.
 
 ## Check that it is up
 

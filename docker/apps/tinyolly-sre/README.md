@@ -65,10 +65,9 @@ Live faults are slow (a fault needs minutes of real traffic to show, then minute
 
 ## Run
 ```bash
-cd docker && ./05-start-sre.sh [--demo [--realistic]]   # Docker: needs the core stack up (SRE_LLM_URL, SRE_MODEL; --demo needs docker-otel-demo cloned)
-k8s/06-rebuild+deploy-sre.sh [--demo [--realistic]]   # kind (--demo points the agent at flagd-ui; no RBAC needed)
+k8s/06-rebuild+deploy-sre.sh [--demo [--realistic]]   # SRE_LLM_URL, SRE_MODEL override the model; --demo uses flagd-ui, no RBAC needed
 ```
-`--demo` uses the **quick** profile by default (`docker-compose-sre-quick.yml`, same values in the k8s script): `DEMO_PROFILE=quick` (each scenario's `quick` block: stronger variant, 75-90 s fault, 30 s cooldown), 5 s polls, `DETECT_RECENT_STATS=1` (rate and p95 from the last `DETECT_RECENT_SECONDS`=30 of spans), a detector cutoff when each fault ends, `CHANGE_NOTES=0`. On Docker the shop's load is raised to `DEMO_LOAD_USERS` (20) with `docker-otel-demo/04-set-load.sh`; on k8s the shift keeps the size profile's load. `--realistic` keeps the demo's strengths and the default timing.
+`--demo` uses the **quick** profile by default (values in `k8s/06-rebuild+deploy-sre.sh`): `DEMO_PROFILE=quick` (each scenario's `quick` block: stronger variant, 75-90 s fault, 30 s cooldown), 5 s polls, `DETECT_RECENT_STATS=1` (rate and p95 from the last `DETECT_RECENT_SECONDS`=30 of spans), a detector cutoff when each fault ends, `CHANGE_NOTES=0`. The shift keeps the size profile's load. `--realistic` keeps the demo's strengths and the default timing.
 
 ## Standalone edition
 This directory is self-contained (own Dockerfile, requirements, tests; build context is this directory; stdlib + httpx, plus the Anthropic SDK for the Claude preset; no tinyolly imports). To split it out: `git subtree split` / copy the directory, done.

@@ -19,7 +19,7 @@ MODEL_ENV=(${SRE_LLM_URL:+"LLM_URL=$SRE_LLM_URL"} ${SRE_MODEL:+"MODEL=$SRE_MODEL
 [ "${#MODEL_ENV[@]}" -eq 0 ] || kubectl set env deploy/tinyolly-sre "${MODEL_ENV[@]}"
 QUICK_ENV=(DEMO_PROFILE=quick DEMO_GAP_SECONDS=20,30 DETECT_SECONDS=5 WARMUP_SECONDS=20 BASELINE_POLLS=6 DETECT_CONFIRM_POLLS=2
   INCIDENT_SETTLE_SECONDS=10 INCIDENT_CLEAR_POLLS=3 DETECT_RECENT_SECONDS=30 DETECT_WINDOW_SECONDS=60 DETECT_RECENT_STATS=1
-  DETECT_HOLD_MAX_POLLS=36 CHANGE_NOTES=0)                       # same as docker/docker-compose-sre-quick.yml
+  DETECT_HOLD_MAX_POLLS=36 CHANGE_NOTES=0)
 if [ -n "$DEMO_ON" ]; then
   # Flags go through the OTel demo's flagd-ui API (flagd:4000), which edits the file flagd serves; no RBAC needed.
   kubectl get svc flagd >/dev/null || { echo "flagd service not found; deploy k8s-otel-demo first." >&2; exit 1; }

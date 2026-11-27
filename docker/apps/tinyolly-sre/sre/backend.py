@@ -16,6 +16,12 @@ class Backend:
     mcp_auth = ""         # Authorization header value for it, if any
     mcp_allow: set[str] | None = None   # tool allowlist; None = every tool the server lists (it must be read-only)
 
+    # never offered: TinyOlly's docs and playbooks describe the demo's faults, so the agent would read the answers
+    mcp_deny: frozenset[str] = frozenset({"list_docs", "search_docs", "read_doc", "list_skills", "get_skill"})
+
+    def usable(self, tools: list[dict]) -> list[dict]:
+        return [t for t in tools if t["name"] not in self.mcp_deny and (self.mcp_allow is None or t["name"] in self.mcp_allow)]
+
     def detect(self) -> list[Signal]:
         """Cheap checks, no model call. Return the signals active right now."""
         raise NotImplementedError

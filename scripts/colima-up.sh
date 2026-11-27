@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start the Colima VM used by all TinyOlly docker/k8s scripts.
+# Start the Colima VM used by the TinyOlly scripts.
 # Colima home: ${COLIMA_HOME:-~/.colima}. Use an APFS location (HFS+ has no sparse files, so VM disk creation hangs).
 # Size follows the Mac's profile (scripts/lib/size.sh; PROFILE=lean|full). COLIMA_CPU / COLIMA_MEMORY (GiB) /
 # COLIMA_DISK (GiB) override it. A VM that already exists is not resized.
@@ -12,7 +12,7 @@ MEMORY="${COLIMA_MEMORY:-$VM_MEM}"
 DISK="${COLIMA_DISK:-60}"
 
 for bin in colima docker; do
-  command -v "$bin" >/dev/null || { echo "ERROR: '$bin' not found. brew install colima docker docker-compose kubectl kind helm" >&2; exit 1; }
+  command -v "$bin" >/dev/null || { echo "ERROR: '$bin' not found. brew install colima docker kubectl kind helm" >&2; exit 1; }
 done
 
 echo "Profile $PROFILE (host ${HOST_GB} GB): VM ${CPU} CPU / ${MEMORY} GB."

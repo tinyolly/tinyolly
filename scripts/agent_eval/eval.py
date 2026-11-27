@@ -2,8 +2,7 @@
 """Fault-injection eval for TinyOlly's MCP tools: inject a known fault, ask an agent to investigate through MCP,
 grade the answer against ground truth.
 
-  scripts/agent_eval/eval.py --target docker                 # seeded Istio metrics on the Compose stack (scripts/docker-alt.sh)
-  scripts/agent_eval/eval.py --target kind --scenarios flaky # real faults on the kind demo (istio-ambient-demo repo)
+  scripts/agent_eval/eval.py --scenarios flaky               # real faults on the kind demo (istio-ambient-demo repo)
   scripts/agent_eval/eval.py --model qwen3.8:27b-mtp-q4_K_M --repeat 3 --no-skill-hint
 
 The agent is a local Ollama model driving the MCP server's tools (the loop is in agent.py). Env: LOCAL_BASE (Ollama).
@@ -30,8 +29,7 @@ SYSTEM = ("You are an SRE investigating an Istio ambient service mesh with TinyO
           "the affected service, the evidence with numbers, and the likely cause. Stop and answer as soon as the evidence names a "
           "cause; do not keep exploring. If nothing is wrong, say the mesh looks healthy.")
 SKILL_HINT = " A playbook is available: call get_skill('tinyolly-mesh-investigation') first and follow it."
-TARGETS = {"docker": {"ui": "http://localhost:5105", "otlp": "http://localhost:4418", "mcp": "http://localhost:8865/mcp"},
-           "kind": {"ui": "http://localhost:5005", "otlp": None, "mcp": "http://localhost:8765/mcp"}}
+URLS = {"ui": "http://localhost:5005", "mcp": "http://localhost:8765/mcp"}
 
 
 def ollama_chat(model, base):
@@ -45,18 +43,6 @@ def ollama_chat(model, base):
         return reply
     chat.tokens = 0
     return chat
-
-
-def inject_docker(name, urls):
-    seed = HERE.parent / "seed_mesh.py"
-    urllib.request.urlopen(urllib.request.Request(urls["ui"] + "/admin/reset", method="POST"), timeout=30).read()
-    steps = SCENARIOS[name]["seed"]
-    for i, scenario in enumerate(steps):
-        duration = "60" if len(steps) == 1 else ("30" if i == 0 else "45")
-        cmd = [sys.executable, str(seed), "--otlp", urls["otlp"], "--scenario", scenario, "--interval", "3", "--duration", duration]
-        if i > 0:
-            cmd += ["--ui", urls["ui"]]
-        subprocess.run(cmd, check=True, capture_output=True)
 
 
 def inject_kind(name, demo_dir):
@@ -79,19 +65,18 @@ def cleanup_kind(demo_dir):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--target", choices=sorted(TARGETS), default="docker")
     ap.add_argument("--scenarios", default=",".join(SCENARIOS), help="comma-separated: " + ", ".join(SCENARIOS))
     ap.add_argument("--model", default=os.environ.get("LOCAL_MODEL", "qwen3.8:27b-mtp-q4_K_M"))
     ap.add_argument("--base", default=os.environ.get("LOCAL_BASE", "http://192.168.68.71:11434"))
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--max-steps", type=int, default=10)
     ap.add_argument("--no-skill-hint", action="store_true", help="do not tell the agent a playbook skill exists")
-    ap.add_argument("--demo-dir", default=str(HERE.parents[2] / "istio-ambient-demo"), help="kind target: the demo repo")
+    ap.add_argument("--demo-dir", default=str(HERE.parents[2] / "istio-ambient-demo"), help="the Istio demo repo")
     ap.add_argument("--out", default="eval-results.json")
     ap.add_argument("--min-pass", type=float, help="exit 1 if the pass rate is below this (0-1)")
     args = ap.parse_args()
 
-    urls = TARGETS[args.target]
+    urls = URLS
     names = [s.strip() for s in args.scenarios.split(",") if s.strip()]
     unknown = [n for n in names if n not in SCENARIOS]
     if unknown:
@@ -101,7 +86,7 @@ def main():
     for name in names:
         for run_no in range(1, args.repeat + 1):
             print(f"== {name} (run {run_no}): {SCENARIOS[name]['describe']}", flush=True)
-            (inject_docker(name, urls) if args.target == "docker" else inject_kind(name, demo_dir))
+            inject_kind(name, demo_dir)
             client = MCPClient(urls["mcp"])
             tools = agent.mcp_tools_to_ollama(client.list_tools())
             chat = ollama_chat(args.model, args.base)
@@ -109,13 +94,12 @@ def main():
             out = agent.run_agent(QUESTION, chat, client.call_tool, tools, max_steps=args.max_steps,
                                   system=SYSTEM + ("" if args.no_skill_hint else SKILL_HINT))
             g = grader.grade(out["answer"], out["tool_calls"], SCENARIOS[name]["truth"])
-            results.append({"scenario": name, "run": run_no, "target": args.target, "model": args.model, **g,
+            results.append({"scenario": name, "run": run_no, "model": args.model, **g,
                             "steps": out["steps"], "truncated": out["truncated"], "tokens": chat.tokens,
                             "seconds": round(time.time() - started, 1), "tools": [c["name"] for c in out["tool_calls"]],
                             "answer": out["answer"]})
             print(f"   {'PASS' if g['passed'] else 'FAIL'} score={g['score']:.2f} steps={out['steps']} tools={len(out['tool_calls'])}", flush=True)
-    if args.target == "kind":
-        cleanup_kind(demo_dir)
+    cleanup_kind(demo_dir)
     pathlib.Path(args.out).write_text(json.dumps(results, indent=2))
     print("\nscenario   runs  pass  avg_score  avg_steps  avg_tokens")
     for name in names:

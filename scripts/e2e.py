@@ -2,7 +2,7 @@
 """End-to-end test of a RUNNING TinyOlly stack, driven only through its public APIs (stdlib only).
 
   scripts/e2e.py                       # run everything against localhost
-  scripts/e2e.py --up                  # start Colima + the local core stack first
+  scripts/e2e.py --up                  # deploy this checkout to kind first
   scripts/e2e.py --only baseline,sampling
   scripts/e2e.py --list
 
@@ -29,9 +29,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RUN = secrets.token_hex(3)
-UI = os.environ.get("TINYOLLY_UI", "http://localhost:5005")           # docker-alt.sh stack: http://localhost:5105
-OTLP = os.environ.get("TINYOLLY_OTLP", "http://localhost:4318")        # docker-alt.sh stack: http://localhost:4418
-REMOTE_WRITE_PORT = int(os.environ.get("TINYOLLY_RW_PORT", "19291"))   # docker-alt.sh stack: 19391
+UI = os.environ.get("TINYOLLY_UI", "http://localhost:5005")
+OTLP = os.environ.get("TINYOLLY_OTLP", "http://localhost:4318")
+REMOTE_WRITE_PORT = int(os.environ.get("TINYOLLY_RW_PORT", "19291"))
 
 results = []   # (scenario, name, ok, detail)
 current = ["-"]
@@ -449,7 +449,7 @@ def main():
     ap.add_argument("--otlp", default=OTLP)
     ap.add_argument("--only", help="comma-separated scenarios (see --list)")
     ap.add_argument("--list", action="store_true")
-    ap.add_argument("--up", action="store_true", help="start Colima + the local core stack first (rebuilds images, clears data)")
+    ap.add_argument("--up", action="store_true", help="start Colima and kind, build images from this checkout and deploy them first")
     ap.add_argument("--keep", action="store_true", help="do not restore the default collector config at the end")
     a = ap.parse_args()
     UI, OTLP = a.ui.rstrip("/"), a.otlp.rstrip("/")
@@ -458,9 +458,13 @@ def main():
         return 0
     if a.up:
         subprocess.run([str(ROOT / "scripts/colima-up.sh")], check=True)
-        subprocess.run(["./01-start-core-local.sh"], cwd=ROOT / "docker", check=True)
+        for cmd in (["scripts/kind-up.sh"], ["build/local/build-core-kind.sh"], ["k8s/02-deploy-tinyolly.sh"],
+                    ["kubectl", "rollout", "restart", "deploy/tinyolly-ui", "deploy/tinyolly-otlp-receiver", "deploy/tinyolly-opamp-server",
+                     "deploy/tinyolly-mcp", "deploy/otel-collector"],
+                    ["kubectl", "wait", "--for=condition=Available", "deploy", "--all", "--timeout=300s"]):
+            subprocess.run(cmd, cwd=ROOT, check=True)
     if not eventually(lambda: http("GET", UI + "/health", timeout=3)[0] == 200, 120, 2):
-        print(f"UI not reachable at {UI}. Start the stack (docker/01-start-core-local.sh) or pass --up.", file=sys.stderr)
+        print(f"UI not reachable at {UI}. Deploy to kind (k8s/02-deploy-tinyolly.sh) or pass --up.", file=sys.stderr)
         return 2
     eventually(lambda: any(x.get("status") == "connected" for x in (ui("/api/opamp/status")[1] or {}).get("agents", {}).values()), 60, 2)
 

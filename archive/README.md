@@ -11,3 +11,5 @@ not run from here as is. The images they built are no longer part of `build/dock
 | `docker-ai-agent-demo/`, `k8s-ai-agent-demo/` | AI agent with Ollama/TinyLlama (GenAI traces), to be replaced by an AI shopper |
 | `build/dockerhub/02-build-*.sh`, `03-push-*.sh`; `build/local/build-*-kind.sh` | image builds for the demos above |
 | `docs/ebpf.md`, `docs/ai-agent.md` | their docs pages |
+
+The Docker Compose deployment option is in [`docker-compose/`](docker-compose/README.md).

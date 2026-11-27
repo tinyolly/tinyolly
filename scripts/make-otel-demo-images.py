@@ -5,8 +5,7 @@ Needs TinyOlly and the demo running (docs/otel-demo.md). It takes the healthy sh
 paymentFailure flag with a change marker, waits for errors to show, takes the failure shots, records what the
 MCP tools answer, then turns the flag off.
 
-    scripts/make-otel-demo-images.py --mode k8s                  # kind: UI :5005, MCP :8765
-    scripts/make-otel-demo-images.py --mode docker --ui http://localhost:5105 --mcp http://localhost:8865/mcp
+    scripts/make-otel-demo-images.py                             # UI :5005, MCP :8765
 
 Each shot is written twice (preview + full size, see scripts/make-doc-images.py). The MCP text answers go to
 /tmp/otel-demo-mcp-output.json so the docs can quote real output. Chrome required.
@@ -31,7 +30,6 @@ def load(name, file):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mode", choices=["docker", "k8s"], required=True)
     ap.add_argument("--ui", default="http://localhost:5005")
     ap.add_argument("--mcp", default="http://localhost:8765/mcp")
     args = ap.parse_args()
@@ -70,7 +68,7 @@ def main():
         return None
 
     # ---------------------------------------------------------------- healthy
-    ok, detail = t.set_flag(args.mode, None, None)
+    ok, detail = t.set_flag(None, None)
     print("flags reset:", ok, detail, flush=True)
     time.sleep(60)
     ui("ui-otel-service-map", "map")
@@ -82,7 +80,7 @@ def main():
     out["list_services"] = mcp.text("list_services", {"format": "table"})
 
     # ---------------------------------------------------------------- paymentFailure
-    ok, detail = t.set_flag(args.mode, "paymentFailure", "50%")
+    ok, detail = t.set_flag("paymentFailure", "50%")
     print("paymentFailure 50%:", ok, detail, flush=True)
     t.http("/api/events", "POST", {"title": "flag: paymentFailure 50%", "source": "otel-demo", "kind": "flag",
                                     "attributes": {"flag": "paymentFailure", "variant": "50%"}})
@@ -102,7 +100,7 @@ def main():
     out["search_error_traces_payment"] = mcp.text("search_traces", {"service": "payment", "errors_only": True, "limit": 3})
     out["get_edge_checkout_payment"] = mcp.text("get_edge", {"source": "checkout", "target": "payment", "minutes": 10})
 
-    ok, detail = t.set_flag(args.mode, None, None)
+    ok, detail = t.set_flag(None, None)
     print("flags reset:", ok, detail, flush=True)
     Path("/tmp/otel-demo-mcp-output.json").write_text(json.dumps(out, indent=2))
     print("captured:", notes, flush=True)
