@@ -1366,7 +1366,7 @@
 <p>Without containers, the client starts the server over stdio. The installer creates a venv and prints the lines for each client (<a href="../mcp/#install">details</a>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker/apps/tinyolly-mcp/install.sh
 </code></pre></div>
-<p>Or run the HTTP server yourself (<code>TINYOLLY_URL</code> points it at TinyOlly, default <code>http://localhost:5005</code>):</p>
+<p>Or run the HTTP server yourself (<code>TINYOLLY_URL</code> points it at TinyOlly, default <a href="http://localhost:5005">http://localhost:5005</a>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>server.py<span class="w"> </span>--http<span class="w"> </span>--port<span class="w"> </span><span class="m">8765</span>
 </code></pre></div>
 <p>Prefer the container: stdio keeps a stale server running until the client restarts.</p>

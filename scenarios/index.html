@@ -1269,16 +1269,16 @@
 <p>You need the shop port-forward from step 2:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/frontend-proxy<span class="w"> </span><span class="m">8080</span>:8080
 </code></pre></div>
-<p>You also need the agent console at http://localhost:7173.</p>
+<p>You also need the agent console at <a href="http://localhost:7173">http://localhost:7173</a>.</p>
 <h2 id="do-this">Do this</h2>
 <ol>
-<li>Open http://localhost:8080/feature</li>
+<li>Open <a href="http://localhost:8080/feature">http://localhost:8080/feature</a></li>
 <li>Set <code>paymentFailure</code> to <code>50%</code> in its dropdown. It applies at once; there is no save button.</li>
 </ol>
 <p>The agent is not told what you changed.</p>
 <h2 id="what-you-should-see">What you should see</h2>
 <ul>
-<li>Within a few minutes, checkout and payment turn red at http://localhost:5005.</li>
+<li>Within a few minutes, checkout and payment turn red at <a href="http://localhost:5005">http://localhost:5005</a>.</li>
 <li>The agent adds an investigation to the console list with a name and status.</li>
 <li>Click it for the cause (payment) and proposed fixes. Fixes are never applied.</li>
 </ul>
