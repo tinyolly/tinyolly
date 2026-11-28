@@ -56,7 +56,7 @@ The agent is never told what was injected. It finds problems from telemetry alon
 | `payment-down` | `paymentUnreachable=on` | hard dependency outage |
 | `cart-flaky` | `cartFailure=25%` | partial errors seen by several callers |
 | `ad-failure` | `adFailure=on` | errors in one service |
-| `slow-images` | `imageSlowLoad=5sec` | frontend latency, cause upstream |
+| `slow-images` | `imageSlowLoad=5sec` | frontend latency, cause upstream (needs browser traffic: `PROFILE=full`) |
 | `slow-shipping` | `intlShippingSlowdown=5sec` | latency on one path only |
 | `catalog-lock` | `productCatalogLockContention=on` | latency from the database |
 | `catalog-bad-product` | `productCatalogFailure=on` | errors on one product only |
@@ -84,13 +84,14 @@ To tune without waiting, record a shift once (`SRE_RECORD=/tmp/shift.jsonl`) and
 
 ## How it decides
 
-Detectors run without a model: error spans, error rate (per service and per operation), p95 latency, traffic drop, a service that stops reporting, error logs, high CPU, failing health checks, container restarts (Kubernetes), mesh denials, and TinyOlly's storage pressure. Errors are attributed to the service where they start, so separate faults stay separate incidents. Each service learns its normal; a change must hold for two polls. Signals on a service and its direct callers or callees join one incident, investigated from the deepest service. Settings are in the [agent's README](https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre).
+Detectors run without a model: error spans, error rate (per service and per operation), p95 latency, traffic drop or surge, a service that stops reporting, error logs, high CPU, failing health checks, container restarts (Kubernetes), mesh denials, and TinyOlly's storage pressure. Errors are attributed to the service where they start, so separate faults stay separate incidents. Each service learns its normal; a change must hold for two polls. Signals on a service and its direct callers or callees join one incident, investigated from the deepest service. Settings are in the [agent's README](https://github.com/tinyolly/tinyolly/tree/main/docker/apps/tinyolly-sre).
 
 **Guardrails:** at most 8 tool calls and 120 s per investigation, 12 investigations an hour, read-only tools (not TinyOlly's docs or playbooks, which describe the demo's faults), and cited traces and services are kept only if they appeared in the evidence.
 
 ## Limits
 
 - Synthetic faults are not production; a good score says little about real incidents.
+- `imageSlowLoad` only affects real browsers. Without browser traffic (the lean profile) it leaves nothing to detect.
 - With `--realistic`, several faults leave too little signal at the demo's low traffic to detect.
 - Two unrelated faults close together can merge into one incident through a shared caller such as `frontend`.
 - One model run at a time: a review can delay an investigation by up to a minute.

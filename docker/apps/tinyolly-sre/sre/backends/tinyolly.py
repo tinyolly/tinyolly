@@ -18,6 +18,7 @@ LOG_ERRORS_MIN = int(E("DETECT_LOG_ERRORS_MIN", "10"))    # error logs of one se
 ERR_PCT_MIN = float(E("DETECT_ERROR_PCT_MIN", "5"))       # service error rate (%) that counts, if also 3x its learned normal
 LATENCY_FACTOR = float(E("DETECT_LATENCY_FACTOR", "3"))   # p95 this many times its learned normal (and +100 ms)
 TRAFFIC_DROP = float(E("DETECT_TRAFFIC_DROP", "0.2"))     # rate below this fraction of normal (normal >= 0.5/s)
+SURGE_FACTOR = float(E("DETECT_SURGE_FACTOR", "4"))       # rate above this multiple of normal (and >= 5/s)
 BASELINE_POLLS = int(E("BASELINE_POLLS", "6"))            # polls before a service's learned normal is trusted
 CONFIRM_POLLS = int(E("DETECT_CONFIRM_POLLS", "2"))       # consecutive polls a shift must hold before it is a signal
 VANISHED_POLLS = int(E("DETECT_VANISHED_POLLS", "3"))
@@ -281,15 +282,18 @@ class TinyOllyBackend(Backend):
         now = time.time(); cut = max(now - RECENT_S, self.fence_t); lcut = max(now - RECENT_S * 3, self.fence_t)
         short, long_ = collections.defaultdict(list), collections.defaultdict(list)
         for s in self._spans(RECENT_S * 3):
-            row = (_is_error(s), float(s.get("duration_ms") or 0))
+            # a long-lived stream (flagd EventStream, ~10 min) is not latency: it counts for errors and rate, not p95
+            stream = str(s.get("name") or "").endswith("/EventStream")
+            row = (_is_error(s), None if stream else float(s.get("duration_ms") or 0))
             long_[_svc(s)].append(row)
             if _secs(s.get("start_time")) >= cut: short[_svc(s)].append(row)
         out = {}
         for k, rows_l in long_.items():
             rows, win = (short[k], now - cut) if len(short[k]) >= RECENT_MIN_SPANS else (rows_l, now - lcut)
-            bad = sum(e for e, _ in rows); d = sorted(x for _, x in rows)
+            bad = sum(e for e, _ in rows); d = sorted(x for _, x in rows if x is not None)
             out[k] = {"error_rate": round(bad * 100 / len(rows), 2) if rows and bad >= RECENT_ERRORS_MIN else 0.0,
-                      "rate": round(len(rows) / win, 3) if win > 0 else 0.0, "duration_p95": d[int(0.95 * (len(d) - 1))] if d else 0.0, "window_s": win}
+                      "rate": round(len(rows) / win, 3) if win > 0 else 0.0, "duration_p95": d[int(0.95 * (len(d) - 1))] if d else 0.0, "window_s": win,
+                      "streams": any(x is None for _, x in long_[k])}
         return out
 
     def _recent_error_pct(self) -> dict[str, float]:
@@ -353,17 +357,21 @@ class TinyOllyBackend(Backend):
                     else: c.update(rate=L.rate, duration_p95=L.p95)        # just after a fence: too little data, stay neutral
                 elif RECENT_STATS:                                             # no spans in the window: silent, unless a fence just cleared it
                     c.update(rate=L.rate if time.time() - self.fence_t < RECENT_S / 2 else 0.0, duration_p95=L.p95)
+                elif r.get("streams"):                                         # the catalog's p95 includes stream spans; ours does not
+                    c["duration_p95"] = r["duration_p95"]
             checks = {
+                "surge": ready and "traffic" in D and float(c.get("rate") or 0) >= max(5.0, SURGE_FACTOR * L.rate),
                 "error-rate": ready and float(c.get("error_rate") or 0) >= ERR_PCT_MIN and float(c.get("error_rate") or 0) > 3 * min(max(L.err, 0.5), ERR_PCT_MIN),
                 "latency": ready and float(c.get("duration_p95") or 0) > LATENCY_FACTOR * max(L.p95, 1) and float(c.get("duration_p95") or 0) - L.p95 > 100,
                 "traffic": ready and L.rate >= 0.5 and float(c.get("rate") or 0) < TRAFFIC_DROP * L.rate,
             }
-            texts = {"error-rate": f"{name}: {float(c.get('error_rate') or 0):.0f}% of requests failing " + ("(already failing when first watched)" if L.err >= ERR_PCT_MIN else f"(usually {L.err:.1f}%)"),
+            texts = {"surge": f"{name}: traffic surged to {float(c.get('rate') or 0):.2f}/s (usually {L.rate:.1f}/s)",
+                     "error-rate": f"{name}: {float(c.get('error_rate') or 0):.0f}% of requests failing " + ("(already failing when first watched)" if L.err >= ERR_PCT_MIN else f"(usually {L.err:.1f}%)"),
                      "latency": f"{name}: slow, p95 {float(c.get('duration_p95') or 0):.0f} ms (usually {L.p95:.0f} ms)",
                      "traffic": f"{name}: traffic dropped to {float(c.get('rate') or 0):.2f}/s (usually {L.rate:.1f}/s)"}
             for k, hit in checks.items():
-                L.hits[k] = L.hits[k] + 1 if hit and k in D else 0
-                if L.hits[k] >= CONFIRM_POLLS: out.append(Signal(k, name, texts[k]))
+                L.hits[k] = L.hits[k] + 1 if hit and (k in D or k == "surge") else 0
+                if L.hits[k] >= CONFIRM_POLLS: out.append(Signal("traffic" if k == "surge" else k, name, texts[k]))
             L.update(c, hold=any(L.hits[k] for k in checks))
         for name, L in self.learned.items():
             if name in cat or _ignored(name) or L.n < BASELINE_POLLS: continue

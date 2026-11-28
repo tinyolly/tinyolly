@@ -38,7 +38,7 @@ Then set the flag back to off. A few minutes later the agent marks the investiga
 | paymentUnreachable | on | payment is unavailable |
 | cartFailure | 75% | cart errors |
 | adFailure | on | ad service errors |
-| imageSlowLoad | 10sec | slow images |
+| loadGeneratorFloodHomepage | on | a flood of homepage traffic |
 | intlShippingSlowdown | 10sec | slow shipping on one path |
 
 ## Hands-off

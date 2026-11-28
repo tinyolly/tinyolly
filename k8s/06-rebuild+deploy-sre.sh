@@ -5,14 +5,18 @@
 #   ./06-rebuild+deploy-sre.sh --demo [--realistic]   agent + demo shift (flags via the flagd-ui API; needs k8s-otel-demo).
 #                                        Default timing quick (~2 min per scenario); --realistic: the demo's own fault strengths and timing
 #   SRE_LLM_URL / SRE_MODEL / SRE_PRESET override the model defaults in tinyolly-sre.yaml (pass them on every run).
+#   ./06-rebuild+deploy-sre.sh --agents  also deploy the optional AI-agents add-on (needs the agentgateway-demo repo next to
+#                                        this one, or AGW_DEMO_DIR; combines with --demo; see its tinyolly/README.md)
 #                                        DEMO=0 waits for POST /demo/start; DEMO_SCRIPT=payment-degraded,quiet,... for a rehearsed run
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts/lib" && pwd)/kubectx.sh" && require_kind_context || { return 1 2>/dev/null || exit 1; }
 set -euo pipefail
-DEMO_ON=""; QUICK=1; BUILD=""
-for a in "$@"; do case "$a" in --demo) DEMO_ON=1;; --build) BUILD=1;; --realistic) QUICK="";; --quick) QUICK=1;;
-  -h|--help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+DEMO_ON=""; QUICK=1; BUILD=""; AGENTS=""
+for a in "$@"; do case "$a" in --demo) DEMO_ON=1;; --build) BUILD=1;; --realistic) QUICK="";; --quick) QUICK=1;; --agents) AGENTS=1;;
+  -h|--help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
   *) echo "unknown option $a (see --help)" >&2; exit 2;; esac; done
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+ADDON="${AGW_DEMO_DIR:-../agentgateway-demo}/tinyolly/deploy.sh"
+[ -z "$AGENTS" ] || [ -x "$ADDON" ] || { echo "--agents needs the agentgateway-demo repo: $ADDON not found (set AGW_DEMO_DIR)." >&2; exit 1; }
 # The cluster pulls the image itself (imagePullPolicy IfNotPresent, like the core services).
 if [ -n "$BUILD" ] || ! docker manifest inspect tinyolly/sre:latest >/dev/null 2>&1; then
   docker build -t tinyolly/sre:latest docker/apps/tinyolly-sre
@@ -22,6 +26,8 @@ kubectl apply -f k8s/tinyolly-k8s-state.yaml               # container restarts 
 kubectl apply -f k8s/tinyolly-sre.yaml                        # resets the model settings to the manifest's defaults
 MODEL_ENV=(${SRE_LLM_URL:+"LLM_URL=$SRE_LLM_URL"} ${SRE_MODEL:+"MODEL=$SRE_MODEL"} ${SRE_PRESET:+"LLM_PRESET=$SRE_PRESET"})
 [ "${#MODEL_ENV[@]}" -eq 0 ] || kubectl set env deploy/tinyolly-sre "${MODEL_ENV[@]}"
+# Before the shift settings, so the shift starts after the add-on is in. This script restarts the agent anyway.
+[ -z "$AGENTS" ] || SHIFT_OK=1 "$ADDON"
 QUICK_ENV=(DEMO_PROFILE=quick DEMO_GAP_SECONDS=20,30 DETECT_SECONDS=5 WARMUP_SECONDS=20 BASELINE_POLLS=6 DETECT_CONFIRM_POLLS=2
   INCIDENT_SETTLE_SECONDS=10 INCIDENT_CLEAR_POLLS=3 DETECT_RECENT_SECONDS=30 DETECT_WINDOW_SECONDS=60 DETECT_RECENT_STATS=1
   DETECT_HOLD_MAX_POLLS=36 CHANGE_NOTES=0)
@@ -37,7 +43,7 @@ if [ -n "$DEMO_ON" ]; then
   if [ -n "$QUICK" ]; then         # default: problems show in seconds, ~2 min per scenario
     kubectl set env deploy/tinyolly-sre "${QUICK_ENV[@]}" DEMO_FIRST_GAP_SECONDS="${DEMO_FIRST_GAP_SECONDS:-60}"
   else                             # --realistic: the demo's own fault strengths, default detector timing
-    kubectl set env deploy/tinyolly-sre $(printf '%s- ' "${QUICK_ENV[@]%%=*}") DEMO_PROFILE=realistic DEMO_FIRST_GAP_SECONDS="${DEMO_FIRST_GAP_SECONDS:-240}"
+    kubectl set env deploy/tinyolly-sre $(printf '%s- ' "${QUICK_ENV[@]%%=*}" | sed 's/DEMO_PROFILE- //') DEMO_PROFILE=realistic DEMO_FIRST_GAP_SECONDS="${DEMO_FIRST_GAP_SECONDS:-240}"
   fi
   source scripts/lib/size.sh     # the shift keeps the profile's load
   kubectl set env deploy/load-generator LOCUST_USERS="${LOCUST_USERS:-$LOAD_USERS}" LOCUST_BROWSER_TRAFFIC_ENABLED="$BROWSER_TRAFFIC"

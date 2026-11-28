@@ -1,5 +1,6 @@
 # Lean profile (a Mac under 48 GB): no Kafka or its consumers (accounting, fraud-detection; checkout would otherwise
-# wait for Kafka), no AI components (agent, chatbot, mcp), telemetry-docs or the demo's own OpAMP server.
+# wait for Kafka), no AI components (agent, chatbot, mcp) or telemetry-docs. The demo's OpAMP server stays on (65Mi):
+# without it product-catalog logs DNS errors all the time, which the SRE agent reports as an incident.
 components:
   kafka: {enabled: false}
   accounting: {enabled: false}
@@ -8,12 +9,16 @@ components:
   chatbot: {enabled: false}
   mcp: {enabled: false}
   telemetry-docs: {enabled: false}
-  opamp-server: {enabled: false}
   checkout:
     initContainers: null
     # checkout only skips Kafka when KAFKA_ADDR is empty; with it set and no broker it panics on every order
     envOverrides:
       - {name: KAFKA_ADDR, value: ""}
+      # The Go flag provider can stop seeing flag changes after a while and keep serving its cached value.
+      - {name: FLAGD_CACHE, value: disabled}
+  product-catalog:
+    envOverrides:
+      - {name: FLAGD_CACHE, value: disabled}
   # The chart's 1500Mi limit is also its request; headless browsers are off here, so far less is needed.
   load-generator: {resources: {limits: {memory: 512Mi}}}
   # Measured at 15 users: ad holds about 215Mi against the chart's 300Mi limit; everything else has ample room.

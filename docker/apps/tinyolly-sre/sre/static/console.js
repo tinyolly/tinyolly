@@ -190,6 +190,7 @@ function card(r) {
     for (const x of r.trail || []) tags.append(trailChip(x));
     c.append(el('div', 'label', `Evidence trail${(r.trail || []).length ? ` · ${r.trail.length} queries` : ''}`), tags);
   }
+  c.append(traceBlock(r));
   if (r.blast_radius.length) {
     const tags = el('div', 'tags');
     for (const s of r.blast_radius) tags.append(link('service', s, s === r.service ? `${s} (cause)` : s));
@@ -212,6 +213,69 @@ function card(r) {
   }
   return c;
 }
+// ---- full transcript (opt-in): prompts, model replies, every tool call with its actual result ----
+let showTrace = false;
+try { showTrace = localStorage.getItem('tinyolly-sre-trace') === '1'; } catch (e) { /* private mode */ }
+const traces = new Map();                   // id -> { box, count }: kept across re-renders so opened entries stay open
+const TX_LABEL = { system: 'system prompt', prompt: 'prompt', reply: 'model reply', tool: 'tool', error: 'error' };
+
+const pretty = s => { try { return JSON.stringify(JSON.parse(s), null, 2); } catch (e) { return s; } };
+function traceEntry(x) {
+  const d = el('details', `tx ${x.kind}${x.ok === false ? ' bad' : ''}`);
+  const calls = (x.calls || []).length ? ` → calls ${x.calls.join(', ')}` : '';
+  const name = x.kind === 'tool' ? `${x.tool}(${x.args === '{}' ? '' : x.args})` : `${TX_LABEL[x.kind] || x.kind}${calls}`;
+  const sum = el('summary');
+  sum.append(el('time', '', clock(x.t)), el('span', 'tx-name', name), el('span', 'sub', `${x.chars} chars`));
+  d.append(sum);
+  if (x.kind === 'system' && x.model) d.append(el('div', 'sub', `model: ${x.model} · tools offered: ${(x.tools || []).join(', ') || 'none'}`));
+  if (x.kind === 'tool') {
+    d.append(el('div', 'label', 'Arguments'), el('pre', '', pretty(x.args)));
+    const cut = x.sent < x.chars ? ` · the model saw the first ${x.sent} chars` : '';
+    d.append(el('div', 'label', `Result${cut}`));
+  }
+  d.append(el('pre', '', x.kind === 'tool' ? pretty(x.text) : x.text || '(no text)'));
+  if (x.chars > x.text.length) d.append(el('div', 'sub', `kept the first ${x.text.length} of ${x.chars} chars`));
+  return d;
+}
+async function loadTrace(id) {
+  const t = traces.get(id);
+  if (!t || t.loading) return;
+  t.loading = true;
+  try {
+    const res = await fetch(`api/investigations/${id}/transcript`);
+    const entries = res.ok ? (await res.json()).entries : [];
+    if (!entries.length) t.box.replaceChildren(el('p', 'sub', 'Nothing recorded yet.'));
+    else {
+      if (!t.last) t.box.replaceChildren();
+      let run = t.run;
+      for (const x of entries.filter(x => x.t > (t.last || 0))) {
+        if (x.run !== run) { run = x.run; t.box.append(el('div', 'label', run)); }
+        t.box.append(traceEntry(x));
+        t.last = x.t;
+      }
+      t.run = run;
+    }
+  } catch (e) { /* retried on the next refresh */ }
+  t.loading = false;
+}
+function traceBlock(r) {
+  const wrap = el('div', 'trace-block');
+  const b = el('button', 'tx-toggle', showTrace ? 'Hide prompts & tool results' : 'Show prompts & tool results');
+  b.type = 'button';
+  b.onclick = ev => {
+    ev.stopPropagation();
+    showTrace = !showTrace;
+    try { localStorage.setItem('tinyolly-sre-trace', showTrace ? '1' : '0'); } catch (e) { /* private mode */ }
+    rendered = ''; renderCards();
+  };
+  wrap.append(b);
+  if (showTrace) {
+    if (!traces.has(r.id)) traces.set(r.id, { box: el('div', 'transcript') });
+    wrap.append(traces.get(r.id).box);
+    loadTrace(r.id);
+  }
+  return wrap;
+}
 // one line per investigation; the full card opens on click
 function item(r) {
   const b = el('button', 'item');
@@ -233,6 +297,7 @@ function renderCards() {
   const box = $('cards'), open = selected === null ? null : records.get(selected);
   const was = box.dataset.view || 'list', view = open ? String(open.id) : 'list';
   const at = box.scrollTop;
+  document.querySelector('main').classList.toggle('wide', !!open && showTrace);
   if (was === 'list') listAt = at;
   box.dataset.view = view;
   if (open) {
@@ -267,6 +332,7 @@ async function refresh() {
     records = new Map(j.investigations.map(r => [r.id, r]));
     if (reveal) grades = (await (await fetch('demo/grades')).json()).grades || {};
     header(); renderCards();
+    if (showTrace && selected !== null) loadTrace(selected);
   } catch (e) { /* the stream tag already shows the disconnect */ }
 }
 function connect() {
@@ -275,7 +341,7 @@ function connect() {
   source.onerror = () => { $('conn').textContent = 'disconnected, retrying'; $('conn').classList.add('bad'); };
   source.onmessage = m => {
     const e = JSON.parse(m.data);
-    if (e.n <= lastN) { $('stream').replaceChildren(); records.clear(); if (selected !== null) select(selected); }   // the agent restarted
+    if (e.n <= lastN) { $('stream').replaceChildren(); records.clear(); traces.clear(); if (selected !== null) select(selected); }   // the agent restarted
     lastN = e.n;
     if (e.type === 'investigation') { if (e.data) { records.set(e.data.id, e.data); renderCards(); } return; }
     addRow(e);

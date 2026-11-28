@@ -30,6 +30,7 @@ REVIEW_MAX_PER_HOUR = int(E("REVIEW_MAX_PER_HOUR", "30"))        # shared by rev
 CHANGE_NOTES = E("CHANGE_NOTES", "1") == "1"                    # change-risk note per new change marker, plus a post-change check
 CHANGE_CHECK_S = int(E("CHANGE_CHECK_SECONDS", "150"))
 RUNBOOK = E("RUNBOOK", "0") == "1"                              # off by default (repeated the card); next steps after each incident's finding
+TRANSCRIPT_CHARS, TRANSCRIPT_ENTRIES = 20000, 200                # per entry and per investigation (kept in memory)
 DIGEST_EVERY_S = int(E("DIGEST_EVERY_SECONDS", "1800"))         # digest of the last hour; 0 disables
 NOTE_CHARS = {"runbook": 900, "digest": 900}
 ASKS = {
@@ -170,14 +171,29 @@ class Agent:
         self.history = collections.deque(maxlen=100)
         self.started = time.time(); self.incidents: list[dict] = []; self.inc_n = 0; self.stats = collections.Counter()
         self.investigations: dict[int, dict] = {}; self.ilock = threading.Lock()
+        self.transcripts: dict[int, list] = {}          # per investigation: prompts, model replies, full tool results
         self.shift: demo.Shift | None = None          # demo shift driver, when a flag backend is configured
         self.playbook = open(E("PLAYBOOK_FILE", "playbook.md")).read() if os.path.exists(E("PLAYBOOK_FILE", "playbook.md")) else "You are an SRE agent. Answer with JSON {\"summary\",\"cited_trace_id\",\"cited_service\"}."
+
+    def _say(self, n, run, kind, text, **extra):
+        """Keep one transcript entry of investigation n. Not part of the record: the console fetches it on request."""
+        if n is None: return
+        text = str(text)
+        with self.ilock:
+            if n not in self.investigations: return
+            log_ = self.transcripts.setdefault(n, [])
+            log_.append({"t": time.time(), "run": run, "kind": kind, "text": text[:TRANSCRIPT_CHARS], "chars": len(text), **extra})
+            del log_[:-TRANSCRIPT_ENTRIES]
+
+    def transcript(self, n):
+        with self.ilock: return copy.deepcopy(self.transcripts.get(n, [])) if n in self.investigations else None
 
     # ---- one model run (investigation, recovery check, or free-form ask) ----
     def run(self, trigger, entity="", recovery=False, question="", duty="", ctx="", wait=300, inv=None):
         """duty="" is an incident investigation / recovery check / ask; a duty name is a review-type note with its own budget."""
         if not self.busy.acquire(timeout=wait): log.info("busy, skipped: %s", trigger); return None
         try:
+            say = lambda kind, text, **extra: self._say(inv, duty or ("recovery check" if recovery else "investigation"), kind, text, **extra)
             now = time.time(); bud, cap = (self.rstarts, REVIEW_MAX_PER_HOUR) if duty else (self.starts, MAX_PER_HOUR)
             bud[:] = [x for x in bud if now - x < 3600]
             if len(bud) >= cap: log.warning("hourly cap (%d) reached, skipped: %s", cap, trigger); return None
@@ -203,6 +219,7 @@ class Agent:
                    f"\nEnvironment: {ENV_NAME}. Now: {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}.\n\nEVIDENCE (already fetched):\n{evidence}"
             msgs = [{"role": "system", "content": sys_}, {"role": "user", "content": user}]
             log.info("prompt to %s (%d tools)", MODELS.model, len(tools), extra=ev("thinking", inv, f"SYSTEM:\n{sys_}\n\nUSER:\n{user}"))
+            say("system", sys_, model=MODELS.model, tools=sorted(allow)); say("prompt", user)
             nudges, capped, used, trail = 0, False, [], []
             try:
                 while True:
@@ -211,12 +228,13 @@ class Agent:
                     m, fin, u = chat(msgs, tools or None, left); tin += u.get("prompt_tokens", 0); tout += u.get("completion_tokens", 0)
                     text = m.get("content") or text; tcs = m.get("tool_calls") or []
                     log.info("model reply: %d tokens out, tool calls %s", u.get("completion_tokens", 0), [t["function"]["name"] for t in tcs], extra=ev("thinking", inv, m.get("content") or "(no text)"))
+                    say("reply", m.get("content") or "", calls=[t["function"]["name"] for t in tcs])
                     if not tcs:
                         if question or duty: final, status = {"summary": (m.get("content") or "").strip()}, "ok"; break
                         final = parse_final(m.get("content"))
                         if final: status = "ok"; break
                         if nudges >= 2: status = "timeout"; break
-                        nudges += 1; msgs += [{"role": "assistant", "content": m.get("content") or "", **_raw(m)}, {"role": "user", "content": "Give the final JSON answer now."}]; continue
+                        nudges += 1; say("prompt", "Give the final JSON answer now."); msgs += [{"role": "assistant", "content": m.get("content") or "", **_raw(m)}, {"role": "user", "content": "Give the final JSON answer now."}]; continue
                     if calls + len(tcs) > MAX_CALLS: capped = True; break
                     msgs.append({"role": "assistant", "content": m.get("content") or "", "tool_calls": tcs, **_raw(m)})
                     for tc in tcs:
@@ -231,16 +249,19 @@ class Agent:
                         except ValueError: targs = {}
                         trail.append({"tool": fn, "args": {k: _clip(v, 120) for k, v in (targs if isinstance(targs, dict) else {}).items()},
                                       "result": _clip(re.sub(r"\s+", " ", out), 280), "ok": fn in allow and not out.startswith("ERROR"), "t": time.time()})
+                        say("tool", out, tool=fn, args=args, ok=trail[-1]["ok"], sent=min(len(out), MAX_TOOL_CHARS))
                         msgs.append({"role": "tool", "tool_call_id": tc.get("id", ""), "content": out[:MAX_TOOL_CHARS]}); seen.append(out[:MAX_TOOL_CHARS])
                 if (capped or status == "timeout") and not final:       # last call, no tools: answer from what was gathered
                     msgs.append({"role": "user", "content": "Stop calling tools. Give the final JSON answer now."})
+                    say("prompt", "Stop calling tools. Give the final JSON answer now.")
                     m, _, u = chat(msgs, None, 30); tin += u.get("prompt_tokens", 0); tout += u.get("completion_tokens", 0)
+                    say("reply", m.get("content") or "", calls=[])
                     text = m.get("content") or text
                     if question or duty: final = {"summary": text.strip()} if text.strip() else None
                     else: final = parse_final(text)
                     status = "ok" if final else "timeout"
             except Exception as e:
-                status = "error"; text = text or f"{type(e).__name__}: {e}"; log.warning("run failed: %s", e, extra=ev("finding", inv))
+                status = "error"; text = text or f"{type(e).__name__}: {e}"; say("error", f"{type(e).__name__}: {e}"); log.warning("run failed: %s", e, extra=ev("finding", inv))
             summ = _clip((final or {}).get("summary") or "[no final answer] " + re.sub(r"\s+", " ", text), 1500 if question else 900)
             tid, svc = str((final or {}).get("cited_trace_id") or ""), str((final or {}).get("cited_service") or "")
             known = " ".join(seen + [evidence])
@@ -325,7 +346,7 @@ class Agent:
                 "verdict": "", "would_page": None, "theories": [], "trail": [], "postmortem": "",
                 "timeline": [{"t": now, "kind": "detected", "text": f"Detected: {s.text}"}], "model": MODELS.model, "status": "", "tool_calls": 0, "tokens_in": 0, "tokens_out": 0, "ms": 0}
             self.investigations[inc["n"]]["blast_radius"] = list(dict.fromkeys([s.entity] + ([s.via] if s.via else [])))
-            while len(self.investigations) > 100: self.investigations.pop(next(iter(self.investigations)))
+            while len(self.investigations) > 100: old = next(iter(self.investigations)); self.investigations.pop(old); self.transcripts.pop(old, None)
         log.info("incident %d opened: %s", inc["n"], s.text, extra=ev("incident", inc["n"]))
         self._update(inc["n"])
 
@@ -381,7 +402,9 @@ class Agent:
         f = self.run(trig, self._deepest(inc), inv=n)
         with self.ilock: state = (self.investigations.get(n) or {}).get("state")
         done = "concluded" if state == "investigating" else state        # it may already be recovering
-        if not f: self._update(n, state=done, status="skipped", summary="Not investigated: model busy or hourly cap reached."); return
+        if not f:                                                   # a skipped re-investigation keeps the earlier finding
+            with self.ilock: had = (self.investigations.get(n) or {}).get("summary")
+            self._update(n, state=done, **({} if had else {"status": "skipped", "summary": "Not investigated: model busy or hourly cap reached."})); return
         inc["svc"] = f["service"]
         proof = ([{"kind": "trace", "value": f["trace"]}] if f.get("trace") else []) + [{"kind": "tool", "value": t} for t in f.get("tools_used", [])]
         with self.ilock: opened = (self.investigations.get(n) or {}).get("opened_at") or time.time()
@@ -555,6 +578,10 @@ def make_handler(agent: Agent):
             if pmg:
                 r = next((r for r in agent.records() if r["id"] == int(pmg.group(1))), None)
                 return self._send(200, r["postmortem"], "text/markdown; charset=utf-8") if r and r.get("postmortem") else self._send(404, {"error": "no postmortem yet"})
+            tx = re.fullmatch(r"/api/investigations/(\d+)/transcript", path)
+            if tx:
+                entries = agent.transcript(int(tx.group(1)))
+                return self._send(200, {"entries": entries}) if entries is not None else self._send(404, {"error": "not found"})
             one = re.fullmatch(r"/api/investigations/(\d+)", path)
             if one:
                 r = next((r for r in agent.records() if r["id"] == int(one.group(1))), None)

@@ -23,6 +23,16 @@ Keep the port-forward running.
 
 The console at [http://localhost:7173](http://localhost:7173) says it is watching your telemetry. Give it a few minutes to learn what normal looks like.
 
+Open an investigation and click **Show prompts & tool results** to see what the model was asked, what it replied, and each tool call with its arguments and actual result. The agent keeps these in memory (up to 20,000 characters per entry), so a restart clears them.
+
 [![The TinyOlly AI SRE Agent console](images/ai-sre-console-light.png)](images/ai-sre-console-light.png)
 
 Next: [Create Scenarios](scenarios.md)
+
+## Optional: AI agents next to the shop
+
+`k8s/06-rebuild+deploy-sre.sh --agents` adds three shopping bots that call the Astronomy Shop, a local LLM and an MCP tool
+through [agentgateway](https://agentgateway.dev), deployed from agentregistry. TinyOlly then shows their traces, token
+metrics and edges on the service map. It needs the [agentgateway-demo](https://github.com/stevelerner/agentgateway-demo)
+repo next to this one; its `tinyolly/README.md` covers what to look at and how to remove it. The AI SRE Agent ignores these
+services unless the add-on is deployed with `AGENTS_WATCH=1`.

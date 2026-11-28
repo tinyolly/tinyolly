@@ -1,6 +1,15 @@
 /** Pure logic for the service map (no DOM / Cytoscape) so it can be unit tested with `node --test`. */
 import { aiEdgeSuffix } from './edgeLabels.js';
 
+// Dark Future Spectrum (github.com/stevelerner, palette/): one colour per node type, the same as the shapes in the
+// legend (templates/partials/service-map-tab.html). Red and yellow are kept for the health ring.
+export const HEALTH_FAILING = '#D23050', HEALTH_DEGRADED = '#E4B740';
+export const TYPE_COLORS = {
+    Client: '#E77D33', Server: '#43A4C6', External: '#C4993F', Database: '#3A3E82', Messaging: '#818A43',
+    Agent: '#A64FBE', LLM: '#3E8C74', MCP: '#C66679', Isolated: '#8F949B',
+    Waypoint: '#97C1CD', Gateway: '#874C21', Ztunnel: '#C89CCB'
+};
+
 // Human-readable duration from milliseconds
 export function formatMs(ms) {
     const n = Number(ms);
@@ -44,7 +53,7 @@ export function postureSummary(p) {
     return parts.join(' · ');
 }
 
-/** Graph -> Cytoscape elements. Shape = service type, colour = health. */
+/** Graph -> Cytoscape elements. Shape = service type, fill = type, ring = health. */
 export function buildElements(graph) {
     // Calculate node types (Root, Leaf, Intermediate)
     const incoming = new Map();
@@ -74,7 +83,7 @@ export function buildElements(graph) {
         const inCount = incoming.get(node.id) || 0;
         const outCount = outgoing.get(node.id) || 0;
 
-        // Shape = what the node is (always); colour = health (always).
+        // Shape = what the node is (always); fill = type; ring = health.
         if (node.type === 'database') {
             shape = 'barrel'; type = 'Database';
         } else if (node.type === 'messaging') {
@@ -109,14 +118,12 @@ export function buildElements(graph) {
             metrics = { duration_p95: Math.max(...ins.map(e => e.p95 || 0)) || null,
                         error_rate: calls ? Math.round(1000 * bad / calls) / 10 : 0 };
         }
-        let color = '#2563eb';                                  // healthy
-        if (type === 'Isolated') color = '#94a3b8';             // no traffic
-        if (metrics.error_rate > 5) color = '#ef4444';          // high error rate
-        else if (metrics.error_rate > 0) color = '#f59e0b';     // some errors
+        const color = TYPE_COLORS[type];                        // fill and shape = type; the ring = health
+        const health = metrics.error_rate > 5 ? 'failing' : metrics.error_rate > 0 ? 'degraded' : '';
 
         elements.push({
             group: 'nodes',
-            classes: INFERRED_TYPES.has(node.type) ? 'inferred' : '',   // no spans of its own: drawn with a dashed outline
+            classes: [INFERRED_TYPES.has(node.type) ? 'inferred' : '', health].filter(Boolean).join(' '),   // inferred (no spans of its own): dashed outline
             data: {
                 id: node.id,
                 label: node.label,

@@ -13,20 +13,34 @@ HERE = os.path.dirname(__file__)
 
 
 # ---- flag backends ----
+def _targeted(flag: dict) -> list | None:
+    """The [condition, then, else] of a targeting `if`. While present it decides the variant and defaultVariant is ignored."""
+    rule = (flag.get("targeting") or {}).get("if")
+    return rule if isinstance(rule, list) and len(rule) == 3 and isinstance(rule[1], str) else None
+
+
+def _variant(flag: dict) -> str:
+    rule = _targeted(flag)
+    return rule[1] if rule else flag.get("defaultVariant", "off")
+
+
 class FlagBackend:
     name = "base"
     def _load(self) -> dict: raise NotImplementedError
     def _save(self, d: dict) -> None: raise NotImplementedError
     def get_all(self) -> dict[str, str]:
-        return {k: v.get("defaultVariant", "off") for k, v in self._load()["flags"].items()}
+        return {k: _variant(v) for k, v in self._load()["flags"].items()}
     def set_many(self, changes: dict[str, str]) -> dict[str, tuple[str, str]]:
         """Apply {flag: variant} in one write. Returns {flag: (old, new)} for flags that really changed."""
         d = self._load(); flags = d["flags"]; done = {}
         for flag, variant in changes.items():
             if flag not in flags: raise ValueError(f"unknown flag {flag}")
             if variant not in flags[flag].get("variants", {}): raise ValueError(f"{flag}: no variant {variant}")
-            old = flags[flag].get("defaultVariant", "off")
-            if old != variant: flags[flag]["defaultVariant"] = variant; done[flag] = (old, variant)
+            old, rule = _variant(flags[flag]), _targeted(flags[flag])
+            if old != variant:
+                if rule: rule[1] = variant                 # e.g. productCatalogFailure: on for one product id only
+                else: flags[flag]["defaultVariant"] = variant
+                done[flag] = (old, variant)
         if done: self._save(d)
         return done
     def set(self, flag: str, variant: str): return self.set_many({flag: variant})

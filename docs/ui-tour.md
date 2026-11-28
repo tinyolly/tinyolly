@@ -31,7 +31,7 @@ Open [http://localhost:5005](http://localhost:5005).
   <a href="../images/full/ui-otel-catalog.png"><img src="../images/ui-otel-catalog.png" alt="Service Catalog" width="700"></a>
 </div>
 
-**Service Map:** dependencies with shape for service type and colour for health (legend above the map); click a node for latency.
+**Service Map:** dependencies with shape for service type, one fill colour per type and a red or yellow ring for errors (see the legend); click a node for latency.
 
 <div align="center">
   <a href="../images/full/ui-otel-service-map.png"><img src="../images/ui-otel-service-map.png" alt="Service Map" width="700"></a>

@@ -3,7 +3,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 os.environ["WARMUP_SECONDS"] = "0"; os.environ["INCIDENT_SETTLE_SECONDS"] = "0"
 from sre import core
 from sre.backend import Backend, Signal
-from sre.backends.tinyolly import _is_error
+from sre.backends.tinyolly import TinyOllyBackend, _is_error
 
 
 class Fake(Backend):
@@ -198,6 +198,20 @@ def test_recent_stats_rate_p95_and_fence(monkeypatch):
     assert b._catalog_signals(cat, {"traffic"}, b._recent_stats()) == []                          # empty right after a fence: no false drop
 
 
+def test_stream_spans_are_not_latency(monkeypatch):
+    from sre.backends import tinyolly as T
+    b = T.TinyOllyBackend(); now = time.time()
+    rows = [{"service_name": "payment", "name": "Charge", "start_time": int((now - i) * 1e9), "duration_ms": 20, "status": {}} for i in range(30)]
+    rows += [{**r, "name": "grpc.flagd.evaluation.v2.Service/EventStream", "duration_ms": 600000} for r in rows[:5]]
+    monkeypatch.setattr(b, "_safe", lambda path, default, **k: rows if path == "/api/spans" else default)
+    st = b._recent_stats()
+    assert st["payment"]["duration_p95"] == 20 and st["payment"]["streams"]
+    cat = {"payment": {"name": "payment", "rate": 1, "duration_p95": 20, "error_rate": 0}}
+    for _ in range(8): b._catalog_signals(cat, {"latency"}, st)
+    spiked = {"payment": {**cat["payment"], "duration_p95": 600000}}                 # the catalog's p95 includes the streams
+    assert [b._catalog_signals(spiked, {"latency"}, st) for _ in range(4)] == [[]] * 4
+
+
 def test_op_errors_finds_failing_call_inside_busy_service(monkeypatch):
     from sre.backends import tinyolly as T
     b = T.TinyOllyBackend(); now = time.time()
@@ -318,3 +332,40 @@ def test_evidence_never_borrows_another_services_trace_or_logs():
     b._safe = lambda path, default, **k: [span] if path == "/api/spans" else [log_] if path == "/api/logs" else default
     text, svc, tid = b.evidence("cart: health check failing", "cart")
     assert svc == "cart" and not tid and "cart: Health check failed" in text
+
+
+def test_traffic_surge_is_a_traffic_signal():
+    b = TinyOllyBackend()
+    ok = {"name": "web", "rate": 2.0, "duration_p95": 20, "error_rate": 0}
+    for _ in range(8): assert not b._catalog_signals({"web": ok}, {"traffic"})
+    for _ in range(2): sig = b._catalog_signals({"web": {**ok, "rate": 25.0}}, {"traffic"})
+    assert [(s.kind, "surged" in s.text) for s in sig] == [("traffic", True)]
+
+
+def test_skipped_reinvestigation_keeps_the_finding(monkeypatch):
+    a = agent()
+    a.investigations[1] = {"id": 1, "state": "investigating", "summary": "slow queries", "status": "ok", "timeline": []}
+    monkeypatch.setattr(a, "run", lambda *x, **k: None)
+    monkeypatch.setattr(a, "_blast", lambda inc: [])
+    monkeypatch.setattr(a, "_deepest", lambda inc: "db")
+    a._investigate_once({"n": 1}, "again")
+    r = a.investigations[1]
+    assert (r["summary"], r["status"], r["state"]) == ("slow queries", "ok", "concluded")
+
+
+def test_transcript_keeps_prompts_and_full_results_outside_the_record(monkeypatch):
+    long = "x" * 9000
+    class Tools:
+        def tools(self): return [{"name": "list_services", "description": "", "inputSchema": {"type": "object", "properties": {}}}]
+        def call(self, name, args): return long
+    a = agent(monkeypatch)
+    a.b.local_tools = Tools()
+    replies = iter([({"content": "", "tool_calls": [{"id": "1", "function": {"name": "list_services", "arguments": "{}"}}]}, "tool_calls", {}),
+                    ({"content": '{"summary": "%s"}' % ("d" * 60)}, "stop", {})])
+    monkeypatch.setattr(core, "chat", lambda *x, **k: next(replies))
+    a.add_signal(core.Signal("errors", "cart", "cart: failing"))
+    a.run("incident 1: cart: failing", "cart", inv=1)
+    t = a.transcript(1)
+    assert [e["kind"] for e in t] == ["system", "prompt", "reply", "tool", "reply"]
+    assert t[3]["text"] == long and t[3]["tool"] == "list_services" and t[3]["sent"] <= len(long)
+    assert long not in str(a.records()) and a.transcript(99) is None

@@ -7,3 +7,6 @@ components:
   fraud-detection: {resources: {limits: {memory: 512Mi}}}
   ad: {resources: {limits: {memory: 512Mi}}}
   accounting: {resources: {limits: {memory: 384Mi}}}
+  # The Go flag provider can stop seeing flag changes after a while and keep serving its cached value.
+  checkout: {envOverrides: [{name: FLAGD_CACHE, value: disabled}]}
+  product-catalog: {envOverrides: [{name: FLAGD_CACHE, value: disabled}]}

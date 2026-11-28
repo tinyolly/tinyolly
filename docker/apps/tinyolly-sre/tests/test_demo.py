@@ -124,3 +124,14 @@ def test_quick_profile_uses_quick_blocks_and_fences_after_each_fault(flags, monk
     s.start(); s.thread.join(5)
     assert s.history[0]["ended"] - s.history[0]["started"] < 1 and len(fences) == 1
     assert demo.Shift(flags, demo.load_scenarios()).by_id["payment-degraded"]["flags"] == {"paymentFailure": "90%"}
+
+
+def test_targeted_flag_is_set_in_its_targeting(tmp_path):
+    p = tmp_path / "f.json"
+    p.write_text(json.dumps({"flags": {"bad": {"defaultVariant": "off", "variants": {"on": True, "off": False},
+                                               "targeting": {"if": [{"==": [{"var": "id"}, "X"]}, "off", "off"]}}}}))
+    f = demo.FileFlags(str(p))
+    assert f.set("bad", "on") == {"bad": ("off", "on")} and f.get_all() == {"bad": "on"}
+    assert json.loads(p.read_text())["flags"]["bad"]["targeting"]["if"][1:] == ["on", "off"]
+    f.reset()
+    assert f.get_all() == {"bad": "off"}

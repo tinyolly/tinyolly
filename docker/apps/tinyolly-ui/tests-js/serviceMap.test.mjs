@@ -18,7 +18,7 @@ test('formatMs picks a readable unit', () => {
     assert.equal(fmtNum(1.23456), 1.23);
 });
 
-test('shape = type, colour = health', () => {
+test('shape = type, fill = type, ring = health', () => {
     const graph = {
         nodes: [node('client'), node('server', { metrics: { error_rate: 2 } }), node('leaf', { metrics: { error_rate: 9 } }),
                 node('db', { type: 'database' }), node('mq', { type: 'messaging' }), node('lonely')],
@@ -31,10 +31,13 @@ test('shape = type, colour = health', () => {
     assert.deepEqual([n.leaf.shape, n.leaf.type], ['hexagon', 'External']);
     assert.equal(n.db.shape, 'barrel');
     assert.equal(n.mq.shape, 'rhomboid');
-    assert.deepEqual([n.lonely.shape, n.lonely.type, n.lonely.color], ['ellipse', 'Isolated', '#94a3b8']);
-    assert.equal(n.client.color, '#2563eb');   // healthy
-    assert.equal(n.server.color, '#f59e0b');   // some errors
-    assert.equal(n.leaf.color, '#ef4444');     // >5% errors
+    assert.deepEqual([n.lonely.shape, n.lonely.type], ['ellipse', 'Isolated']);
+    assert.equal(new Set(Object.values(n).map(d => d.color)).size, 6);   // six types here, six colours
+    const two = nodesOf(buildElements({ nodes: [node('a', { type: 'database' }), node('b', { type: 'database' })], edges: [] }));
+    assert.equal(two.a.color, two.b.color);                              // same type, same colour
+    const cls = Object.fromEntries(buildElements(graph).filter(e => e.group === 'nodes').map(e => [e.data.id, e.classes]));
+    assert.deepEqual([cls.client, cls.server, cls.leaf], ['', 'degraded', 'failing']);
+    assert.equal(nodesOf(buildElements(graph)).server.color, n.server.color);   // errors do not change the fill
 });
 
 test('hexagons are drawn wider than tall (regular hexagon), other shapes square', () => {
@@ -117,7 +120,7 @@ test('inferred nodes get health from incoming edges, blocked calls count as erro
     const els = buildElements(graph);
     const n = nodesOf(els);
     assert.deepEqual(n.ollama.metrics, { duration_p95: 780, error_rate: 10 });
-    assert.equal(n.ollama.color, '#ef4444');
+    assert.equal(els.find(x => x.data.id === 'ollama').classes, 'inferred failing');
     const e = els.find(x => x.group === 'edges');
     assert.equal(e.classes, 'denied');
     assert.equal(e.data.label, '780ms · 1 blocked');

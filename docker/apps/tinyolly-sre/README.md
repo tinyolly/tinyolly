@@ -11,7 +11,7 @@ Generic AI SRE agent. Watches telemetry, groups failures into incidents, investi
 | `error-rate` | service error % (spans of the last 120 s, at least 3 errors; a service with < 10 spans there is measured over 360 s) >= 5 and 3x its learned normal, normal counted as at most 5% |
 | `op-errors` | one operation (service + span name, e.g. frontend `GetAds`) failing >= 5% and 3x its own normal, with at least 3 errors in 3x the recent window: a failing dependency call hidden in a busy service |
 | `latency` | p95 >= 3x its learned normal (and +100 ms) |
-| `traffic` | request rate < 20% of normal |
+| `traffic` | request rate < 20% of normal, or >= 4x normal and >= 5/s (`DETECT_SURGE_FACTOR`) |
 | `vanished` | a service that was reporting stops |
 | `logs` | >= 10 error/fatal logs of one service in 2 min |
 | `cpu` | a process at >= `DETECT_CPU_PCT` (40)% CPU in each of its last 3 runtime-metric samples |

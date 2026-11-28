@@ -1,7 +1,7 @@
 /**
  * Service Map Module - Renders service dependency graph using Cytoscape.js
  */
-import { formatMs, fmtNum, graphSignature, filterSelfServices, buildElements } from './serviceMapUtils.js';
+import { formatMs, fmtNum, graphSignature, filterSelfServices, buildElements, HEALTH_FAILING, HEALTH_DEGRADED } from './serviceMapUtils.js';
 
 let cy = null;
 
@@ -196,6 +196,8 @@ export function renderServiceMap(graph) {
             { selector: 'edge.mtls', style: { 'line-color': '#16a34a', 'target-arrow-color': '#16a34a' } },
             { selector: 'edge.plaintext', style: { 'line-color': '#f59e0b', 'target-arrow-color': '#f59e0b', 'line-style': 'dashed' } },
             { selector: 'node.inferred', style: { 'border-style': 'dashed', 'border-width': 2, 'border-color': '#64748b' } },
+            { selector: 'node.degraded', style: { 'border-width': 5, 'border-color': HEALTH_DEGRADED } },
+            { selector: 'node.failing', style: { 'border-width': 6, 'border-color': HEALTH_FAILING } },
             { selector: 'edge.denied', style: { 'line-color': '#ef4444', 'target-arrow-color': '#ef4444', 'width': 4 } },
             {
                 selector: 'node:selected',
@@ -230,7 +232,7 @@ export function renderServiceMap(graph) {
 
         let html = `
             <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;">
-                <span style="background: ${data.color}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; text-transform: uppercase;">${data.type}</span>
+                <span style="background: ${data.color}; color: white; text-shadow: 0 0 3px #100D0B; padding: 2px 6px; border-radius: 4px; font-size: 10px; text-transform: uppercase;">${data.type}</span>
             </div>
         `;
 
