@@ -1489,7 +1489,7 @@
 </tr>
 <tr>
 <td><code>chart_service_map</code></td>
-<td><strong>Image</strong>: the whole map, or with <code>service</code> one service's callers (left) and callees (right), coloured by health, edges labelled with p95 and rate (<code>depth=2</code> for two hops)</td>
+<td><strong>Image</strong>: the whole map, or with <code>service</code> one service's callers (left) and callees (right), coloured by node type and outlined by health, edges labelled with p95 and rate (<code>depth=2</code> for two hops)</td>
 </tr>
 <tr>
 <td><code>list_skills</code>, <code>get_skill</code></td>
@@ -1504,10 +1504,10 @@
 <p>The docs are also MCP resources: <code>tinyolly-docs://&lt;name&gt;</code> (for example <code>tinyolly-docs://quickstart</code>).</p>
 <h2 id="pretty-output-and-charts">Pretty output and charts</h2>
 <p>JSON output is compact for agents. To show a person, pass <code>format="table"</code> (catalog, traces, spans, logs) or <code>format="waterfall"</code> on <code>get_trace</code> (span tree with timing bars; big traces keep every error span and the slowest, up to <code>max_rows</code>). <code>chart_metric</code> and <code>chart_service_map</code> return PNG images (drawn with matplotlib, installed by <code>install.sh</code>), so the client must display images; Claude Desktop and Claude Code do. Desktop shows a small preview: click to enlarge, or ask for a file with <code>save_to</code> ("save the service map to ~/Desktop/map.png").</p>
-<p><code>chart_service_map</code> draws each service as a card with a role icon, <code>err · p95</code>, and a health stripe (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green mTLS, amber dashed plaintext, red denied or errors, grey unknown. Only the six busiest edges carry latency labels on the whole map.</p>
+<p><code>chart_service_map</code> draws each service as a card with a role icon and stripe coloured by node type (the same colours as the web UI), <code>err · p95</code>, and an outline for health (yellow: some errors, red: above 5%, dashed: inferred, no spans of its own). With mesh data, edge colour shows security: green mTLS, amber dashed plaintext, red denied or errors, grey unknown. Only the six busiest edges carry latency labels on the whole map.</p>
 <p><a href="../images/full/mesh-otel-service-map.png"><img alt="Service map drawn by chart_service_map" src="../images/mesh-otel-service-map.png" /></a></p>
-<p>During a fault the failing services turn red, and <code>chart_trace_path</code> draws one request's journey hop by hop. <code>chart_map_diff</code> needs a mesh: it reads Istio request metrics.</p>
-<p><a href="../images/full/mesh-otel-failure-map.png"><img alt="chart_service_map during a fault: failing services in red" src="../images/mesh-otel-failure-map.png" /></a></p>
+<p>During a fault the failing services get a red outline, and <code>chart_trace_path</code> draws one request's journey hop by hop. <code>chart_map_diff</code> needs a mesh: it reads Istio request metrics.</p>
+<p><a href="../images/full/mesh-otel-failure-map.png"><img alt="chart_service_map during a fault: failing services outlined in red" src="../images/mesh-otel-failure-map.png" /></a></p>
 <p><a href="../images/full/mesh-otel-trace-path.png"><img alt="chart_trace_path for one failing order" src="../images/mesh-otel-trace-path.png" /></a></p>
 <p>Try: "show me the service map", "draw the service map around cart", "show the slowest checkout trace as a waterfall", "chart http.server.duration for tinyolly-ui".</p>
 <h2 id="investigation-skills">Investigation skills</h2>

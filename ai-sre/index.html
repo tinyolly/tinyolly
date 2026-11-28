@@ -393,6 +393,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#optional-ai-agents-next-to-the-shop" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Optional: AI agents next to the shop
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1179,6 +1190,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#optional-ai-agents-next-to-the-shop" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Optional: AI agents next to the shop
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1212,8 +1234,15 @@
 <p>Keep the port-forward running.</p>
 <h2 id="what-you-should-see">What you should see</h2>
 <p>The console at <a href="http://localhost:7173">http://localhost:7173</a> says it is watching your telemetry. Give it a few minutes to learn what normal looks like.</p>
+<p>Open an investigation and click <strong>Show prompts &amp; tool results</strong> to see what the model was asked, what it replied, and each tool call with its arguments and actual result. The agent keeps these in memory (up to 20,000 characters per entry), so a restart clears them.</p>
 <p><a href="../images/ai-sre-console-light.png"><img alt="The TinyOlly AI SRE Agent console" src="../images/ai-sre-console-light.png" /></a></p>
 <p>Next: <a href="../scenarios/">Create Scenarios</a></p>
+<h2 id="optional-ai-agents-next-to-the-shop">Optional: AI agents next to the shop</h2>
+<p><code>k8s/06-rebuild+deploy-sre.sh --agents</code> adds three shopping bots that call the Astronomy Shop, a local LLM and an MCP tool
+through <a href="https://agentgateway.dev">agentgateway</a>, deployed from agentregistry. TinyOlly then shows their traces, token
+metrics and edges on the service map. It needs the <a href="https://github.com/stevelerner/agentgateway-demo">agentgateway-demo</a>
+repo next to this one; its <code>tinyolly/README.md</code> covers what to look at and how to remove it. The AI SRE Agent ignores these
+services unless the add-on is deployed with <code>AGENTS_WATCH=1</code>.</p>
 
 
 

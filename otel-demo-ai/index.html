@@ -1536,7 +1536,7 @@
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w"> </span><span class="nt">"edges"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"frontend"</span><span class="p">,</span><span class="w"> </span><span class="nt">"target"</span><span class="p">:</span><span class="w"> </span><span class="s2">"checkout"</span><span class="p">,</span><span class="w"> </span><span class="nt">"error_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">"p95"</span><span class="p">:</span><span class="w"> </span><span class="mf">59.03</span><span class="p">},</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">           </span><span class="p">{</span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"checkout"</span><span class="p">,</span><span class="w"> </span><span class="nt">"target"</span><span class="p">:</span><span class="w"> </span><span class="s2">"payment"</span><span class="p">,</span><span class="w">  </span><span class="nt">"error_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">"p95"</span><span class="p">:</span><span class="w"> </span><span class="mf">8.6</span><span class="p">}]}</span>
 </code></pre></div>
-<p><a href="../images/full/mesh-otel-failure-map.png"><img alt="chart_service_map with checkout and payment in red" src="../images/mesh-otel-failure-map.png" /></a></p>
+<p><a href="../images/full/mesh-otel-failure-map.png"><img alt="chart_service_map with checkout and payment outlined in red" src="../images/mesh-otel-failure-map.png" /></a></p>
 <h3 id="3-look-at-a-failing-order">3. Look at a failing order</h3>
 <blockquote>
 <p>Show me a failing order as a waterfall.</p>
@@ -1556,7 +1556,7 @@
 <blockquote>
 <p>Draw the journey of that failing request over the map.</p>
 </blockquote>
-<p><code>chart_trace_path</code> numbers each hop with its time, failing services in red:</p>
+<p><code>chart_trace_path</code> numbers each hop with its time, failing services outlined in red:</p>
 <p><a href="../images/full/mesh-otel-trace-path.png"><img alt="chart_trace_path: the failing order's journey, with checkout and payment in red" src="../images/mesh-otel-trace-path.png" /></a></p>
 <h3 id="5-confirm-with-the-edge">5. Confirm with the edge</h3>
 <blockquote>
