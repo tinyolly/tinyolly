@@ -25,7 +25,7 @@ description: "Architecture, storage and retention, OTLP compatibility, UI featur
 - **Deep links:** `?tab=traces&traceId=...`, `?tab=spans&spanId=...`, `?tab=logs&search=...`; "Copy Link" buttons generate them, and IDs copy with one click.
 - **Correlated logs** inline in a trace; trace and span IDs in logs jump to their trace or span.
 - **Service Catalog:** RED metrics; a service name opens a menu (map, traces, spans, logs, metrics) filtered to it.
-- **Service Map:** Cytoscape.js and dagre, left to right, always fitted to the window. Shape is the service type (server, client, external, database, messaging, isolated, and [agent, LLM, MCP server](#agents-llms-and-mcp-servers)), colour the health (blue, amber some errors, red >5%); TinyOlly's own services can be hidden. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), with waypoint and gateway shapes ([Istio Ambient Mesh](istio.md)). A selected node shows P50/P95/P99 and rate.
+- **Service Map:** Cytoscape.js and dagre, left to right, always fitted to the window. Shape and fill colour are the node type (server, client, external, database, messaging, isolated, and [agent, LLM, MCP server](#agents-llms-and-mcp-servers)); the outline is health (solid yellow some errors, solid red over 5%) or marks an inferred node that sends no spans (dashed grey); TinyOlly's own services can be hidden. With Istio, edges also come from mesh metrics (green mTLS, orange dashed plaintext, red denied), with waypoint and gateway shapes ([Istio Ambient Mesh](istio.md)). A selected node shows P50/P95/P99 and rate.
 - **Auto-refresh** every 5 s, paused while a search filter is active; lists scroll with sticky headers.
 
 ## Agents, LLMs and MCP servers

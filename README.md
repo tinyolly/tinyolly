@@ -80,7 +80,7 @@ Claude Desktop and Zed work too ([connect a client](docs/mcp-deploy.md)). Ask in
 
 <table>
 <tr>
-<td width="50%" align="center"><a href="docs/images/full/mesh-otel-failure-map.png"><img src="docs/images/mesh-otel-failure-map.png" width="440" alt="Service map drawn by the MCP server with checkout and payment in red"></a><br><sub><code>chart_service_map</code>: the failing services in red</sub></td>
+<td width="50%" align="center"><a href="docs/images/full/mesh-otel-failure-map.png"><img src="docs/images/mesh-otel-failure-map.png" width="440" alt="Service map drawn by the MCP server with checkout and payment outlined in red"></a><br><sub><code>chart_service_map</code>: the failing services outlined in red</sub></td>
 <td width="50%" align="center"><a href="docs/images/full/mesh-otel-trace-path.png"><img src="docs/images/mesh-otel-trace-path.png" width="440" alt="One failing request's journey over the service map"></a><br><sub><code>chart_trace_path</code>: one failing order, hop by hop</sub></td>
 </tr>
 </table>

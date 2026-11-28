@@ -188,3 +188,11 @@ async def test_calls_to_an_ip_use_reverse_dns(storage, monkeypatch):
     types = {n["id"]: n["type"] for n in graph["nodes"]}
     assert types.get("cartservice") == "external"
     assert "10.1.2.3" not in types and ("frontend", "currencyservice") not in _edges(graph)
+
+
+def test_generic_grpc_service_name_uses_the_host_or_package():
+    from tinyolly_common.graph_infer import _external_name
+    rpc = {"key": "rpc.service", "value": {"stringValue": "flagd.evaluation.v1.Service"}}
+    host = {"key": "server.address", "value": {"stringValue": "flags-host"}}
+    assert _external_name({"name": "x", "attributes": [rpc, host]}) == "flags-host"
+    assert _external_name({"name": "x", "attributes": [rpc]}) == "flagd"

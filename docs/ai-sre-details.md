@@ -38,6 +38,7 @@ Configured presets appear in the console's model picker; switching applies to th
     - **Triage:** `act now`, `watch` or `noise`, and whether it **would page** (shadow mode: nothing is paged; the shift report scores it).
     - **Conclusion** with confidence, and the **theories** considered: confirmed ✓, ruled out ✗ with the deciding fact, or open.
     - **Evidence trail:** the cited trace and every query the agent ran; each chip opens that view in TinyOlly, and hovering shows the result.
+    - **Show prompts & tool results:** on an opened investigation, the system and user prompts, each model reply, and each tool call with its arguments and full result (kept in memory until the agent restarts).
     - **Timeline:** related change marker, detection, new symptoms, investigation, conclusion, fix, recovery.
     - Blast radius, proposed fixes, recovery result and time to resolve.
     - **Write postmortem:** a blameless draft (summary, impact, timeline, root cause, theories, 5 whys, evidence, action items) to copy or download as markdown.

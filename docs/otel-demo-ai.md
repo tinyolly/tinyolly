@@ -71,7 +71,7 @@ The catalog shows the two services whose error rate jumped, and `get_service_map
            {"source": "checkout", "target": "payment",  "error_count": 4, "p95": 8.6}]}
 ```
 
-[![chart_service_map with checkout and payment in red](images/mesh-otel-failure-map.png)](images/full/mesh-otel-failure-map.png)
+[![chart_service_map with checkout and payment outlined in red](images/mesh-otel-failure-map.png)](images/full/mesh-otel-failure-map.png)
 
 ### 3. Look at a failing order
 
@@ -96,7 +96,7 @@ The failure starts in `payment: charge` and bubbles up to the proxy.
 
 > Draw the journey of that failing request over the map.
 
-`chart_trace_path` numbers each hop with its time, failing services in red:
+`chart_trace_path` numbers each hop with its time, failing services outlined in red:
 
 [![chart_trace_path: the failing order's journey, with checkout and payment in red](images/mesh-otel-trace-path.png)](images/full/mesh-otel-trace-path.png)
 

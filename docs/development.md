@@ -93,7 +93,9 @@ pytest scripts/agent_eval
 
 ## Documentation images
 
-Screenshots are generated, not hand-pasted. `scripts/make-doc-images.py` screenshots the UI tabs (headless Chrome) and saves the MCP chart images, each twice: a preview (max 900 px wide) in `docs/images/` and the full size in `docs/images/full/` (what a click opens). The OpenTelemetry Demo shots come from `scripts/make-otel-demo-images.py`.
+To regenerate everything at once from the running kind stack, stop any SRE demo shift and run `scripts/regen-docs.sh`. It also shoots the SRE console (`scripts/shoot-sre-console.mjs`), pauses the agents add-on's bots while it works, and takes the `mesh-*` charts from a temporary second TinyOlly with seeded data.
+
+Screenshots are generated, not hand-pasted. `scripts/make-doc-images.py` screenshots the UI tabs (headless Chrome) and saves the MCP chart images, each twice: a preview (1600 px wide) in `docs/images/` and the full size in `docs/images/full/` (what a click opens). The OpenTelemetry Demo shots come from `scripts/make-otel-demo-images.py`.
 
 ```bash
 scripts/make-doc-images.py                       # all shots from the running stack (UI :5005, MCP :8765)
@@ -102,7 +104,7 @@ scripts/make-doc-images.py --seed --otlp http://localhost:4318   # post a fault 
 scripts/make-doc-images.py --check               # no stack needed; also runs in test-all.sh
 ```
 
-To add one, add a line to `SHOTS`, run the script, and embed it as `[![alt](images/<name>.png)](images/full/<name>.png)`, or with a width, `<a href="../images/full/<name>.png"><img src="../images/<name>.png" width="400"></a>`. Path prefixes: markdown under `docs/` uses `images/` (Zensical/MkDocs rewrites it); raw HTML uses `../images/` because pages are served at `/<page>/` (except `docs/index.md`: `images/`); the README uses `docs/images/`. `--check` fails on a missing shot, a preview over 300 KB, or an embed without the click-to-expand link. Settings: `TINYOLLY_UI`, `TINYOLLY_MCP`, `CHROME`; needs Pillow or macOS `sips`.
+To add one, add a line to `SHOTS`, run the script, and embed it as `[![alt](images/<name>.png)](images/full/<name>.png)`, or with a width, `<a href="../images/full/<name>.png"><img src="../images/<name>.png" width="400"></a>`. Path prefixes: markdown under `docs/` uses `images/` (Zensical/MkDocs rewrites it); raw HTML uses `../images/` because pages are served at `/<page>/` (except `docs/index.md`: `images/`); the README uses `docs/images/`. `--check` fails on a missing shot, a preview over 900 KB, or an embed without the click-to-expand link. Settings: `TINYOLLY_UI`, `TINYOLLY_MCP`, `CHROME`; needs Pillow or macOS `sips`.
 
 **Before publishing the docs site** (`./mkdocs-deploy.sh` pushes to `gh-pages`):
 

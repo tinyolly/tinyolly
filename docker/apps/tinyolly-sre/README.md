@@ -68,7 +68,7 @@ Live faults are slow (a fault needs minutes of real traffic to show, then minute
 
 ## Run
 ```bash
-k8s/06-rebuild+deploy-sre.sh [--demo [--realistic]]   # SRE_LLM_URL, SRE_MODEL override the model; --demo uses flagd-ui, no RBAC needed
+k8s/06-rebuild+deploy-sre.sh [--demo [--realistic]] [--agents]   # SRE_LLM_URL, SRE_MODEL override the model; --demo uses flagd-ui, no RBAC needed; --agents adds the AI-agents add-on
 ```
 `--demo` uses the **quick** profile by default (values in `k8s/06-rebuild+deploy-sre.sh`): `DEMO_PROFILE=quick` (each scenario's `quick` block: stronger variant, 75-90 s fault, 30 s cooldown), 5 s polls, `DETECT_RECENT_STATS=1` (rate and p95 from the last `DETECT_RECENT_SECONDS`=30 of spans), a detector cutoff when each fault ends, `CHANGE_NOTES=0`. The shift keeps the size profile's load. `--realistic` keeps the demo's strengths and the default timing.
 

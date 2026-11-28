@@ -60,7 +60,7 @@ TinyOlly's Docker and Kubernetes deployments also run the server as a container 
 | `list_metrics` | Metric names, with a search filter |
 | `query_metric` | Time series for the last N minutes, downsampled (min/max/avg/last). `labels` filters on attributes; `group_by` sums per attribute value |
 | `chart_metric` | **Image**: line chart of a metric (histograms: mean solid, p95 dashed) |
-| `chart_service_map` | **Image**: the whole map, or with `service` one service's callers (left) and callees (right), coloured by health, edges labelled with p95 and rate (`depth=2` for two hops) |
+| `chart_service_map` | **Image**: the whole map, or with `service` one service's callers (left) and callees (right), coloured by node type and outlined by health, edges labelled with p95 and rate (`depth=2` for two hops) |
 | `list_skills`, `get_skill` | Investigation playbooks, and the full steps of one |
 | `list_docs`, `search_docs`, `read_doc` | These docs: list pages, search sections, read a page or one section |
 
@@ -70,13 +70,13 @@ The docs are also MCP resources: `tinyolly-docs://<name>` (for example `tinyolly
 
 JSON output is compact for agents. To show a person, pass `format="table"` (catalog, traces, spans, logs) or `format="waterfall"` on `get_trace` (span tree with timing bars; big traces keep every error span and the slowest, up to `max_rows`). `chart_metric` and `chart_service_map` return PNG images (drawn with matplotlib, installed by `install.sh`), so the client must display images; Claude Desktop and Claude Code do. Desktop shows a small preview: click to enlarge, or ask for a file with `save_to` ("save the service map to ~/Desktop/map.png").
 
-`chart_service_map` draws each service as a card with a role icon, `err · p95`, and a health stripe (blue healthy, amber above 1% errors, red above 5%, grey no connections). With mesh data, edge colour shows security: green mTLS, amber dashed plaintext, red denied or errors, grey unknown. Only the six busiest edges carry latency labels on the whole map.
+`chart_service_map` draws each service as a card with a role icon and stripe coloured by node type (the same colours as the web UI), `err · p95`, and an outline for health (yellow: some errors, red: above 5%, dashed: inferred, no spans of its own). With mesh data, edge colour shows security: green mTLS, amber dashed plaintext, red denied or errors, grey unknown. Only the six busiest edges carry latency labels on the whole map.
 
 [![Service map drawn by chart_service_map](images/mesh-otel-service-map.png)](images/full/mesh-otel-service-map.png)
 
-During a fault the failing services turn red, and `chart_trace_path` draws one request's journey hop by hop. `chart_map_diff` needs a mesh: it reads Istio request metrics.
+During a fault the failing services get a red outline, and `chart_trace_path` draws one request's journey hop by hop. `chart_map_diff` needs a mesh: it reads Istio request metrics.
 
-[![chart_service_map during a fault: failing services in red](images/mesh-otel-failure-map.png)](images/full/mesh-otel-failure-map.png)
+[![chart_service_map during a fault: failing services outlined in red](images/mesh-otel-failure-map.png)](images/full/mesh-otel-failure-map.png)
 
 [![chart_trace_path for one failing order](images/mesh-otel-trace-path.png)](images/full/mesh-otel-trace-path.png)
 

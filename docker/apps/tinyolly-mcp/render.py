@@ -12,7 +12,13 @@ from edge_labels import ai_edge_suffix
 
 HEALTH = ((5, "🔴"), (0.0001, "🟡"))   # error_rate % thresholds
 SEVERITY_ICON = {"error": "🔴", "fatal": "🔴", "critical": "🔴", "warn": "🟡", "warning": "🟡", "info": "🔵", "debug": "⚪", "trace": "⚪"}
-COLOR_OK, COLOR_WARN, COLOR_ERR, COLOR_IDLE = "#2563eb", "#f59e0b", "#ef4444", "#94a3b8"
+COLOR_OK, COLOR_WARN, COLOR_ERR, COLOR_IDLE = "#2563eb", "#f59e0b", "#ef4444", "#94a3b8"   # metric charts and edges
+# Service-map nodes: Dark Future Spectrum, one colour per node type; red and yellow outlines say health. Keep in sync with
+# the web UI (tinyolly-ui/static/serviceMapUtils.js: TYPE_COLORS, HEALTH_*).
+HEALTH_FAILING, HEALTH_DEGRADED = "#D23050", "#E4B740"
+TYPE_COLORS = {"client": "#E77D33", "server": "#43A4C6", "external": "#C4993F", "database": "#3A3E82", "messaging": "#818A43",
+               "agent": "#A64FBE", "llm": "#3E8C74", "mcp": "#C66679", "isolated": "#8F949B",
+               "waypoint": "#97C1CD", "gateway": "#874C21", "ztunnel": "#C89CCB"}
 
 
 # ---------- small formatters ----------
@@ -280,13 +286,10 @@ def metric_chart(name: str, unit: str, mtype: str, series: list[dict], max_serie
     return _png(fig)
 
 
-def _node_color(m: dict, isolated: bool = False) -> str:
+def _health_color(m: dict) -> str | None:
+    """Outline colour for a node with errors (same thresholds as the web UI), else None."""
     e = float((m or {}).get("error_rate") or 0)
-    if e > 5:
-        return COLOR_ERR
-    if e > 1:
-        return COLOR_WARN
-    return COLOR_IDLE if isolated else COLOR_OK
+    return HEALTH_FAILING if e > 5 else HEALTH_DEGRADED if e > 0 else None
 
 
 ROW = 1.35   # vertical spacing between nodes in the map charts
@@ -297,7 +300,7 @@ INFERRED_TYPES = ("llm", "mcp", "external")       # node types tinyolly_common i
 
 
 def node_roles(graph: dict) -> dict:
-    """Same rules as the web UI's service map: shape says what the node is, colour says its health."""
+    """Same rules as the web UI's service map: shape and fill say what the node is, the outline its health."""
     ins: dict[str, int] = defaultdict(int)
     outs: dict[str, int] = defaultdict(int)
     for e in graph.get("edges", []):
@@ -334,12 +337,12 @@ INK, MUTED, LINE = "#0f172a", "#64748b", "#cbd5e1"
 
 def _draw_node(ax, x: float, y: float, name: str, m: dict, role: str, center: bool = False, cluster: str | None = None,
                inferred: bool = False) -> None:
-    """Card at (x, y): role icon, service name, error/p95 line, and a stripe on the left coloured by health."""
+    """Card at (x, y): role icon and left stripe in the type colour, service name, error/p95 line; outlined by health."""
     from matplotlib.patches import FancyBboxPatch
-    color = _node_color(m, isolated=role == "isolated")
+    color, health = TYPE_COLORS.get(role, TYPE_COLORS["server"]), _health_color(m)
     x0, y0 = x - CARD_W / 2, y - CARD_H / 2
     ax.add_patch(FancyBboxPatch((x0, y0), CARD_W, CARD_H, boxstyle="round,pad=0,rounding_size=0.18", fc="white",
-                                ec=INK if center else LINE, lw=2.6 if center else 1.2, zorder=3,
+                                ec=health or (INK if center else LINE), lw=3.2 if health else 2.6 if center else 1.2, zorder=3,
                                 linestyle=(0, (4, 3)) if inferred else "-"))    # dashed: no spans of its own, inferred from callers
     ax.add_patch(FancyBboxPatch((x0, y0), 0.2, CARD_H, boxstyle="round,pad=0,rounding_size=0.1", fc=color, ec="none", zorder=4))
     _draw_node_icon(ax, x0 + 0.62, y, role)
@@ -368,7 +371,8 @@ def _legend_rows(mesh: bool, diff: bool = False, present: frozenset = frozenset(
                                + ([("role", "gateway", "gateway")] if mesh or "gateway" in present else []),
                                *([[(r, k, t) for r, k, t in (("role", "agent", "agent"), ("role", "llm", "LLM"), ("role", "mcp", "MCP server"))
                                    if k in present]] if present & set(AI_ROLES) else []),
-                               [("node", COLOR_OK, "node: healthy"), ("node", COLOR_WARN, "node: >1% errors"), ("node", COLOR_ERR, "node: >5% errors")]]
+                               [("outline", (HEALTH_DEGRADED, "-"), "some errors"), ("outline", (HEALTH_FAILING, "-"), "over 5% errors"),
+                                ("outline", (MUTED, "--"), "inferred (no spans)")]]
     if mesh:
         rows.append([("edge", ("#16a34a", "-"), "edge: mTLS"), ("edge", ("#f59e0b", "--"), "edge: plaintext"),
                      ("edge", ("#ef4444", "-"), "edge: denied / errors")])
@@ -383,7 +387,7 @@ def legend_height(mesh: bool, diff: bool = False, present: frozenset = frozenset
 
 
 def _legend(ax, x: float, y: float, mesh: bool = False, diff: bool = False, present: frozenset = frozenset()) -> None:
-    """Shapes = role, node colour = health, edge colour = mesh security. Rows go downward from y."""
+    """Shape and fill = role, outline = health, edge colour = mesh security. Rows go downward from y."""
     from matplotlib.patches import Rectangle
     for ri, items in enumerate(_legend_rows(mesh, diff, present)):
         yy = y - ri * LEGEND_ROW
@@ -391,8 +395,8 @@ def _legend(ax, x: float, y: float, mesh: bool = False, diff: bool = False, pres
             xx = x + i * LEGEND_COL
             if kind == "role":
                 _draw_node_icon(ax, xx, yy, key)
-            elif kind == "node":
-                ax.add_patch(Rectangle((xx - 0.2, yy - 0.13), 0.4, 0.26, fc=key, ec="none", zorder=3))
+            elif kind == "outline":
+                ax.add_patch(Rectangle((xx - 0.2, yy - 0.13), 0.4, 0.26, fc="none", ec=key[0], linestyle=key[1], lw=2.2, zorder=3))
             else:
                 ax.plot([xx - 0.22, xx + 0.22], [yy, yy], color=key[0], linestyle=key[1], lw=2.4, alpha=key[2] if len(key) > 2 else 1.0)
             ax.text(xx + 0.42, yy, text, fontsize=10, va="center", color="#475569")
@@ -407,9 +411,9 @@ def _finalize(fig, ax, scale: float = 0.9) -> None:
 
 
 def _draw_node_icon(ax, x: float, y: float, role: str) -> None:
-    """Small role glyph (shape = role; health is the card stripe)."""
+    """Small role glyph (shape and colour = role; health is the card outline)."""
     from matplotlib.patches import Ellipse, FancyBboxPatch, Polygon, Rectangle
-    kw = dict(fc="#475569" if role != "isolated" else "#94a3b8", ec="none", zorder=5)
+    kw = dict(fc=TYPE_COLORS.get(role, TYPE_COLORS["server"]), ec="none", zorder=5)
     r = 0.2
     if role == "client":
         ax.add_patch(Polygon([(x - r, y), (x, y + r), (x + r, y), (x, y - r)], **kw))
@@ -575,7 +579,7 @@ def with_inferred_metrics(graph: dict) -> dict:
 
 
 def service_map_chart(graph: dict, service: str, depth: int = 1) -> bytes:
-    """Callers -> service -> callees diagram for one service, nodes coloured by health, edges labelled with p95."""
+    """Callers -> service -> callees diagram for one service, nodes coloured by type and outlined by health, edges labelled with p95."""
     plt = _plt()
     graph = with_inferred_metrics(graph)
     g = ego_graph(graph, service, depth)

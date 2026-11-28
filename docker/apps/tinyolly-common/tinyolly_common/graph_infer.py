@@ -64,7 +64,10 @@ def _external_name(span: Dict[str, Any]) -> Optional[str]:
     rpc = str(_attr(span, ["rpc.service"]) or "")
     if rpc.startswith("opentelemetry.proto.collector") or "/Export" in str(span.get("name", "")) and "opentelemetry" in str(span.get("name", "")):
         return None
-    name = _attr(span, ["peer.service"]) or (rpc.rsplit(".", 1)[-1] if rpc else None) or _host(span)
+    short = rpc.rsplit(".", 1)[-1] if rpc else None
+    if short == "Service":                              # `flagd.evaluation.v1.Service` names nothing: host, else the package
+        short = _host(span) or rpc.split(".", 1)[0]
+    name = _attr(span, ["peer.service"]) or short or _host(span)
     if name and _is_ip(str(name)):
         name = ip_name(str(name))                       # reverse DNS (resolve_ips), else no identity: skip it
     return _short_name(str(name)) if name else None
